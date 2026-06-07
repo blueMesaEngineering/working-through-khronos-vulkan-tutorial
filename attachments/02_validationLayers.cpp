@@ -1,8 +1,11 @@
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <vector>
+
 #if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
 #   include <vulkan/vulkan_raii.hpp>
 #else
@@ -14,6 +17,17 @@ import vulkan_hpp;
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
+
+const std::vector<char const *> validationLayers = 
+{
+    "VK_LAYER_KHRONOS_validation"
+};
+
+#ifdef NDEBUG
+constexpr bool enableValidationLayers = false;
+#else
+constexpr bool enableValidationLayers = true;
+#endif
 
 class HelloTriangleApplication
 {
@@ -40,8 +54,9 @@ class HelloTriangleApplication
     private:
         GLFWwindow *window = nullptr;
 
-        vk::raii::Context  context;
-        vk::raii::Instance instance = nullptr;
+        vk::raii::Context               context;
+        vk::raii::Instance              instance        = nullptr;
+        vk::raii:DebugUtilsMessengerEXT debugMessenger  = nullptr;
 
 
 //******************************************************************************************
@@ -85,6 +100,7 @@ class HelloTriangleApplication
         void initVulkan()
         {
             createInstance();
+            setupDebugMessenger();
         }
         
 
@@ -151,7 +167,7 @@ class HelloTriangleApplication
             uint32_t glfwExtensionCount = 0;
             auto glfwExtensions         = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-            // Check if the required FLDW extensions are supported by the Vulkan Implementation.
+            // Check if the required GLFW extensions are supported by the Vulkan Implementation.
             auto extensionProperties = context.enumerateInstanceExtensionProperties();
             for (uint32_t i = 0; i < glfwExtensionCount; ++i)
             {
