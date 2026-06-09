@@ -208,6 +208,19 @@ depend:
 .PHONY : 01_instanceCreation/fast
 
 #=============================================================================
+# Target rules for targets named 02_validationLayers
+
+# Build rule for target.
+02_validationLayers: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 02_validationLayers
+.PHONY : 02_validationLayers
+
+# fast build rule for target.
+02_validationLayers/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/02_validationLayers.dir/build.make CMakeFiles/02_validationLayers.dir/build
+.PHONY : 02_validationLayers/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -736,6 +749,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/01_instanceCreation.dir/build.make CMakeFiles/01_instanceCreation.dir/01_instanceCreation.cpp.s
 .PHONY : 01_instanceCreation.cpp.s
 
+02_validationLayers.o: 02_validationLayers.cpp.o
+.PHONY : 02_validationLayers.o
+
+# target to build an object file
+02_validationLayers.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/02_validationLayers.dir/build.make CMakeFiles/02_validationLayers.dir/02_validationLayers.cpp.o
+.PHONY : 02_validationLayers.cpp.o
+
+02_validationLayers.i: 02_validationLayers.cpp.i
+.PHONY : 02_validationLayers.i
+
+# target to preprocess a source file
+02_validationLayers.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/02_validationLayers.dir/build.make CMakeFiles/02_validationLayers.dir/02_validationLayers.cpp.i
+.PHONY : 02_validationLayers.cpp.i
+
+02_validationLayers.s: 02_validationLayers.cpp.s
+.PHONY : 02_validationLayers.s
+
+# target to generate assembly for a file
+02_validationLayers.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/02_validationLayers.dir/build.make CMakeFiles/02_validationLayers.dir/02_validationLayers.cpp.s
+.PHONY : 02_validationLayers.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -782,6 +819,7 @@ help:
 	@echo "... uninstall"
 	@echo "... 00_baseCode"
 	@echo "... 01_instanceCreation"
+	@echo "... 02_validationLayers"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -795,6 +833,9 @@ help:
 	@echo "... 01_instanceCreation.o"
 	@echo "... 01_instanceCreation.i"
 	@echo "... 01_instanceCreation.s"
+	@echo "... 02_validationLayers.o"
+	@echo "... 02_validationLayers.i"
+	@echo "... 02_validationLayers.s"
 .PHONY : help
 
 
