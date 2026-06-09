@@ -221,6 +221,19 @@ depend:
 .PHONY : 02_validationLayers/fast
 
 #=============================================================================
+# Target rules for targets named 03_physicalDeviceSelection
+
+# Build rule for target.
+03_physicalDeviceSelection: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 03_physicalDeviceSelection
+.PHONY : 03_physicalDeviceSelection
+
+# fast build rule for target.
+03_physicalDeviceSelection/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/03_physicalDeviceSelection.dir/build.make CMakeFiles/03_physicalDeviceSelection.dir/build
+.PHONY : 03_physicalDeviceSelection/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -773,6 +786,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/02_validationLayers.dir/build.make CMakeFiles/02_validationLayers.dir/02_validationLayers.cpp.s
 .PHONY : 02_validationLayers.cpp.s
 
+03_physicalDeviceSelection.o: 03_physicalDeviceSelection.cpp.o
+.PHONY : 03_physicalDeviceSelection.o
+
+# target to build an object file
+03_physicalDeviceSelection.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/03_physicalDeviceSelection.dir/build.make CMakeFiles/03_physicalDeviceSelection.dir/03_physicalDeviceSelection.cpp.o
+.PHONY : 03_physicalDeviceSelection.cpp.o
+
+03_physicalDeviceSelection.i: 03_physicalDeviceSelection.cpp.i
+.PHONY : 03_physicalDeviceSelection.i
+
+# target to preprocess a source file
+03_physicalDeviceSelection.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/03_physicalDeviceSelection.dir/build.make CMakeFiles/03_physicalDeviceSelection.dir/03_physicalDeviceSelection.cpp.i
+.PHONY : 03_physicalDeviceSelection.cpp.i
+
+03_physicalDeviceSelection.s: 03_physicalDeviceSelection.cpp.s
+.PHONY : 03_physicalDeviceSelection.s
+
+# target to generate assembly for a file
+03_physicalDeviceSelection.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/03_physicalDeviceSelection.dir/build.make CMakeFiles/03_physicalDeviceSelection.dir/03_physicalDeviceSelection.cpp.s
+.PHONY : 03_physicalDeviceSelection.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -820,6 +857,7 @@ help:
 	@echo "... 00_baseCode"
 	@echo "... 01_instanceCreation"
 	@echo "... 02_validationLayers"
+	@echo "... 03_physicalDeviceSelection"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -836,6 +874,9 @@ help:
 	@echo "... 02_validationLayers.o"
 	@echo "... 02_validationLayers.i"
 	@echo "... 02_validationLayers.s"
+	@echo "... 03_physicalDeviceSelection.o"
+	@echo "... 03_physicalDeviceSelection.i"
+	@echo "... 03_physicalDeviceSelection.s"
 .PHONY : help
 
 
