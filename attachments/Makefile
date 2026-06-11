@@ -234,6 +234,19 @@ depend:
 .PHONY : 03_physicalDeviceSelection/fast
 
 #=============================================================================
+# Target rules for targets named 04_logicalDevice
+
+# Build rule for target.
+04_logicalDevice: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 04_logicalDevice
+.PHONY : 04_logicalDevice
+
+# fast build rule for target.
+04_logicalDevice/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/04_logicalDevice.dir/build.make CMakeFiles/04_logicalDevice.dir/build
+.PHONY : 04_logicalDevice/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -810,6 +823,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/03_physicalDeviceSelection.dir/build.make CMakeFiles/03_physicalDeviceSelection.dir/03_physicalDeviceSelection.cpp.s
 .PHONY : 03_physicalDeviceSelection.cpp.s
 
+04_logicalDevice.o: 04_logicalDevice.cpp.o
+.PHONY : 04_logicalDevice.o
+
+# target to build an object file
+04_logicalDevice.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/04_logicalDevice.dir/build.make CMakeFiles/04_logicalDevice.dir/04_logicalDevice.cpp.o
+.PHONY : 04_logicalDevice.cpp.o
+
+04_logicalDevice.i: 04_logicalDevice.cpp.i
+.PHONY : 04_logicalDevice.i
+
+# target to preprocess a source file
+04_logicalDevice.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/04_logicalDevice.dir/build.make CMakeFiles/04_logicalDevice.dir/04_logicalDevice.cpp.i
+.PHONY : 04_logicalDevice.cpp.i
+
+04_logicalDevice.s: 04_logicalDevice.cpp.s
+.PHONY : 04_logicalDevice.s
+
+# target to generate assembly for a file
+04_logicalDevice.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/04_logicalDevice.dir/build.make CMakeFiles/04_logicalDevice.dir/04_logicalDevice.cpp.s
+.PHONY : 04_logicalDevice.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -858,6 +895,7 @@ help:
 	@echo "... 01_instanceCreation"
 	@echo "... 02_validationLayers"
 	@echo "... 03_physicalDeviceSelection"
+	@echo "... 04_logicalDevice"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -877,6 +915,9 @@ help:
 	@echo "... 03_physicalDeviceSelection.o"
 	@echo "... 03_physicalDeviceSelection.i"
 	@echo "... 03_physicalDeviceSelection.s"
+	@echo "... 04_logicalDevice.o"
+	@echo "... 04_logicalDevice.i"
+	@echo "... 04_logicalDevice.s"
 .PHONY : help
 
 
