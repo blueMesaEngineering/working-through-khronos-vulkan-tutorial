@@ -247,6 +247,19 @@ depend:
 .PHONY : 04_logicalDevice/fast
 
 #=============================================================================
+# Target rules for targets named 05_windowSurface
+
+# Build rule for target.
+05_windowSurface: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 05_windowSurface
+.PHONY : 05_windowSurface
+
+# fast build rule for target.
+05_windowSurface/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/05_windowSurface.dir/build.make CMakeFiles/05_windowSurface.dir/build
+.PHONY : 05_windowSurface/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -847,6 +860,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/04_logicalDevice.dir/build.make CMakeFiles/04_logicalDevice.dir/04_logicalDevice.cpp.s
 .PHONY : 04_logicalDevice.cpp.s
 
+05_windowSurface.o: 05_windowSurface.cpp.o
+.PHONY : 05_windowSurface.o
+
+# target to build an object file
+05_windowSurface.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/05_windowSurface.dir/build.make CMakeFiles/05_windowSurface.dir/05_windowSurface.cpp.o
+.PHONY : 05_windowSurface.cpp.o
+
+05_windowSurface.i: 05_windowSurface.cpp.i
+.PHONY : 05_windowSurface.i
+
+# target to preprocess a source file
+05_windowSurface.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/05_windowSurface.dir/build.make CMakeFiles/05_windowSurface.dir/05_windowSurface.cpp.i
+.PHONY : 05_windowSurface.cpp.i
+
+05_windowSurface.s: 05_windowSurface.cpp.s
+.PHONY : 05_windowSurface.s
+
+# target to generate assembly for a file
+05_windowSurface.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/05_windowSurface.dir/build.make CMakeFiles/05_windowSurface.dir/05_windowSurface.cpp.s
+.PHONY : 05_windowSurface.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -896,6 +933,7 @@ help:
 	@echo "... 02_validationLayers"
 	@echo "... 03_physicalDeviceSelection"
 	@echo "... 04_logicalDevice"
+	@echo "... 05_windowSurface"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -918,6 +956,9 @@ help:
 	@echo "... 04_logicalDevice.o"
 	@echo "... 04_logicalDevice.i"
 	@echo "... 04_logicalDevice.s"
+	@echo "... 05_windowSurface.o"
+	@echo "... 05_windowSurface.i"
+	@echo "... 05_windowSurface.s"
 .PHONY : help
 
 
