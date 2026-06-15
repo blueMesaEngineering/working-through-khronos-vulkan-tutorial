@@ -136,6 +136,7 @@ class HelloTriangleApplication
             createLogicalDevice();
             createSwapChain();
             createImageViews();
+            createGraphicsPipeline();
         }
         
 
@@ -547,7 +548,7 @@ class HelloTriangleApplication
         {
             assert(swapChainImageViews.empty());
 
-            vk::ImageViewCreateInfo imageViewCreateInfo
+            vk::ImageviewCreateInfo imageviewCreateInfo
             {
                   .viewType             = vk::ImageViewType::e2D
                 , .format               = swapChainSurfaceFormat.format
@@ -566,6 +567,23 @@ class HelloTriangleApplication
                 swapChainImageViews.emplace_back(  device
                                                  , imageViewCreateInfo);
             }
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           createGraphicsPipeline
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createGraphicsPipeline()
+        {
+
         }
         
 

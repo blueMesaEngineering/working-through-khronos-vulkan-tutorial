@@ -260,6 +260,32 @@ depend:
 .PHONY : 05_windowSurface/fast
 
 #=============================================================================
+# Target rules for targets named 06_swapChainCreation
+
+# Build rule for target.
+06_swapChainCreation: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 06_swapChainCreation
+.PHONY : 06_swapChainCreation
+
+# fast build rule for target.
+06_swapChainCreation/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/06_swapChainCreation.dir/build.make CMakeFiles/06_swapChainCreation.dir/build
+.PHONY : 06_swapChainCreation/fast
+
+#=============================================================================
+# Target rules for targets named 07_imageViews
+
+# Build rule for target.
+07_imageViews: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 07_imageViews
+.PHONY : 07_imageViews
+
+# fast build rule for target.
+07_imageViews/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/07_imageViews.dir/build.make CMakeFiles/07_imageViews.dir/build
+.PHONY : 07_imageViews/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -884,6 +910,54 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/05_windowSurface.dir/build.make CMakeFiles/05_windowSurface.dir/05_windowSurface.cpp.s
 .PHONY : 05_windowSurface.cpp.s
 
+06_swapChainCreation.o: 06_swapChainCreation.cpp.o
+.PHONY : 06_swapChainCreation.o
+
+# target to build an object file
+06_swapChainCreation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/06_swapChainCreation.dir/build.make CMakeFiles/06_swapChainCreation.dir/06_swapChainCreation.cpp.o
+.PHONY : 06_swapChainCreation.cpp.o
+
+06_swapChainCreation.i: 06_swapChainCreation.cpp.i
+.PHONY : 06_swapChainCreation.i
+
+# target to preprocess a source file
+06_swapChainCreation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/06_swapChainCreation.dir/build.make CMakeFiles/06_swapChainCreation.dir/06_swapChainCreation.cpp.i
+.PHONY : 06_swapChainCreation.cpp.i
+
+06_swapChainCreation.s: 06_swapChainCreation.cpp.s
+.PHONY : 06_swapChainCreation.s
+
+# target to generate assembly for a file
+06_swapChainCreation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/06_swapChainCreation.dir/build.make CMakeFiles/06_swapChainCreation.dir/06_swapChainCreation.cpp.s
+.PHONY : 06_swapChainCreation.cpp.s
+
+07_imageViews.o: 07_imageViews.cpp.o
+.PHONY : 07_imageViews.o
+
+# target to build an object file
+07_imageViews.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/07_imageViews.dir/build.make CMakeFiles/07_imageViews.dir/07_imageViews.cpp.o
+.PHONY : 07_imageViews.cpp.o
+
+07_imageViews.i: 07_imageViews.cpp.i
+.PHONY : 07_imageViews.i
+
+# target to preprocess a source file
+07_imageViews.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/07_imageViews.dir/build.make CMakeFiles/07_imageViews.dir/07_imageViews.cpp.i
+.PHONY : 07_imageViews.cpp.i
+
+07_imageViews.s: 07_imageViews.cpp.s
+.PHONY : 07_imageViews.s
+
+# target to generate assembly for a file
+07_imageViews.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/07_imageViews.dir/build.make CMakeFiles/07_imageViews.dir/07_imageViews.cpp.s
+.PHONY : 07_imageViews.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -934,6 +1008,8 @@ help:
 	@echo "... 03_physicalDeviceSelection"
 	@echo "... 04_logicalDevice"
 	@echo "... 05_windowSurface"
+	@echo "... 06_swapChainCreation"
+	@echo "... 07_imageViews"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -959,6 +1035,12 @@ help:
 	@echo "... 05_windowSurface.o"
 	@echo "... 05_windowSurface.i"
 	@echo "... 05_windowSurface.s"
+	@echo "... 06_swapChainCreation.o"
+	@echo "... 06_swapChainCreation.i"
+	@echo "... 06_swapChainCreation.s"
+	@echo "... 07_imageViews.o"
+	@echo "... 07_imageViews.i"
+	@echo "... 07_imageViews.s"
 .PHONY : help
 
 
