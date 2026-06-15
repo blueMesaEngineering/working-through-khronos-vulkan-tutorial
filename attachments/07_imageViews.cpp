@@ -493,9 +493,17 @@ class HelloTriangleApplication
 //  Name:           createSwapChain
 //  Arguments:      N/A
 //  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
+//  Calls:          physicalDevice.getSurfaceCapabilitiesKHR
+//                  chooseSwapExtent
+//                  chooseSwapMinImageCount
+//                  physicalDevice.getSurfaceFormatsKHR
+//                  chooseSwapSurfaceFormat
+//                  physicalDevice.getSurfacePresentModesKHR
+//                  chooseSwapPresentMode
+//                  vk::raii::SwapchainKHR
+//                  swapChain.getImages
+//  Called by:      initVulkan
+//  Description:    Creates the Swap Chain.
 // 
 //******************************************************************************************
 
@@ -537,8 +545,8 @@ class HelloTriangleApplication
 //  Name:           createImageViews
 //  Arguments:      N/A
 //  Returns:        void
-//  Calls:          
-//  Called by:      
+//  Calls:          assert
+//  Called by:      initVulkan
 //  Description:    
 // 
 //******************************************************************************************

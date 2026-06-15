@@ -286,6 +286,58 @@ depend:
 .PHONY : 07_imageViews/fast
 
 #=============================================================================
+# Target rules for targets named 08_graphicsPipeline
+
+# Build rule for target.
+08_graphicsPipeline: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 08_graphicsPipeline
+.PHONY : 08_graphicsPipeline
+
+# fast build rule for target.
+08_graphicsPipeline/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/08_graphicsPipeline.dir/build.make CMakeFiles/08_graphicsPipeline.dir/build
+.PHONY : 08_graphicsPipeline/fast
+
+#=============================================================================
+# Target rules for targets named 09_shaderModules
+
+# Build rule for target.
+09_shaderModules: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 09_shaderModules
+.PHONY : 09_shaderModules
+
+# fast build rule for target.
+09_shaderModules/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/09_shaderModules.dir/build.make CMakeFiles/09_shaderModules.dir/build
+.PHONY : 09_shaderModules/fast
+
+#=============================================================================
+# Target rules for targets named 09_shaderModules_shader
+
+# Build rule for target.
+09_shaderModules_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 09_shaderModules_shader
+.PHONY : 09_shaderModules_shader
+
+# fast build rule for target.
+09_shaderModules_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/09_shaderModules_shader.dir/build.make CMakeFiles/09_shaderModules_shader.dir/build
+.PHONY : 09_shaderModules_shader/fast
+
+#=============================================================================
+# Target rules for targets named 09_shaderModules_slang_shader
+
+# Build rule for target.
+09_shaderModules_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 09_shaderModules_slang_shader
+.PHONY : 09_shaderModules_slang_shader
+
+# fast build rule for target.
+09_shaderModules_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/09_shaderModules_slang_shader.dir/build.make CMakeFiles/09_shaderModules_slang_shader.dir/build
+.PHONY : 09_shaderModules_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -958,6 +1010,54 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/07_imageViews.dir/build.make CMakeFiles/07_imageViews.dir/07_imageViews.cpp.s
 .PHONY : 07_imageViews.cpp.s
 
+08_graphicsPipeline.o: 08_graphicsPipeline.cpp.o
+.PHONY : 08_graphicsPipeline.o
+
+# target to build an object file
+08_graphicsPipeline.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/08_graphicsPipeline.dir/build.make CMakeFiles/08_graphicsPipeline.dir/08_graphicsPipeline.cpp.o
+.PHONY : 08_graphicsPipeline.cpp.o
+
+08_graphicsPipeline.i: 08_graphicsPipeline.cpp.i
+.PHONY : 08_graphicsPipeline.i
+
+# target to preprocess a source file
+08_graphicsPipeline.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/08_graphicsPipeline.dir/build.make CMakeFiles/08_graphicsPipeline.dir/08_graphicsPipeline.cpp.i
+.PHONY : 08_graphicsPipeline.cpp.i
+
+08_graphicsPipeline.s: 08_graphicsPipeline.cpp.s
+.PHONY : 08_graphicsPipeline.s
+
+# target to generate assembly for a file
+08_graphicsPipeline.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/08_graphicsPipeline.dir/build.make CMakeFiles/08_graphicsPipeline.dir/08_graphicsPipeline.cpp.s
+.PHONY : 08_graphicsPipeline.cpp.s
+
+09_shaderModules.o: 09_shaderModules.cpp.o
+.PHONY : 09_shaderModules.o
+
+# target to build an object file
+09_shaderModules.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/09_shaderModules.dir/build.make CMakeFiles/09_shaderModules.dir/09_shaderModules.cpp.o
+.PHONY : 09_shaderModules.cpp.o
+
+09_shaderModules.i: 09_shaderModules.cpp.i
+.PHONY : 09_shaderModules.i
+
+# target to preprocess a source file
+09_shaderModules.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/09_shaderModules.dir/build.make CMakeFiles/09_shaderModules.dir/09_shaderModules.cpp.i
+.PHONY : 09_shaderModules.cpp.i
+
+09_shaderModules.s: 09_shaderModules.cpp.s
+.PHONY : 09_shaderModules.s
+
+# target to generate assembly for a file
+09_shaderModules.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/09_shaderModules.dir/build.make CMakeFiles/09_shaderModules.dir/09_shaderModules.cpp.s
+.PHONY : 09_shaderModules.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -972,6 +1072,8 @@ help:
 	@echo "... package"
 	@echo "... package_source"
 	@echo "... rebuild_cache"
+	@echo "... 09_shaderModules_shader"
+	@echo "... 09_shaderModules_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1010,6 +1112,8 @@ help:
 	@echo "... 05_windowSurface"
 	@echo "... 06_swapChainCreation"
 	@echo "... 07_imageViews"
+	@echo "... 08_graphicsPipeline"
+	@echo "... 09_shaderModules"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1041,6 +1145,12 @@ help:
 	@echo "... 07_imageViews.o"
 	@echo "... 07_imageViews.i"
 	@echo "... 07_imageViews.s"
+	@echo "... 08_graphicsPipeline.o"
+	@echo "... 08_graphicsPipeline.i"
+	@echo "... 08_graphicsPipeline.s"
+	@echo "... 09_shaderModules.o"
+	@echo "... 09_shaderModules.i"
+	@echo "... 09_shaderModules.s"
 .PHONY : help
 
 
