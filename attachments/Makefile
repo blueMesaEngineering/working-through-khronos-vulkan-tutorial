@@ -338,6 +338,45 @@ depend:
 .PHONY : 09_shaderModules_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 10_fixedFunctions
+
+# Build rule for target.
+10_fixedFunctions: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 10_fixedFunctions
+.PHONY : 10_fixedFunctions
+
+# fast build rule for target.
+10_fixedFunctions/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/10_fixedFunctions.dir/build.make CMakeFiles/10_fixedFunctions.dir/build
+.PHONY : 10_fixedFunctions/fast
+
+#=============================================================================
+# Target rules for targets named 10_fixedFunctions_shader
+
+# Build rule for target.
+10_fixedFunctions_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 10_fixedFunctions_shader
+.PHONY : 10_fixedFunctions_shader
+
+# fast build rule for target.
+10_fixedFunctions_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/10_fixedFunctions_shader.dir/build.make CMakeFiles/10_fixedFunctions_shader.dir/build
+.PHONY : 10_fixedFunctions_shader/fast
+
+#=============================================================================
+# Target rules for targets named 10_fixedFunctions_slang_shader
+
+# Build rule for target.
+10_fixedFunctions_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 10_fixedFunctions_slang_shader
+.PHONY : 10_fixedFunctions_slang_shader
+
+# fast build rule for target.
+10_fixedFunctions_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/10_fixedFunctions_slang_shader.dir/build.make CMakeFiles/10_fixedFunctions_slang_shader.dir/build
+.PHONY : 10_fixedFunctions_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1058,6 +1097,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/09_shaderModules.dir/build.make CMakeFiles/09_shaderModules.dir/09_shaderModules.cpp.s
 .PHONY : 09_shaderModules.cpp.s
 
+10_fixedFunctions.o: 10_fixedFunctions.cpp.o
+.PHONY : 10_fixedFunctions.o
+
+# target to build an object file
+10_fixedFunctions.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/10_fixedFunctions.dir/build.make CMakeFiles/10_fixedFunctions.dir/10_fixedFunctions.cpp.o
+.PHONY : 10_fixedFunctions.cpp.o
+
+10_fixedFunctions.i: 10_fixedFunctions.cpp.i
+.PHONY : 10_fixedFunctions.i
+
+# target to preprocess a source file
+10_fixedFunctions.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/10_fixedFunctions.dir/build.make CMakeFiles/10_fixedFunctions.dir/10_fixedFunctions.cpp.i
+.PHONY : 10_fixedFunctions.cpp.i
+
+10_fixedFunctions.s: 10_fixedFunctions.cpp.s
+.PHONY : 10_fixedFunctions.s
+
+# target to generate assembly for a file
+10_fixedFunctions.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/10_fixedFunctions.dir/build.make CMakeFiles/10_fixedFunctions.dir/10_fixedFunctions.cpp.s
+.PHONY : 10_fixedFunctions.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1074,6 +1137,8 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... 09_shaderModules_shader"
 	@echo "... 09_shaderModules_slang_shader"
+	@echo "... 10_fixedFunctions_shader"
+	@echo "... 10_fixedFunctions_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1114,6 +1179,7 @@ help:
 	@echo "... 07_imageViews"
 	@echo "... 08_graphicsPipeline"
 	@echo "... 09_shaderModules"
+	@echo "... 10_fixedFunctions"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1151,6 +1217,9 @@ help:
 	@echo "... 09_shaderModules.o"
 	@echo "... 09_shaderModules.i"
 	@echo "... 09_shaderModules.s"
+	@echo "... 10_fixedFunctions.o"
+	@echo "... 10_fixedFunctions.i"
+	@echo "... 10_fixedFunctions.s"
 .PHONY : help
 
 
