@@ -377,6 +377,45 @@ depend:
 .PHONY : 10_fixedFunctions_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 12_graphicsPipelineComplete
+
+# Build rule for target.
+12_graphicsPipelineComplete: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 12_graphicsPipelineComplete
+.PHONY : 12_graphicsPipelineComplete
+
+# fast build rule for target.
+12_graphicsPipelineComplete/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/12_graphicsPipelineComplete.dir/build.make CMakeFiles/12_graphicsPipelineComplete.dir/build
+.PHONY : 12_graphicsPipelineComplete/fast
+
+#=============================================================================
+# Target rules for targets named 12_graphicsPipelineComplete_shader
+
+# Build rule for target.
+12_graphicsPipelineComplete_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 12_graphicsPipelineComplete_shader
+.PHONY : 12_graphicsPipelineComplete_shader
+
+# fast build rule for target.
+12_graphicsPipelineComplete_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/12_graphicsPipelineComplete_shader.dir/build.make CMakeFiles/12_graphicsPipelineComplete_shader.dir/build
+.PHONY : 12_graphicsPipelineComplete_shader/fast
+
+#=============================================================================
+# Target rules for targets named 12_graphicsPipelineComplete_slang_shader
+
+# Build rule for target.
+12_graphicsPipelineComplete_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 12_graphicsPipelineComplete_slang_shader
+.PHONY : 12_graphicsPipelineComplete_slang_shader
+
+# fast build rule for target.
+12_graphicsPipelineComplete_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/12_graphicsPipelineComplete_slang_shader.dir/build.make CMakeFiles/12_graphicsPipelineComplete_slang_shader.dir/build
+.PHONY : 12_graphicsPipelineComplete_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1121,6 +1160,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/10_fixedFunctions.dir/build.make CMakeFiles/10_fixedFunctions.dir/10_fixedFunctions.cpp.s
 .PHONY : 10_fixedFunctions.cpp.s
 
+12_graphicsPipelineComplete.o: 12_graphicsPipelineComplete.cpp.o
+.PHONY : 12_graphicsPipelineComplete.o
+
+# target to build an object file
+12_graphicsPipelineComplete.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/12_graphicsPipelineComplete.dir/build.make CMakeFiles/12_graphicsPipelineComplete.dir/12_graphicsPipelineComplete.cpp.o
+.PHONY : 12_graphicsPipelineComplete.cpp.o
+
+12_graphicsPipelineComplete.i: 12_graphicsPipelineComplete.cpp.i
+.PHONY : 12_graphicsPipelineComplete.i
+
+# target to preprocess a source file
+12_graphicsPipelineComplete.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/12_graphicsPipelineComplete.dir/build.make CMakeFiles/12_graphicsPipelineComplete.dir/12_graphicsPipelineComplete.cpp.i
+.PHONY : 12_graphicsPipelineComplete.cpp.i
+
+12_graphicsPipelineComplete.s: 12_graphicsPipelineComplete.cpp.s
+.PHONY : 12_graphicsPipelineComplete.s
+
+# target to generate assembly for a file
+12_graphicsPipelineComplete.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/12_graphicsPipelineComplete.dir/build.make CMakeFiles/12_graphicsPipelineComplete.dir/12_graphicsPipelineComplete.cpp.s
+.PHONY : 12_graphicsPipelineComplete.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1139,6 +1202,8 @@ help:
 	@echo "... 09_shaderModules_slang_shader"
 	@echo "... 10_fixedFunctions_shader"
 	@echo "... 10_fixedFunctions_slang_shader"
+	@echo "... 12_graphicsPipelineComplete_shader"
+	@echo "... 12_graphicsPipelineComplete_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1180,6 +1245,7 @@ help:
 	@echo "... 08_graphicsPipeline"
 	@echo "... 09_shaderModules"
 	@echo "... 10_fixedFunctions"
+	@echo "... 12_graphicsPipelineComplete"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1220,6 +1286,9 @@ help:
 	@echo "... 10_fixedFunctions.o"
 	@echo "... 10_fixedFunctions.i"
 	@echo "... 10_fixedFunctions.s"
+	@echo "... 12_graphicsPipelineComplete.o"
+	@echo "... 12_graphicsPipelineComplete.i"
+	@echo "... 12_graphicsPipelineComplete.s"
 .PHONY : help
 
 
