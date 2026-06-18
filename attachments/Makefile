@@ -416,6 +416,45 @@ depend:
 .PHONY : 12_graphicsPipelineComplete_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 14_commandBuffers
+
+# Build rule for target.
+14_commandBuffers: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 14_commandBuffers
+.PHONY : 14_commandBuffers
+
+# fast build rule for target.
+14_commandBuffers/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/14_commandBuffers.dir/build.make CMakeFiles/14_commandBuffers.dir/build
+.PHONY : 14_commandBuffers/fast
+
+#=============================================================================
+# Target rules for targets named 14_commandBuffers_shader
+
+# Build rule for target.
+14_commandBuffers_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 14_commandBuffers_shader
+.PHONY : 14_commandBuffers_shader
+
+# fast build rule for target.
+14_commandBuffers_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/14_commandBuffers_shader.dir/build.make CMakeFiles/14_commandBuffers_shader.dir/build
+.PHONY : 14_commandBuffers_shader/fast
+
+#=============================================================================
+# Target rules for targets named 14_commandBuffers_slang_shader
+
+# Build rule for target.
+14_commandBuffers_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 14_commandBuffers_slang_shader
+.PHONY : 14_commandBuffers_slang_shader
+
+# fast build rule for target.
+14_commandBuffers_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/14_commandBuffers_slang_shader.dir/build.make CMakeFiles/14_commandBuffers_slang_shader.dir/build
+.PHONY : 14_commandBuffers_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1184,6 +1223,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/12_graphicsPipelineComplete.dir/build.make CMakeFiles/12_graphicsPipelineComplete.dir/12_graphicsPipelineComplete.cpp.s
 .PHONY : 12_graphicsPipelineComplete.cpp.s
 
+14_commandBuffers.o: 14_commandBuffers.cpp.o
+.PHONY : 14_commandBuffers.o
+
+# target to build an object file
+14_commandBuffers.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/14_commandBuffers.dir/build.make CMakeFiles/14_commandBuffers.dir/14_commandBuffers.cpp.o
+.PHONY : 14_commandBuffers.cpp.o
+
+14_commandBuffers.i: 14_commandBuffers.cpp.i
+.PHONY : 14_commandBuffers.i
+
+# target to preprocess a source file
+14_commandBuffers.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/14_commandBuffers.dir/build.make CMakeFiles/14_commandBuffers.dir/14_commandBuffers.cpp.i
+.PHONY : 14_commandBuffers.cpp.i
+
+14_commandBuffers.s: 14_commandBuffers.cpp.s
+.PHONY : 14_commandBuffers.s
+
+# target to generate assembly for a file
+14_commandBuffers.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/14_commandBuffers.dir/build.make CMakeFiles/14_commandBuffers.dir/14_commandBuffers.cpp.s
+.PHONY : 14_commandBuffers.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1204,6 +1267,8 @@ help:
 	@echo "... 10_fixedFunctions_slang_shader"
 	@echo "... 12_graphicsPipelineComplete_shader"
 	@echo "... 12_graphicsPipelineComplete_slang_shader"
+	@echo "... 14_commandBuffers_shader"
+	@echo "... 14_commandBuffers_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1246,6 +1311,7 @@ help:
 	@echo "... 09_shaderModules"
 	@echo "... 10_fixedFunctions"
 	@echo "... 12_graphicsPipelineComplete"
+	@echo "... 14_commandBuffers"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1289,6 +1355,9 @@ help:
 	@echo "... 12_graphicsPipelineComplete.o"
 	@echo "... 12_graphicsPipelineComplete.i"
 	@echo "... 12_graphicsPipelineComplete.s"
+	@echo "... 14_commandBuffers.o"
+	@echo "... 14_commandBuffers.i"
+	@echo "... 14_commandBuffers.s"
 .PHONY : help
 
 
