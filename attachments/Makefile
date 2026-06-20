@@ -455,6 +455,45 @@ depend:
 .PHONY : 14_commandBuffers_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 15_helloTriangle
+
+# Build rule for target.
+15_helloTriangle: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 15_helloTriangle
+.PHONY : 15_helloTriangle
+
+# fast build rule for target.
+15_helloTriangle/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/15_helloTriangle.dir/build.make CMakeFiles/15_helloTriangle.dir/build
+.PHONY : 15_helloTriangle/fast
+
+#=============================================================================
+# Target rules for targets named 15_helloTriangle_shader
+
+# Build rule for target.
+15_helloTriangle_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 15_helloTriangle_shader
+.PHONY : 15_helloTriangle_shader
+
+# fast build rule for target.
+15_helloTriangle_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/15_helloTriangle_shader.dir/build.make CMakeFiles/15_helloTriangle_shader.dir/build
+.PHONY : 15_helloTriangle_shader/fast
+
+#=============================================================================
+# Target rules for targets named 15_helloTriangle_slang_shader
+
+# Build rule for target.
+15_helloTriangle_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 15_helloTriangle_slang_shader
+.PHONY : 15_helloTriangle_slang_shader
+
+# fast build rule for target.
+15_helloTriangle_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/15_helloTriangle_slang_shader.dir/build.make CMakeFiles/15_helloTriangle_slang_shader.dir/build
+.PHONY : 15_helloTriangle_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1247,6 +1286,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/14_commandBuffers.dir/build.make CMakeFiles/14_commandBuffers.dir/14_commandBuffers.cpp.s
 .PHONY : 14_commandBuffers.cpp.s
 
+15_helloTriangle.o: 15_helloTriangle.cpp.o
+.PHONY : 15_helloTriangle.o
+
+# target to build an object file
+15_helloTriangle.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/15_helloTriangle.dir/build.make CMakeFiles/15_helloTriangle.dir/15_helloTriangle.cpp.o
+.PHONY : 15_helloTriangle.cpp.o
+
+15_helloTriangle.i: 15_helloTriangle.cpp.i
+.PHONY : 15_helloTriangle.i
+
+# target to preprocess a source file
+15_helloTriangle.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/15_helloTriangle.dir/build.make CMakeFiles/15_helloTriangle.dir/15_helloTriangle.cpp.i
+.PHONY : 15_helloTriangle.cpp.i
+
+15_helloTriangle.s: 15_helloTriangle.cpp.s
+.PHONY : 15_helloTriangle.s
+
+# target to generate assembly for a file
+15_helloTriangle.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/15_helloTriangle.dir/build.make CMakeFiles/15_helloTriangle.dir/15_helloTriangle.cpp.s
+.PHONY : 15_helloTriangle.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1269,6 +1332,8 @@ help:
 	@echo "... 12_graphicsPipelineComplete_slang_shader"
 	@echo "... 14_commandBuffers_shader"
 	@echo "... 14_commandBuffers_slang_shader"
+	@echo "... 15_helloTriangle_shader"
+	@echo "... 15_helloTriangle_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1312,6 +1377,7 @@ help:
 	@echo "... 10_fixedFunctions"
 	@echo "... 12_graphicsPipelineComplete"
 	@echo "... 14_commandBuffers"
+	@echo "... 15_helloTriangle"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1358,6 +1424,9 @@ help:
 	@echo "... 14_commandBuffers.o"
 	@echo "... 14_commandBuffers.i"
 	@echo "... 14_commandBuffers.s"
+	@echo "... 15_helloTriangle.o"
+	@echo "... 15_helloTriangle.i"
+	@echo "... 15_helloTriangle.s"
 .PHONY : help
 
 
