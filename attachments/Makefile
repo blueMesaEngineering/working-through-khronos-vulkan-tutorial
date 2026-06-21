@@ -494,6 +494,45 @@ depend:
 .PHONY : 15_helloTriangle_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 16_framesInFlight
+
+# Build rule for target.
+16_framesInFlight: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 16_framesInFlight
+.PHONY : 16_framesInFlight
+
+# fast build rule for target.
+16_framesInFlight/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/16_framesInFlight.dir/build.make CMakeFiles/16_framesInFlight.dir/build
+.PHONY : 16_framesInFlight/fast
+
+#=============================================================================
+# Target rules for targets named 16_framesInFlight_shader
+
+# Build rule for target.
+16_framesInFlight_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 16_framesInFlight_shader
+.PHONY : 16_framesInFlight_shader
+
+# fast build rule for target.
+16_framesInFlight_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/16_framesInFlight_shader.dir/build.make CMakeFiles/16_framesInFlight_shader.dir/build
+.PHONY : 16_framesInFlight_shader/fast
+
+#=============================================================================
+# Target rules for targets named 16_framesInFlight_slang_shader
+
+# Build rule for target.
+16_framesInFlight_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 16_framesInFlight_slang_shader
+.PHONY : 16_framesInFlight_slang_shader
+
+# fast build rule for target.
+16_framesInFlight_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/16_framesInFlight_slang_shader.dir/build.make CMakeFiles/16_framesInFlight_slang_shader.dir/build
+.PHONY : 16_framesInFlight_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1310,6 +1349,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/15_helloTriangle.dir/build.make CMakeFiles/15_helloTriangle.dir/15_helloTriangle.cpp.s
 .PHONY : 15_helloTriangle.cpp.s
 
+16_framesInFlight.o: 16_framesInFlight.cpp.o
+.PHONY : 16_framesInFlight.o
+
+# target to build an object file
+16_framesInFlight.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/16_framesInFlight.dir/build.make CMakeFiles/16_framesInFlight.dir/16_framesInFlight.cpp.o
+.PHONY : 16_framesInFlight.cpp.o
+
+16_framesInFlight.i: 16_framesInFlight.cpp.i
+.PHONY : 16_framesInFlight.i
+
+# target to preprocess a source file
+16_framesInFlight.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/16_framesInFlight.dir/build.make CMakeFiles/16_framesInFlight.dir/16_framesInFlight.cpp.i
+.PHONY : 16_framesInFlight.cpp.i
+
+16_framesInFlight.s: 16_framesInFlight.cpp.s
+.PHONY : 16_framesInFlight.s
+
+# target to generate assembly for a file
+16_framesInFlight.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/16_framesInFlight.dir/build.make CMakeFiles/16_framesInFlight.dir/16_framesInFlight.cpp.s
+.PHONY : 16_framesInFlight.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1334,6 +1397,8 @@ help:
 	@echo "... 14_commandBuffers_slang_shader"
 	@echo "... 15_helloTriangle_shader"
 	@echo "... 15_helloTriangle_slang_shader"
+	@echo "... 16_framesInFlight_shader"
+	@echo "... 16_framesInFlight_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1378,6 +1443,7 @@ help:
 	@echo "... 12_graphicsPipelineComplete"
 	@echo "... 14_commandBuffers"
 	@echo "... 15_helloTriangle"
+	@echo "... 16_framesInFlight"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1427,6 +1493,9 @@ help:
 	@echo "... 15_helloTriangle.o"
 	@echo "... 15_helloTriangle.i"
 	@echo "... 15_helloTriangle.s"
+	@echo "... 16_framesInFlight.o"
+	@echo "... 16_framesInFlight.i"
+	@echo "... 16_framesInFlight.s"
 .PHONY : help
 
 
