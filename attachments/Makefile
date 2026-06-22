@@ -611,6 +611,45 @@ depend:
 .PHONY : 19_vertexBuffer_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 20_stagingBuffer
+
+# Build rule for target.
+20_stagingBuffer: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 20_stagingBuffer
+.PHONY : 20_stagingBuffer
+
+# fast build rule for target.
+20_stagingBuffer/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/20_stagingBuffer.dir/build.make CMakeFiles/20_stagingBuffer.dir/build
+.PHONY : 20_stagingBuffer/fast
+
+#=============================================================================
+# Target rules for targets named 20_stagingBuffer_shader
+
+# Build rule for target.
+20_stagingBuffer_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 20_stagingBuffer_shader
+.PHONY : 20_stagingBuffer_shader
+
+# fast build rule for target.
+20_stagingBuffer_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/20_stagingBuffer_shader.dir/build.make CMakeFiles/20_stagingBuffer_shader.dir/build
+.PHONY : 20_stagingBuffer_shader/fast
+
+#=============================================================================
+# Target rules for targets named 20_stagingBuffer_slang_shader
+
+# Build rule for target.
+20_stagingBuffer_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 20_stagingBuffer_slang_shader
+.PHONY : 20_stagingBuffer_slang_shader
+
+# fast build rule for target.
+20_stagingBuffer_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/20_stagingBuffer_slang_shader.dir/build.make CMakeFiles/20_stagingBuffer_slang_shader.dir/build
+.PHONY : 20_stagingBuffer_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1499,6 +1538,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/19_vertexBuffer.dir/build.make CMakeFiles/19_vertexBuffer.dir/19_vertexBuffer.cpp.s
 .PHONY : 19_vertexBuffer.cpp.s
 
+20_stagingBuffer.o: 20_stagingBuffer.cpp.o
+.PHONY : 20_stagingBuffer.o
+
+# target to build an object file
+20_stagingBuffer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/20_stagingBuffer.dir/build.make CMakeFiles/20_stagingBuffer.dir/20_stagingBuffer.cpp.o
+.PHONY : 20_stagingBuffer.cpp.o
+
+20_stagingBuffer.i: 20_stagingBuffer.cpp.i
+.PHONY : 20_stagingBuffer.i
+
+# target to preprocess a source file
+20_stagingBuffer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/20_stagingBuffer.dir/build.make CMakeFiles/20_stagingBuffer.dir/20_stagingBuffer.cpp.i
+.PHONY : 20_stagingBuffer.cpp.i
+
+20_stagingBuffer.s: 20_stagingBuffer.cpp.s
+.PHONY : 20_stagingBuffer.s
+
+# target to generate assembly for a file
+20_stagingBuffer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/20_stagingBuffer.dir/build.make CMakeFiles/20_stagingBuffer.dir/20_stagingBuffer.cpp.s
+.PHONY : 20_stagingBuffer.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1529,6 +1592,8 @@ help:
 	@echo "... 17_swapChainRecreation_slang_shader"
 	@echo "... 19_vertexBuffer_shader"
 	@echo "... 19_vertexBuffer_slang_shader"
+	@echo "... 20_stagingBuffer_shader"
+	@echo "... 20_stagingBuffer_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1576,6 +1641,7 @@ help:
 	@echo "... 16_framesInFlight"
 	@echo "... 17_swapChainRecreation"
 	@echo "... 19_vertexBuffer"
+	@echo "... 20_stagingBuffer"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1634,6 +1700,9 @@ help:
 	@echo "... 19_vertexBuffer.o"
 	@echo "... 19_vertexBuffer.i"
 	@echo "... 19_vertexBuffer.s"
+	@echo "... 20_stagingBuffer.o"
+	@echo "... 20_stagingBuffer.i"
+	@echo "... 20_stagingBuffer.s"
 .PHONY : help
 
 
