@@ -533,6 +533,84 @@ depend:
 .PHONY : 16_framesInFlight_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 17_swapChainRecreation
+
+# Build rule for target.
+17_swapChainRecreation: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 17_swapChainRecreation
+.PHONY : 17_swapChainRecreation
+
+# fast build rule for target.
+17_swapChainRecreation/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/17_swapChainRecreation.dir/build.make CMakeFiles/17_swapChainRecreation.dir/build
+.PHONY : 17_swapChainRecreation/fast
+
+#=============================================================================
+# Target rules for targets named 17_swapChainRecreation_shader
+
+# Build rule for target.
+17_swapChainRecreation_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 17_swapChainRecreation_shader
+.PHONY : 17_swapChainRecreation_shader
+
+# fast build rule for target.
+17_swapChainRecreation_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/17_swapChainRecreation_shader.dir/build.make CMakeFiles/17_swapChainRecreation_shader.dir/build
+.PHONY : 17_swapChainRecreation_shader/fast
+
+#=============================================================================
+# Target rules for targets named 17_swapChainRecreation_slang_shader
+
+# Build rule for target.
+17_swapChainRecreation_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 17_swapChainRecreation_slang_shader
+.PHONY : 17_swapChainRecreation_slang_shader
+
+# fast build rule for target.
+17_swapChainRecreation_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/17_swapChainRecreation_slang_shader.dir/build.make CMakeFiles/17_swapChainRecreation_slang_shader.dir/build
+.PHONY : 17_swapChainRecreation_slang_shader/fast
+
+#=============================================================================
+# Target rules for targets named 19_vertexBuffer
+
+# Build rule for target.
+19_vertexBuffer: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 19_vertexBuffer
+.PHONY : 19_vertexBuffer
+
+# fast build rule for target.
+19_vertexBuffer/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/19_vertexBuffer.dir/build.make CMakeFiles/19_vertexBuffer.dir/build
+.PHONY : 19_vertexBuffer/fast
+
+#=============================================================================
+# Target rules for targets named 19_vertexBuffer_shader
+
+# Build rule for target.
+19_vertexBuffer_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 19_vertexBuffer_shader
+.PHONY : 19_vertexBuffer_shader
+
+# fast build rule for target.
+19_vertexBuffer_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/19_vertexBuffer_shader.dir/build.make CMakeFiles/19_vertexBuffer_shader.dir/build
+.PHONY : 19_vertexBuffer_shader/fast
+
+#=============================================================================
+# Target rules for targets named 19_vertexBuffer_slang_shader
+
+# Build rule for target.
+19_vertexBuffer_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 19_vertexBuffer_slang_shader
+.PHONY : 19_vertexBuffer_slang_shader
+
+# fast build rule for target.
+19_vertexBuffer_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/19_vertexBuffer_slang_shader.dir/build.make CMakeFiles/19_vertexBuffer_slang_shader.dir/build
+.PHONY : 19_vertexBuffer_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1373,6 +1451,54 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/16_framesInFlight.dir/build.make CMakeFiles/16_framesInFlight.dir/16_framesInFlight.cpp.s
 .PHONY : 16_framesInFlight.cpp.s
 
+17_swapChainRecreation.o: 17_swapChainRecreation.cpp.o
+.PHONY : 17_swapChainRecreation.o
+
+# target to build an object file
+17_swapChainRecreation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/17_swapChainRecreation.dir/build.make CMakeFiles/17_swapChainRecreation.dir/17_swapChainRecreation.cpp.o
+.PHONY : 17_swapChainRecreation.cpp.o
+
+17_swapChainRecreation.i: 17_swapChainRecreation.cpp.i
+.PHONY : 17_swapChainRecreation.i
+
+# target to preprocess a source file
+17_swapChainRecreation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/17_swapChainRecreation.dir/build.make CMakeFiles/17_swapChainRecreation.dir/17_swapChainRecreation.cpp.i
+.PHONY : 17_swapChainRecreation.cpp.i
+
+17_swapChainRecreation.s: 17_swapChainRecreation.cpp.s
+.PHONY : 17_swapChainRecreation.s
+
+# target to generate assembly for a file
+17_swapChainRecreation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/17_swapChainRecreation.dir/build.make CMakeFiles/17_swapChainRecreation.dir/17_swapChainRecreation.cpp.s
+.PHONY : 17_swapChainRecreation.cpp.s
+
+19_vertexBuffer.o: 19_vertexBuffer.cpp.o
+.PHONY : 19_vertexBuffer.o
+
+# target to build an object file
+19_vertexBuffer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/19_vertexBuffer.dir/build.make CMakeFiles/19_vertexBuffer.dir/19_vertexBuffer.cpp.o
+.PHONY : 19_vertexBuffer.cpp.o
+
+19_vertexBuffer.i: 19_vertexBuffer.cpp.i
+.PHONY : 19_vertexBuffer.i
+
+# target to preprocess a source file
+19_vertexBuffer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/19_vertexBuffer.dir/build.make CMakeFiles/19_vertexBuffer.dir/19_vertexBuffer.cpp.i
+.PHONY : 19_vertexBuffer.cpp.i
+
+19_vertexBuffer.s: 19_vertexBuffer.cpp.s
+.PHONY : 19_vertexBuffer.s
+
+# target to generate assembly for a file
+19_vertexBuffer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/19_vertexBuffer.dir/build.make CMakeFiles/19_vertexBuffer.dir/19_vertexBuffer.cpp.s
+.PHONY : 19_vertexBuffer.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1399,6 +1525,10 @@ help:
 	@echo "... 15_helloTriangle_slang_shader"
 	@echo "... 16_framesInFlight_shader"
 	@echo "... 16_framesInFlight_slang_shader"
+	@echo "... 17_swapChainRecreation_shader"
+	@echo "... 17_swapChainRecreation_slang_shader"
+	@echo "... 19_vertexBuffer_shader"
+	@echo "... 19_vertexBuffer_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1444,6 +1574,8 @@ help:
 	@echo "... 14_commandBuffers"
 	@echo "... 15_helloTriangle"
 	@echo "... 16_framesInFlight"
+	@echo "... 17_swapChainRecreation"
+	@echo "... 19_vertexBuffer"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1496,6 +1628,12 @@ help:
 	@echo "... 16_framesInFlight.o"
 	@echo "... 16_framesInFlight.i"
 	@echo "... 16_framesInFlight.s"
+	@echo "... 17_swapChainRecreation.o"
+	@echo "... 17_swapChainRecreation.i"
+	@echo "... 17_swapChainRecreation.s"
+	@echo "... 19_vertexBuffer.o"
+	@echo "... 19_vertexBuffer.i"
+	@echo "... 19_vertexBuffer.s"
 .PHONY : help
 
 
