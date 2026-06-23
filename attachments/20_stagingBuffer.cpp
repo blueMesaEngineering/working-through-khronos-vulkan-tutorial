@@ -941,8 +941,8 @@ class HelloTriangleApplication
             vk::raii::DeviceMemory bufferMemory            = vk::raii::DeviceMemory(  device
                                                                                     , allocInfo);
             
-            vertexBuffer.bindMemory(  *bufferMemory
-                                    , 0);
+            buffer.bindMemory(  *bufferMemory
+                              , 0);
 
             return 
             {
@@ -1412,7 +1412,7 @@ class HelloTriangleApplication
 // 
 //  Name:           chooseSwapMinImageCount
 //  Arguments:      N/A
-//  Returns:        
+//  Returns:        uint32_t
 //  Calls:          
 //  Called by:      
 //  Description:    
