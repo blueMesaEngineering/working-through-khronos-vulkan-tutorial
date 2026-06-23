@@ -689,6 +689,84 @@ depend:
 .PHONY : 21_indexBuffer_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 22_descriptorLayout
+
+# Build rule for target.
+22_descriptorLayout: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 22_descriptorLayout
+.PHONY : 22_descriptorLayout
+
+# fast build rule for target.
+22_descriptorLayout/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/22_descriptorLayout.dir/build.make CMakeFiles/22_descriptorLayout.dir/build
+.PHONY : 22_descriptorLayout/fast
+
+#=============================================================================
+# Target rules for targets named 22_descriptorLayout_shader
+
+# Build rule for target.
+22_descriptorLayout_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 22_descriptorLayout_shader
+.PHONY : 22_descriptorLayout_shader
+
+# fast build rule for target.
+22_descriptorLayout_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/22_descriptorLayout_shader.dir/build.make CMakeFiles/22_descriptorLayout_shader.dir/build
+.PHONY : 22_descriptorLayout_shader/fast
+
+#=============================================================================
+# Target rules for targets named 22_descriptorLayout_slang_shader
+
+# Build rule for target.
+22_descriptorLayout_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 22_descriptorLayout_slang_shader
+.PHONY : 22_descriptorLayout_slang_shader
+
+# fast build rule for target.
+22_descriptorLayout_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/22_descriptorLayout_slang_shader.dir/build.make CMakeFiles/22_descriptorLayout_slang_shader.dir/build
+.PHONY : 22_descriptorLayout_slang_shader/fast
+
+#=============================================================================
+# Target rules for targets named 23_descriptorSets
+
+# Build rule for target.
+23_descriptorSets: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 23_descriptorSets
+.PHONY : 23_descriptorSets
+
+# fast build rule for target.
+23_descriptorSets/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/23_descriptorSets.dir/build.make CMakeFiles/23_descriptorSets.dir/build
+.PHONY : 23_descriptorSets/fast
+
+#=============================================================================
+# Target rules for targets named 23_descriptorSets_shader
+
+# Build rule for target.
+23_descriptorSets_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 23_descriptorSets_shader
+.PHONY : 23_descriptorSets_shader
+
+# fast build rule for target.
+23_descriptorSets_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/23_descriptorSets_shader.dir/build.make CMakeFiles/23_descriptorSets_shader.dir/build
+.PHONY : 23_descriptorSets_shader/fast
+
+#=============================================================================
+# Target rules for targets named 23_descriptorSets_slang_shader
+
+# Build rule for target.
+23_descriptorSets_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 23_descriptorSets_slang_shader
+.PHONY : 23_descriptorSets_slang_shader
+
+# fast build rule for target.
+23_descriptorSets_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/23_descriptorSets_slang_shader.dir/build.make CMakeFiles/23_descriptorSets_slang_shader.dir/build
+.PHONY : 23_descriptorSets_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1625,6 +1703,54 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/21_indexBuffer.dir/build.make CMakeFiles/21_indexBuffer.dir/21_indexBuffer.cpp.s
 .PHONY : 21_indexBuffer.cpp.s
 
+22_descriptorLayout.o: 22_descriptorLayout.cpp.o
+.PHONY : 22_descriptorLayout.o
+
+# target to build an object file
+22_descriptorLayout.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/22_descriptorLayout.dir/build.make CMakeFiles/22_descriptorLayout.dir/22_descriptorLayout.cpp.o
+.PHONY : 22_descriptorLayout.cpp.o
+
+22_descriptorLayout.i: 22_descriptorLayout.cpp.i
+.PHONY : 22_descriptorLayout.i
+
+# target to preprocess a source file
+22_descriptorLayout.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/22_descriptorLayout.dir/build.make CMakeFiles/22_descriptorLayout.dir/22_descriptorLayout.cpp.i
+.PHONY : 22_descriptorLayout.cpp.i
+
+22_descriptorLayout.s: 22_descriptorLayout.cpp.s
+.PHONY : 22_descriptorLayout.s
+
+# target to generate assembly for a file
+22_descriptorLayout.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/22_descriptorLayout.dir/build.make CMakeFiles/22_descriptorLayout.dir/22_descriptorLayout.cpp.s
+.PHONY : 22_descriptorLayout.cpp.s
+
+23_descriptorSets.o: 23_descriptorSets.cpp.o
+.PHONY : 23_descriptorSets.o
+
+# target to build an object file
+23_descriptorSets.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/23_descriptorSets.dir/build.make CMakeFiles/23_descriptorSets.dir/23_descriptorSets.cpp.o
+.PHONY : 23_descriptorSets.cpp.o
+
+23_descriptorSets.i: 23_descriptorSets.cpp.i
+.PHONY : 23_descriptorSets.i
+
+# target to preprocess a source file
+23_descriptorSets.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/23_descriptorSets.dir/build.make CMakeFiles/23_descriptorSets.dir/23_descriptorSets.cpp.i
+.PHONY : 23_descriptorSets.cpp.i
+
+23_descriptorSets.s: 23_descriptorSets.cpp.s
+.PHONY : 23_descriptorSets.s
+
+# target to generate assembly for a file
+23_descriptorSets.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/23_descriptorSets.dir/build.make CMakeFiles/23_descriptorSets.dir/23_descriptorSets.cpp.s
+.PHONY : 23_descriptorSets.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1659,6 +1785,10 @@ help:
 	@echo "... 20_stagingBuffer_slang_shader"
 	@echo "... 21_indexBuffer_shader"
 	@echo "... 21_indexBuffer_slang_shader"
+	@echo "... 22_descriptorLayout_shader"
+	@echo "... 22_descriptorLayout_slang_shader"
+	@echo "... 23_descriptorSets_shader"
+	@echo "... 23_descriptorSets_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1708,6 +1838,8 @@ help:
 	@echo "... 19_vertexBuffer"
 	@echo "... 20_stagingBuffer"
 	@echo "... 21_indexBuffer"
+	@echo "... 22_descriptorLayout"
+	@echo "... 23_descriptorSets"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1772,6 +1904,12 @@ help:
 	@echo "... 21_indexBuffer.o"
 	@echo "... 21_indexBuffer.i"
 	@echo "... 21_indexBuffer.s"
+	@echo "... 22_descriptorLayout.o"
+	@echo "... 22_descriptorLayout.i"
+	@echo "... 22_descriptorLayout.s"
+	@echo "... 23_descriptorSets.o"
+	@echo "... 23_descriptorSets.i"
+	@echo "... 23_descriptorSets.s"
 .PHONY : help
 
 
