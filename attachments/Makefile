@@ -650,6 +650,45 @@ depend:
 .PHONY : 20_stagingBuffer_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 21_indexBuffer
+
+# Build rule for target.
+21_indexBuffer: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 21_indexBuffer
+.PHONY : 21_indexBuffer
+
+# fast build rule for target.
+21_indexBuffer/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/21_indexBuffer.dir/build.make CMakeFiles/21_indexBuffer.dir/build
+.PHONY : 21_indexBuffer/fast
+
+#=============================================================================
+# Target rules for targets named 21_indexBuffer_shader
+
+# Build rule for target.
+21_indexBuffer_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 21_indexBuffer_shader
+.PHONY : 21_indexBuffer_shader
+
+# fast build rule for target.
+21_indexBuffer_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/21_indexBuffer_shader.dir/build.make CMakeFiles/21_indexBuffer_shader.dir/build
+.PHONY : 21_indexBuffer_shader/fast
+
+#=============================================================================
+# Target rules for targets named 21_indexBuffer_slang_shader
+
+# Build rule for target.
+21_indexBuffer_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 21_indexBuffer_slang_shader
+.PHONY : 21_indexBuffer_slang_shader
+
+# fast build rule for target.
+21_indexBuffer_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/21_indexBuffer_slang_shader.dir/build.make CMakeFiles/21_indexBuffer_slang_shader.dir/build
+.PHONY : 21_indexBuffer_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1562,6 +1601,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/20_stagingBuffer.dir/build.make CMakeFiles/20_stagingBuffer.dir/20_stagingBuffer.cpp.s
 .PHONY : 20_stagingBuffer.cpp.s
 
+21_indexBuffer.o: 21_indexBuffer.cpp.o
+.PHONY : 21_indexBuffer.o
+
+# target to build an object file
+21_indexBuffer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/21_indexBuffer.dir/build.make CMakeFiles/21_indexBuffer.dir/21_indexBuffer.cpp.o
+.PHONY : 21_indexBuffer.cpp.o
+
+21_indexBuffer.i: 21_indexBuffer.cpp.i
+.PHONY : 21_indexBuffer.i
+
+# target to preprocess a source file
+21_indexBuffer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/21_indexBuffer.dir/build.make CMakeFiles/21_indexBuffer.dir/21_indexBuffer.cpp.i
+.PHONY : 21_indexBuffer.cpp.i
+
+21_indexBuffer.s: 21_indexBuffer.cpp.s
+.PHONY : 21_indexBuffer.s
+
+# target to generate assembly for a file
+21_indexBuffer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/21_indexBuffer.dir/build.make CMakeFiles/21_indexBuffer.dir/21_indexBuffer.cpp.s
+.PHONY : 21_indexBuffer.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1594,6 +1657,8 @@ help:
 	@echo "... 19_vertexBuffer_slang_shader"
 	@echo "... 20_stagingBuffer_shader"
 	@echo "... 20_stagingBuffer_slang_shader"
+	@echo "... 21_indexBuffer_shader"
+	@echo "... 21_indexBuffer_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1642,6 +1707,7 @@ help:
 	@echo "... 17_swapChainRecreation"
 	@echo "... 19_vertexBuffer"
 	@echo "... 20_stagingBuffer"
+	@echo "... 21_indexBuffer"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1703,6 +1769,9 @@ help:
 	@echo "... 20_stagingBuffer.o"
 	@echo "... 20_stagingBuffer.i"
 	@echo "... 20_stagingBuffer.s"
+	@echo "... 21_indexBuffer.o"
+	@echo "... 21_indexBuffer.i"
+	@echo "... 21_indexBuffer.s"
 .PHONY : help
 
 
