@@ -767,6 +767,45 @@ depend:
 .PHONY : 23_descriptorSets_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 24_textureImage
+
+# Build rule for target.
+24_textureImage: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 24_textureImage
+.PHONY : 24_textureImage
+
+# fast build rule for target.
+24_textureImage/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/24_textureImage.dir/build.make CMakeFiles/24_textureImage.dir/build
+.PHONY : 24_textureImage/fast
+
+#=============================================================================
+# Target rules for targets named 24_textureImage_shader
+
+# Build rule for target.
+24_textureImage_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 24_textureImage_shader
+.PHONY : 24_textureImage_shader
+
+# fast build rule for target.
+24_textureImage_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/24_textureImage_shader.dir/build.make CMakeFiles/24_textureImage_shader.dir/build
+.PHONY : 24_textureImage_shader/fast
+
+#=============================================================================
+# Target rules for targets named 24_textureImage_slang_shader
+
+# Build rule for target.
+24_textureImage_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 24_textureImage_slang_shader
+.PHONY : 24_textureImage_slang_shader
+
+# fast build rule for target.
+24_textureImage_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/24_textureImage_slang_shader.dir/build.make CMakeFiles/24_textureImage_slang_shader.dir/build
+.PHONY : 24_textureImage_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1751,6 +1790,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/23_descriptorSets.dir/build.make CMakeFiles/23_descriptorSets.dir/23_descriptorSets.cpp.s
 .PHONY : 23_descriptorSets.cpp.s
 
+24_textureImage.o: 24_textureImage.cpp.o
+.PHONY : 24_textureImage.o
+
+# target to build an object file
+24_textureImage.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/24_textureImage.dir/build.make CMakeFiles/24_textureImage.dir/24_textureImage.cpp.o
+.PHONY : 24_textureImage.cpp.o
+
+24_textureImage.i: 24_textureImage.cpp.i
+.PHONY : 24_textureImage.i
+
+# target to preprocess a source file
+24_textureImage.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/24_textureImage.dir/build.make CMakeFiles/24_textureImage.dir/24_textureImage.cpp.i
+.PHONY : 24_textureImage.cpp.i
+
+24_textureImage.s: 24_textureImage.cpp.s
+.PHONY : 24_textureImage.s
+
+# target to generate assembly for a file
+24_textureImage.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/24_textureImage.dir/build.make CMakeFiles/24_textureImage.dir/24_textureImage.cpp.s
+.PHONY : 24_textureImage.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1789,6 +1852,8 @@ help:
 	@echo "... 22_descriptorLayout_slang_shader"
 	@echo "... 23_descriptorSets_shader"
 	@echo "... 23_descriptorSets_slang_shader"
+	@echo "... 24_textureImage_shader"
+	@echo "... 24_textureImage_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1840,6 +1905,7 @@ help:
 	@echo "... 21_indexBuffer"
 	@echo "... 22_descriptorLayout"
 	@echo "... 23_descriptorSets"
+	@echo "... 24_textureImage"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1910,6 +1976,9 @@ help:
 	@echo "... 23_descriptorSets.o"
 	@echo "... 23_descriptorSets.i"
 	@echo "... 23_descriptorSets.s"
+	@echo "... 24_textureImage.o"
+	@echo "... 24_textureImage.i"
+	@echo "... 24_textureImage.s"
 .PHONY : help
 
 
