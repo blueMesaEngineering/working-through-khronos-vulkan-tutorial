@@ -90,15 +90,15 @@ struct UniformBufferObject
 const std::vector<Vertex>           vertices            = 
 {
     {
-          {0.0f, -0.5f}
-        , {1.0f, 0.0f, 0.0f}
+          {-0.5f, -0.5f}
+        , { 1.0f,  0.0f, 0.0f}
+    }
+    , {
+          {0.5f, -0.5f}
+        , {0.0f,  1.0f, 0.0f}
     }
     , {
           {0.5f, 0.5f}
-        , {0.0f, 1.0f, 0.0f}
-    }
-    , {
-          {-0.5f, 0.5f}
         , {0.0f, 0.0f, 1.0f}
     }
     , {
@@ -889,7 +889,7 @@ class HelloTriangleApplication
                 , .rasterizerDiscardEnable                  = vk::False
                 , .polygonMode                              = vk::PolygonMode::eFill
                 , .cullMode                                 = vk::CullModeFlagBits::eBack
-                , .frontFace                                = vk::FrontFace::eClockwise
+                , .frontFace                                = vk::FrontFace::eCounterClockwise
                 , .depthBiasEnable                          = vk::False
                 , .lineWidth                                = 1.0f
             };
@@ -931,7 +931,8 @@ class HelloTriangleApplication
 
             vk::PipelineLayoutCreateInfo                    pipelineLayoutInfo
             {
-                  .setLayoutCount                           = 0
+                  .setLayoutCount                           = 1
+                , .pSetLayouts                              = &*descriptorSetLayout
                 , .pushConstantRangeCount                   = 0
             };
 
@@ -939,7 +940,7 @@ class HelloTriangleApplication
                                                                                    , pipelineLayoutInfo);
 
             vk::StructureChain<  vk::GraphicsPipelineCreateInfo
-                               , vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain
+                               , vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain =
             {
                 {
                       .stageCount                           = 2
@@ -1714,6 +1715,12 @@ class HelloTriangleApplication
                                           , 0
                                           , vk::IndexTypeValue<decltype(indices)::value_type>::value);
 
+            commandBuffer.bindDescriptorSets(  vk::PipelineBindPoint::eGraphics
+                                             , pipelineLayout
+                                             , 0
+                                             , *descriptorSets[frameIndex]
+                                             , nullptr);
+
             commandBuffer.drawIndexed(  static_cast<uint32_t>(indices.size())
                                       , 1
                                       , 0
@@ -1764,6 +1771,7 @@ class HelloTriangleApplication
                 , .dstStageMask                             = dst_stage_mask
                 , .dstAccessMask                            = dst_access_mask
                 , .oldLayout                                = old_layout
+                , .newLayout                                = new_layout
                 , .srcQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
                 , .dstQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
                 , .image                                    = swapChainImages[imageIndex]
