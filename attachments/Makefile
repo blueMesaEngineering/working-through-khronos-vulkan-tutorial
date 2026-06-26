@@ -845,6 +845,45 @@ depend:
 .PHONY : 25_sampler_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 26_textureMapping
+
+# Build rule for target.
+26_textureMapping: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 26_textureMapping
+.PHONY : 26_textureMapping
+
+# fast build rule for target.
+26_textureMapping/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/26_textureMapping.dir/build.make CMakeFiles/26_textureMapping.dir/build
+.PHONY : 26_textureMapping/fast
+
+#=============================================================================
+# Target rules for targets named 26_textureMapping_shader
+
+# Build rule for target.
+26_textureMapping_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 26_textureMapping_shader
+.PHONY : 26_textureMapping_shader
+
+# fast build rule for target.
+26_textureMapping_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/26_textureMapping_shader.dir/build.make CMakeFiles/26_textureMapping_shader.dir/build
+.PHONY : 26_textureMapping_shader/fast
+
+#=============================================================================
+# Target rules for targets named 26_textureMapping_slang_shader
+
+# Build rule for target.
+26_textureMapping_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 26_textureMapping_slang_shader
+.PHONY : 26_textureMapping_slang_shader
+
+# fast build rule for target.
+26_textureMapping_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/26_textureMapping_slang_shader.dir/build.make CMakeFiles/26_textureMapping_slang_shader.dir/build
+.PHONY : 26_textureMapping_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1877,6 +1916,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/25_sampler.dir/build.make CMakeFiles/25_sampler.dir/25_sampler.cpp.s
 .PHONY : 25_sampler.cpp.s
 
+26_textureMapping.o: 26_textureMapping.cpp.o
+.PHONY : 26_textureMapping.o
+
+# target to build an object file
+26_textureMapping.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/26_textureMapping.dir/build.make CMakeFiles/26_textureMapping.dir/26_textureMapping.cpp.o
+.PHONY : 26_textureMapping.cpp.o
+
+26_textureMapping.i: 26_textureMapping.cpp.i
+.PHONY : 26_textureMapping.i
+
+# target to preprocess a source file
+26_textureMapping.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/26_textureMapping.dir/build.make CMakeFiles/26_textureMapping.dir/26_textureMapping.cpp.i
+.PHONY : 26_textureMapping.cpp.i
+
+26_textureMapping.s: 26_textureMapping.cpp.s
+.PHONY : 26_textureMapping.s
+
+# target to generate assembly for a file
+26_textureMapping.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/26_textureMapping.dir/build.make CMakeFiles/26_textureMapping.dir/26_textureMapping.cpp.s
+.PHONY : 26_textureMapping.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1919,6 +1982,8 @@ help:
 	@echo "... 24_textureImage_slang_shader"
 	@echo "... 25_sampler_shader"
 	@echo "... 25_sampler_slang_shader"
+	@echo "... 26_textureMapping_shader"
+	@echo "... 26_textureMapping_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1972,6 +2037,7 @@ help:
 	@echo "... 23_descriptorSets"
 	@echo "... 24_textureImage"
 	@echo "... 25_sampler"
+	@echo "... 26_textureMapping"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -2048,6 +2114,9 @@ help:
 	@echo "... 25_sampler.o"
 	@echo "... 25_sampler.i"
 	@echo "... 25_sampler.s"
+	@echo "... 26_textureMapping.o"
+	@echo "... 26_textureMapping.i"
+	@echo "... 26_textureMapping.s"
 .PHONY : help
 
 
