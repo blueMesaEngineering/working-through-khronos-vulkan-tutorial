@@ -806,6 +806,45 @@ depend:
 .PHONY : 24_textureImage_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 25_sampler
+
+# Build rule for target.
+25_sampler: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 25_sampler
+.PHONY : 25_sampler
+
+# fast build rule for target.
+25_sampler/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/25_sampler.dir/build.make CMakeFiles/25_sampler.dir/build
+.PHONY : 25_sampler/fast
+
+#=============================================================================
+# Target rules for targets named 25_sampler_shader
+
+# Build rule for target.
+25_sampler_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 25_sampler_shader
+.PHONY : 25_sampler_shader
+
+# fast build rule for target.
+25_sampler_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/25_sampler_shader.dir/build.make CMakeFiles/25_sampler_shader.dir/build
+.PHONY : 25_sampler_shader/fast
+
+#=============================================================================
+# Target rules for targets named 25_sampler_slang_shader
+
+# Build rule for target.
+25_sampler_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 25_sampler_slang_shader
+.PHONY : 25_sampler_slang_shader
+
+# fast build rule for target.
+25_sampler_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/25_sampler_slang_shader.dir/build.make CMakeFiles/25_sampler_slang_shader.dir/build
+.PHONY : 25_sampler_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1814,6 +1853,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/24_textureImage.dir/build.make CMakeFiles/24_textureImage.dir/24_textureImage.cpp.s
 .PHONY : 24_textureImage.cpp.s
 
+25_sampler.o: 25_sampler.cpp.o
+.PHONY : 25_sampler.o
+
+# target to build an object file
+25_sampler.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/25_sampler.dir/build.make CMakeFiles/25_sampler.dir/25_sampler.cpp.o
+.PHONY : 25_sampler.cpp.o
+
+25_sampler.i: 25_sampler.cpp.i
+.PHONY : 25_sampler.i
+
+# target to preprocess a source file
+25_sampler.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/25_sampler.dir/build.make CMakeFiles/25_sampler.dir/25_sampler.cpp.i
+.PHONY : 25_sampler.cpp.i
+
+25_sampler.s: 25_sampler.cpp.s
+.PHONY : 25_sampler.s
+
+# target to generate assembly for a file
+25_sampler.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/25_sampler.dir/build.make CMakeFiles/25_sampler.dir/25_sampler.cpp.s
+.PHONY : 25_sampler.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1854,6 +1917,8 @@ help:
 	@echo "... 23_descriptorSets_slang_shader"
 	@echo "... 24_textureImage_shader"
 	@echo "... 24_textureImage_slang_shader"
+	@echo "... 25_sampler_shader"
+	@echo "... 25_sampler_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -1906,6 +1971,7 @@ help:
 	@echo "... 22_descriptorLayout"
 	@echo "... 23_descriptorSets"
 	@echo "... 24_textureImage"
+	@echo "... 25_sampler"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -1979,6 +2045,9 @@ help:
 	@echo "... 24_textureImage.o"
 	@echo "... 24_textureImage.i"
 	@echo "... 24_textureImage.s"
+	@echo "... 25_sampler.o"
+	@echo "... 25_sampler.i"
+	@echo "... 25_sampler.s"
 .PHONY : help
 
 
