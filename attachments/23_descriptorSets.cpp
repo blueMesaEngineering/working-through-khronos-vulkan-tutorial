@@ -929,7 +929,7 @@ class HelloTriangleApplication
                                                                                        , pipelineLayoutInfo);
 
             vk::StructureChain<  vk::GraphicsPipelineCreateInfo
-                               , vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain
+                               , vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain =
             {
                 {
                       .stageCount                           = 2
