@@ -46,7 +46,8 @@ struct Vertex
 
     static vk::VertexInputBindingDescription getBindingDescription()
     {
-        return {
+        return 
+        {
               .binding                                      = 0
             , .stride                                       = sizeof(Vertex)
             , .inputRate                                    = vk::VertexInputRate::eVertex
@@ -827,7 +828,7 @@ class HelloTriangleApplication
 
         void createGraphicsPipeline()
         {
-            vk::raii::ShaderModule shaderModule = createShaderModule(readFile("09_shaderModules/shaders/slang.spv"));
+            vk::raii::ShaderModule shaderModule = createShaderModule(readFile("shaders/slang.spv"));
 
             vk::PipelineShaderStageCreateInfo               vertShaderStageInfo
             {
@@ -924,7 +925,7 @@ class HelloTriangleApplication
             };
 
             pipelineLayout                                  = vk::raii::PipelineLayout(  device
-                                                                                   , pipelineLayoutInfo);
+                                                                                       , pipelineLayoutInfo);
 
             vk::StructureChain<  vk::GraphicsPipelineCreateInfo
                                , vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain
