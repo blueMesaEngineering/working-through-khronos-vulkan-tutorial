@@ -921,6 +921,7 @@ class HelloTriangleApplication
             vk::PipelineLayoutCreateInfo                    pipelineLayoutInfo
             {
                   .setLayoutCount                           = 0
+                , .pSetLayouts                              = &*descriptorSetLayout
                 , .pushConstantRangeCount                   = 0
             };
 
