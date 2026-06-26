@@ -88,15 +88,15 @@ struct UniformBufferObject
 const std::vector<Vertex>           vertices            = 
 {
     {
-          {0.0f, -0.5f}
-        , {1.0f, 0.0f, 0.0f}
+          {-0.5f, -0.5f}
+        , { 1.0f,  0.0f, 0.0f}
+    }
+    , {
+          {0.5f, -0.5f}
+        , {0.0f,  1.0f, 0.0f}
     }
     , {
           {0.5f, 0.5f}
-        , {0.0f, 1.0f, 0.0f}
-    }
-    , {
-          {-0.5f, 0.5f}
         , {0.0f, 0.0f, 1.0f}
     }
     , {
@@ -1460,6 +1460,7 @@ class HelloTriangleApplication
                 , .dstStageMask                             = dst_stage_mask
                 , .dstAccessMask                            = dst_access_mask
                 , .oldLayout                                = old_layout
+                , .newLayout                                = new_layout
                 , .srcQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
                 , .dstQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
                 , .image                                    = swapChainImages[imageIndex]
