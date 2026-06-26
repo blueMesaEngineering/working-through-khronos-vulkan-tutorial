@@ -878,7 +878,7 @@ class HelloTriangleApplication
                 , .rasterizerDiscardEnable                  = vk::False
                 , .polygonMode                              = vk::PolygonMode::eFill
                 , .cullMode                                 = vk::CullModeFlagBits::eBack
-                , .frontFace                                = vk::FrontFace::eClockwise
+                , .frontFace                                = vk::FrontFace::eCounterClockwise
                 , .depthBiasEnable                          = vk::False
                 , .lineWidth                                = 1.0f
             };
