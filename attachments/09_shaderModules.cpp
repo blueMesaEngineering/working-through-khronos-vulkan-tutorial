@@ -594,7 +594,7 @@ class HelloTriangleApplication
 
         void createGraphicsPipeline()
         {
-            vk::raii::ShaderModule shaderModule = createShaderModule(readFile("09_shaderModules/shaders/slang.spv"));
+            vk::raii::ShaderModule shaderModule = createShaderModule(readFile("shaders/slang.spv"));
 
             vk::PipelineShaderStageCreateInfo vertShaderStageInfo
             {

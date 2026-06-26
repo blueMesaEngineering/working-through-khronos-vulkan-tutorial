@@ -839,7 +839,7 @@ class HelloTriangleApplication
 
         void createGraphicsPipeline()
         {
-            vk::raii::ShaderModule shaderModule = createShaderModule(readFile("09_shaderModules/shaders/slang.spv"));
+            vk::raii::ShaderModule shaderModule = createShaderModule(readFile("shaders/slang.spv"));
 
             vk::PipelineShaderStageCreateInfo               vertShaderStageInfo
             {
@@ -1006,7 +1006,7 @@ class HelloTriangleApplication
                                       , texHeight
                                       , texChannels;
 
-            stbi_uc                     *pixels             = stbi_load(  "/home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/images/texture.jpg"
+            stbi_uc                     *pixels             = stbi_load(  "textures/texture.jpg"
                                                                         , &texWidth
                                                                         , &texHeight
                                                                         , &texChannels
