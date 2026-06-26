@@ -1410,6 +1410,12 @@ class HelloTriangleApplication
                                           , 0
                                           , vk::IndexTypeValue<decltype(indices)::value_type>::value);
 
+            commandBuffer.bindDescriptorSets(  vk::PipelineBindPoint::eGraphics
+                                             , pipelineLayout
+                                             , 0
+                                             , *descriptorSets[frameIndex]
+                                             , nullptr);
+
             commandBuffer.drawIndexed(  static_cast<uint32_t>(indices.size())
                                       , 1
                                       , 0
