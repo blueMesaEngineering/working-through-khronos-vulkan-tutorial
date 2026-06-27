@@ -884,6 +884,45 @@ depend:
 .PHONY : 26_textureMapping_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 27_depthBuffering
+
+# Build rule for target.
+27_depthBuffering: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 27_depthBuffering
+.PHONY : 27_depthBuffering
+
+# fast build rule for target.
+27_depthBuffering/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/27_depthBuffering.dir/build.make CMakeFiles/27_depthBuffering.dir/build
+.PHONY : 27_depthBuffering/fast
+
+#=============================================================================
+# Target rules for targets named 27_depthBuffering_shader
+
+# Build rule for target.
+27_depthBuffering_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 27_depthBuffering_shader
+.PHONY : 27_depthBuffering_shader
+
+# fast build rule for target.
+27_depthBuffering_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/27_depthBuffering_shader.dir/build.make CMakeFiles/27_depthBuffering_shader.dir/build
+.PHONY : 27_depthBuffering_shader/fast
+
+#=============================================================================
+# Target rules for targets named 27_depthBuffering_slang_shader
+
+# Build rule for target.
+27_depthBuffering_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 27_depthBuffering_slang_shader
+.PHONY : 27_depthBuffering_slang_shader
+
+# fast build rule for target.
+27_depthBuffering_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/27_depthBuffering_slang_shader.dir/build.make CMakeFiles/27_depthBuffering_slang_shader.dir/build
+.PHONY : 27_depthBuffering_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -1940,6 +1979,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/26_textureMapping.dir/build.make CMakeFiles/26_textureMapping.dir/26_textureMapping.cpp.s
 .PHONY : 26_textureMapping.cpp.s
 
+27_depthBuffering.o: 27_depthBuffering.cpp.o
+.PHONY : 27_depthBuffering.o
+
+# target to build an object file
+27_depthBuffering.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/27_depthBuffering.dir/build.make CMakeFiles/27_depthBuffering.dir/27_depthBuffering.cpp.o
+.PHONY : 27_depthBuffering.cpp.o
+
+27_depthBuffering.i: 27_depthBuffering.cpp.i
+.PHONY : 27_depthBuffering.i
+
+# target to preprocess a source file
+27_depthBuffering.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/27_depthBuffering.dir/build.make CMakeFiles/27_depthBuffering.dir/27_depthBuffering.cpp.i
+.PHONY : 27_depthBuffering.cpp.i
+
+27_depthBuffering.s: 27_depthBuffering.cpp.s
+.PHONY : 27_depthBuffering.s
+
+# target to generate assembly for a file
+27_depthBuffering.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/27_depthBuffering.dir/build.make CMakeFiles/27_depthBuffering.dir/27_depthBuffering.cpp.s
+.PHONY : 27_depthBuffering.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1984,6 +2047,8 @@ help:
 	@echo "... 25_sampler_slang_shader"
 	@echo "... 26_textureMapping_shader"
 	@echo "... 26_textureMapping_slang_shader"
+	@echo "... 27_depthBuffering_shader"
+	@echo "... 27_depthBuffering_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -2038,6 +2103,7 @@ help:
 	@echo "... 24_textureImage"
 	@echo "... 25_sampler"
 	@echo "... 26_textureMapping"
+	@echo "... 27_depthBuffering"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -2117,6 +2183,9 @@ help:
 	@echo "... 26_textureMapping.o"
 	@echo "... 26_textureMapping.i"
 	@echo "... 26_textureMapping.s"
+	@echo "... 27_depthBuffering.o"
+	@echo "... 27_depthBuffering.i"
+	@echo "... 27_depthBuffering.s"
 .PHONY : help
 
 
