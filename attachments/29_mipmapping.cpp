@@ -807,12 +807,28 @@ class HelloTriangleApplication
         {
             assert(swapChainImageViews.empty());
 
-            swapChainImageViews.reserve(swapChainImages.size());
-            for ( auto &image: swapChainImages)
+            vk::ImageViewCreateInfo
             {
-                swapChainImageViews.emplace_back(createImageView(  image
-                                                                 , swapChainSurfaceFormat.format
-                                                                 , vk::ImageAspectFlagBits::eColor));
+                  .viewType                                 = vk::ImageViewType::e2D
+                , .format                                   = swapChainSurfaceFormat.format
+                , .subresourceRange                         = 
+                {
+                      vk::ImageAspectFlagBits
+                    , 0
+                    , 1
+                    , 0
+                    , 1
+                }
+            };
+
+            for ( auto &image : swapChainImages)
+            {
+                imageViewCreateInfo.image                   = image;
+                swapChainImageViews.emplace_back
+                (  
+                      device
+                    , imageViewCreateInfo
+                );
             }
         }
         
@@ -830,23 +846,24 @@ class HelloTriangleApplication
 
         void createDescriptorSetLayout()
         {
-            std::array<vk::DescriptorSetLayoutBinding, 2>   bindings
+            std::array   bindings
             {
-                {
-
-                    {
-                        .binding                            = 0
-                        , .descriptorType                   = vk::DescriptorType::eUniformBuffer
-                        , .descriptorCount                  = 1
-                        , .stageFlags                       = vk::ShaderStageFlagBits::eVertex
-                    }
-                    , {
-                        .binding                            = 1
-                        , .descriptorType                   = vk::DescriptorType::eCombinedImageSampler
-                        , .descriptorCount                  = 1
-                        , .stageFlags                       = vk::ShaderStageFlagBits::eFragment
-                    }
-                }
+                  vk::DescriptorSetLayoutBinding
+                    (
+                          0
+                        , vk::DescriptorType::eUniformBuffer
+                        , 1
+                        , vk::ShaderStageFlagBits::eVertex
+                        , nullptr
+                    )
+                , vk::DescriptorSetLayoutBinding
+                    (
+                          1
+                        , vk::DescriptorType::eCombinedImageSampler
+                        , 1
+                        , vk::ShaderStageFlagBits::eFragment
+                        , nullptr
+                    )
             };
 
             vk::DescriptorSetLayoutCreateInfo   layoutInfo
@@ -909,6 +926,7 @@ class HelloTriangleApplication
             vk::PipelineInputAssemblyStateCreateInfo        inputAssembly
             {
                   .topology                                 = vk::PrimitiveTopology::eTriangleList
+                , .primitiveRestartEnable                   = vk::False
             };
 
             vk::PipelineViewportStateCreateInfo             viewportState
@@ -960,7 +978,7 @@ class HelloTriangleApplication
                 , .pAttachments                             = &colorBlendAttachment
             };
 
-            std::vector<vk::DynamicState>                   dynamicStates = 
+            std::vector                                     dynamicStates = 
             {
                   vk::DynamicState::eViewport
                 , vk::DynamicState::eScissor
