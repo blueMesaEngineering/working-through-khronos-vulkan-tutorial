@@ -923,6 +923,45 @@ depend:
 .PHONY : 27_depthBuffering_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 28_modelLoading
+
+# Build rule for target.
+28_modelLoading: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 28_modelLoading
+.PHONY : 28_modelLoading
+
+# fast build rule for target.
+28_modelLoading/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/28_modelLoading.dir/build.make CMakeFiles/28_modelLoading.dir/build
+.PHONY : 28_modelLoading/fast
+
+#=============================================================================
+# Target rules for targets named 28_modelLoading_shader
+
+# Build rule for target.
+28_modelLoading_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 28_modelLoading_shader
+.PHONY : 28_modelLoading_shader
+
+# fast build rule for target.
+28_modelLoading_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/28_modelLoading_shader.dir/build.make CMakeFiles/28_modelLoading_shader.dir/build
+.PHONY : 28_modelLoading_shader/fast
+
+#=============================================================================
+# Target rules for targets named 28_modelLoading_slang_shader
+
+# Build rule for target.
+28_modelLoading_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 28_modelLoading_slang_shader
+.PHONY : 28_modelLoading_slang_shader
+
+# fast build rule for target.
+28_modelLoading_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/28_modelLoading_slang_shader.dir/build.make CMakeFiles/28_modelLoading_slang_shader.dir/build
+.PHONY : 28_modelLoading_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -2003,6 +2042,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/27_depthBuffering.dir/build.make CMakeFiles/27_depthBuffering.dir/27_depthBuffering.cpp.s
 .PHONY : 27_depthBuffering.cpp.s
 
+28_modelLoading.o: 28_modelLoading.cpp.o
+.PHONY : 28_modelLoading.o
+
+# target to build an object file
+28_modelLoading.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/28_modelLoading.dir/build.make CMakeFiles/28_modelLoading.dir/28_modelLoading.cpp.o
+.PHONY : 28_modelLoading.cpp.o
+
+28_modelLoading.i: 28_modelLoading.cpp.i
+.PHONY : 28_modelLoading.i
+
+# target to preprocess a source file
+28_modelLoading.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/28_modelLoading.dir/build.make CMakeFiles/28_modelLoading.dir/28_modelLoading.cpp.i
+.PHONY : 28_modelLoading.cpp.i
+
+28_modelLoading.s: 28_modelLoading.cpp.s
+.PHONY : 28_modelLoading.s
+
+# target to generate assembly for a file
+28_modelLoading.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/28_modelLoading.dir/build.make CMakeFiles/28_modelLoading.dir/28_modelLoading.cpp.s
+.PHONY : 28_modelLoading.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -2049,6 +2112,8 @@ help:
 	@echo "... 26_textureMapping_slang_shader"
 	@echo "... 27_depthBuffering_shader"
 	@echo "... 27_depthBuffering_slang_shader"
+	@echo "... 28_modelLoading_shader"
+	@echo "... 28_modelLoading_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -2104,6 +2169,7 @@ help:
 	@echo "... 25_sampler"
 	@echo "... 26_textureMapping"
 	@echo "... 27_depthBuffering"
+	@echo "... 28_modelLoading"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -2186,6 +2252,9 @@ help:
 	@echo "... 27_depthBuffering.o"
 	@echo "... 27_depthBuffering.i"
 	@echo "... 27_depthBuffering.s"
+	@echo "... 28_modelLoading.o"
+	@echo "... 28_modelLoading.i"
+	@echo "... 28_modelLoading.s"
 .PHONY : help
 
 
