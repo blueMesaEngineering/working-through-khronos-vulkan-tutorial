@@ -566,10 +566,12 @@ class HelloTriangleApplication
         void createSurface()
         {
             VkSurfaceKHR _surface;
-            if (glfwCreateWindowSurface(  *instance
-                                        , window
-                                        , nullptr
-                                        , &_surface) != 0)
+            if (glfwCreateWindowSurface(  
+                  *instance
+                , window
+                , nullptr
+                , &_surface) != 0
+               )
             {
                 throw std::runtime_error("Failed to create window surface!");
             }
@@ -620,7 +622,8 @@ class HelloTriangleApplication
                                                                     {
                                                                         return strcmp(  availableDeviceExtension.extensionName
                                                                                       , requiredDeviceExtension) == 0;
-                                                                    });
+                                                                    }
+                                                                  );
                                     });
 
             // Check if the physicalDevice supports the required features
@@ -731,14 +734,21 @@ class HelloTriangleApplication
 
             // Create a device
             float                       queuePriority       = 0.5f;
-            vk::DeviceQueueCreateInfo   deviceQueueCreateInfo {  .queueFamilyIndex      = queueIndex
-                                                               , .queueCount            = 1
-                                                               , .pQueuePriorities      = &queuePriority};
-            vk::DeviceCreateInfo        deviceCreateInfo {  .pNext                      = &featureChain.get<vk::PhysicalDeviceFeatures2>()
-                                                          , .queueCreateInfoCount       = 1
-                                                          , .pQueueCreateInfos          = &deviceQueueCreateInfo
-                                                          , .enabledExtensionCount      = static_cast<uint32_t>(requiredDeviceExtension.size())
-                                                          , .ppEnabledExtensionNames    = requiredDeviceExtension.data()};
+            vk::DeviceQueueCreateInfo   deviceQueueCreateInfo 
+            {
+                  .queueFamilyIndex                         = queueIndex
+                , .queueCount                               = 1
+                , .pQueuePriorities                         = &queuePriority
+            };
+
+            vk::DeviceCreateInfo        deviceCreateInfo 
+            {
+                  .pNext                                    = &featureChain.get<vk::PhysicalDeviceFeatures2>()
+                , .queueCreateInfoCount                     = 1
+                , .pQueueCreateInfos                        = &deviceQueueCreateInfo
+                , .enabledExtensionCount                    = static_cast<uint32_t>(requiredDeviceExtension.size())
+                , .ppEnabledExtensionNames                  = requiredDeviceExtension.data()
+            };
 
             device          = vk::raii::Device(  physicalDevice
                                                , deviceCreateInfo);
@@ -761,33 +771,37 @@ class HelloTriangleApplication
 
         void createSwapChain()
         {
-            vk::SurfaceCapabilitiesKHR surfaceCapabilities  = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
-            swapChainExtent                                 = chooseSwapExtent(surfaceCapabilities);
-            uint32_t minImageCount                          = chooseSwapMinImageCount(surfaceCapabilities);
+            vk::SurfaceCapabilitiesKHR surfaceCapabilities          = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
+            swapChainExtent                                         = chooseSwapExtent(surfaceCapabilities);
+            uint32_t minImageCount                                  = chooseSwapMinImageCount(surfaceCapabilities);
 
-            std::vector<vk::SurfaceFormatKHR> availableFormats  = physicalDevice.getSurfaceFormatsKHR(*surface);
-            swapChainSurfaceFormat                              = chooseSwapSurfaceFormat(availableFormats);
+            std::vector<vk::SurfaceFormatKHR> availableFormats      = physicalDevice.getSurfaceFormatsKHR(*surface);
+            swapChainSurfaceFormat                                  = chooseSwapSurfaceFormat(availableFormats);
 
             std::vector<vk::PresentModeKHR> availablePresentModes   = physicalDevice.getSurfacePresentModesKHR(*surface);
             vk::PresentModeKHR              presentMode             = chooseSwapPresentMode(availablePresentModes);
 
-            vk::SwapchainCreateInfoKHR swapChainCreateInfo {  .surface          = *surface
-                                                            , .minImageCount    = minImageCount
-                                                            , .imageFormat      = swapChainSurfaceFormat.format
-                                                            , .imageColorSpace  = swapChainSurfaceFormat.colorSpace
-                                                            , .imageExtent      = swapChainExtent
-                                                            , .imageArrayLayers = 1
-                                                            , .imageUsage       = vk::ImageUsageFlagBits::eColorAttachment
-                                                            , .imageSharingMode = vk::SharingMode::eExclusive
-                                                            , .preTransform     = surfaceCapabilities.currentTransform
-                                                            , .compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque
-                                                            , .presentMode      = presentMode
-                                                            , .clipped          = true
+            vk::SwapchainCreateInfoKHR swapChainCreateInfo 
+            {  
+                  .surface          = *surface
+                , .minImageCount    = minImageCount
+                , .imageFormat      = swapChainSurfaceFormat.format
+                , .imageColorSpace  = swapChainSurfaceFormat.colorSpace
+                , .imageExtent      = swapChainExtent
+                , .imageArrayLayers = 1
+                , .imageUsage       = vk::ImageUsageFlagBits::eColorAttachment
+                , .imageSharingMode = vk::SharingMode::eExclusive
+                , .preTransform     = surfaceCapabilities.currentTransform
+                , .compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque
+                , .presentMode      = presentMode
+                , .clipped          = true
 
             };
 
             swapChain       = vk::raii::SwapchainKHR(  device
-                                                     , swapChainCreateInfo);
+                                                     , swapChainCreateInfo
+                                                    );
+
             swapChainImages = swapChain.getImages();
         }
         
@@ -1051,7 +1065,8 @@ class HelloTriangleApplication
                 , .queueFamilyIndex                         = queueIndex
             };
             commandPool = vk::raii::CommandPool(  device
-                                                , poolInfo);
+                                                , poolInfo
+                                               );
         }
         
 
@@ -1070,8 +1085,8 @@ class HelloTriangleApplication
         {
             vk::Format                  depthFormat         = findDepthFormat();
 
-            createImage
-            (     swapChainExtent.width
+            createImage(
+                  swapChainExtent.width
                 , swapChainExtent.height
                 , depthFormat
                 , 1
@@ -1082,8 +1097,7 @@ class HelloTriangleApplication
                 , depthImageMemory
             );
 
-            depthImageView                                  = createImageView
-                                                                            ( 
+            depthImageView                                  = createImageView( 
                                                                                 depthImage
                                                                               , depthFormat
                                                                               , vk::ImageAspectFlagBits::eDepth
@@ -1114,10 +1128,13 @@ class HelloTriangleApplication
             {
                 vk::FormatProperties        props           = physicalDevice.getFormatProperties(format);
 
-                if (   ((tiling == vk::ImageTiling::eLinear) 
-                    && ((props.linearTilingFeatures & features) == features))
-                    || ((tiling == vk::ImageTiling::eOptimal) 
-                    && ((props.optimalTilingFeatures & features) == features)))
+                if (   tiling == vk::ImageTiling::eLinear
+                    && (props.linearTilingFeatures & features) == features)
+                {
+                    return format;
+                }
+                if (   tiling == vk::ImageTiling::eOptimal
+                    && (props.optimalTilingFeatures & features) == features)
                 {
                     return format;
                 }
@@ -1155,6 +1172,24 @@ class HelloTriangleApplication
 
 //******************************************************************************************
 // 
+//  Name:           hasStencilComponent
+//  Arguments:      N/A
+//  Returns:        bool
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        static bool hasStencilComponent(vk::Format format)
+        {
+            return    format == vk::Format::eD32SfloatS8Uint 
+                   || format == vk::Format::eD24UnormS8Uint;
+        }
+        
+
+//******************************************************************************************
+// 
 //  Name:           createTextureImage
 //  Arguments:      N/A
 //  Returns:        
@@ -1178,52 +1213,121 @@ class HelloTriangleApplication
 
             vk::DeviceSize              imageSize           = texWidth * texHeight * 4;
 
+            mipLevels                                       = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+
             if (!pixels)
             {
                 throw std::runtime_error("Failed to load texture image!");
             }
 
-            auto [  stagingBuffer
-                  , stagingBufferMemory]                    = createBuffer(  imageSize
-                                                                          , vk::BufferUsageFlagBits::eTransferSrc
-                                                                          , vk::MemoryPropertyFlagBits::eHostVisible
-                                                                          | vk::MemoryPropertyFlagBits::eHostCoherent);
+            vk::raii::Buffer            stagingBuffer({});
+            vk::raii::DeviceMemory      stagingBufferMemory({});
+
+            createBuffer(
+                  imageSize
+                , vk::BufferUsageFlagBits::eTransferSrc
+                , vk::MemoryPropertyFlagBits::eHostVisible
+                | vk::MemoryPropertyFlagBits::eHostCoherent
+                , stagingBuffer
+                , stagingBufferMemory
+            );
 
             void                        *data               = stagingBufferMemory.mapMemory(  0
                                                                                             , imageSize);
 
-            memcpy(  data
-                   , pixels
-                   , imageSize);
+            memcpy(  
+                  data
+                , pixels
+                , imageSize
+            );
 
             stagingBufferMemory.unmapMemory();
 
             stbi_image_free(pixels);
 
-            std::tie(  textureImage
-                     , textureImageMemory)                  = createImage(  texWidth
-                                                                          , texHeight
-                                                                          , vk::Format::eR8G8B8A8Srgb
-                                                                          , vk::ImageTiling::eOptimal
-                                                                          , vk::ImageUsageFlagBits::eTransferDst
-                                                                          | vk::ImageUsageFlagBits::eSampled
-                                                                          , vk::MemoryPropertyFlagBits::eDeviceLocal);
+            createImage(  
+                  texWidth
+                , texHeight
+                , vk::Format::eR8G8B8A8Srgb
+                , vk::ImageTiling::eOptimal
+                , vk::ImageUsageFlagBits::eTransferDst
+                | vk::ImageUsageFlagBits::eSampled
+                , vk::MemoryPropertyFlagBits::eDeviceLocal
+                , textureImage
+                , textureImageMemory
+            );
 
-            vk::raii::CommandBuffer     commandBuffer       = beginSingleTimeCommands();
-            transitionImageLayout(  commandBuffer
-                                  , textureImage
-                                  , vk::ImageLayout::eUndefined
-                                  , vk::ImageLayout::eTransferDstOptimal);
-            copyBufferToImage(  commandBuffer
-                              , stagingBuffer
-                              , textureImage
-                              , static_cast<uint32_t>(texWidth)
-                              , static_cast<uint32_t>(texHeight));
-            transitionImageLayout(  commandBuffer
-                                  , textureImage
-                                  , vk::ImageLayout::eTransferDstOptimal
-                                  , vk::ImageLayout::eShaderReadOnlyOptimal);
-            endSingleTimeCommands(std::move(commandBuffer));
+            transitionImageLayout(  
+                  textureImage
+                , vk::ImageLayout::eUndefined
+                , vk::ImageLayout::eTransferDstOptimal
+                , mipLevels
+            );
+
+            copyBufferToImage(  
+                  stagingBuffer
+                , textureImage
+                , static_cast<uint32_t>(texWidth)
+                , static_cast<uint32_t>(texHeight)
+            );
+            
+            generateMipmaps(
+                  textureImage
+                , vk::Format::eR8G8B8A8Srgb
+                , texWidth
+                , texHeight
+                , mipLevels
+            );
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           generateMipmaps
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void generateMipmaps(
+              vk::raii::Image &image
+            , vk::Format imageFormat
+            , int32_t texWidth
+            , int32_t texHeight
+            , uint32_t mipLevels
+        )
+        {
+            // Check if image format supports linear blit-ing
+            vk::FormatProperties formatProperties           = physicalDevice.getFormatProperties(imageFormat);
+
+            if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear))
+            {
+                throw std::runtime_error("Texture image format does not support linear blitting!");
+            }
+
+            std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = beginSingleTimeCommands();
+
+            vk::ImageMemoryBarrier          barrier         =
+            {
+                  .srcAccessMask                            = vk::AccessFlagBits::eTransferWrite
+                , .dstAccessMask                            = vk::AccessFlagBits::eTransferRead
+                , .oldLayout                                = vk::ImageLayout::eTransferDstOptimal
+                , .newLayout                                = vk::ImageLayout::eTransferSrcOptimal
+                , ,srcQueueFamilyIndex                      = vk::QueueFamilyIgnored
+                , ,dstQueueFamilyIndex                      = vk::QueueFamilyIgnored
+                , .image                                    = image
+            };
+
+            barrier.subresourceRange.aspectMask             = vk::ImageAspectFlagBits::eColor;
+            barrier.subresourceRange.baseArrayLayer         = 0;
+            barrier.subresourceRange.layerCount             = 1;
+            barrier.subresourceRange.levelCount             = 1;
+
+            int32_t                         mipWidth        = texWidth;
+            int32_t                         mipHeight       = texHeight;
         }
         
 
