@@ -1070,17 +1070,25 @@ class HelloTriangleApplication
         {
             vk::Format                  depthFormat         = findDepthFormat();
 
-            std::tie(  depthImage
-                     , depthImageMemory)                    = createImage(  swapChainExtent.width
-                                                                          , swapChainExtent.height
-                                                                          , depthFormat
-                                                                          , vk::ImageTiling::eOptimal
-                                                                          , vk::ImageUsageFlagBits::eDepthStencilAttachment
-                                                                          , vk::MemoryPropertyFlagBits::eDeviceLocal);
+            createImage
+            (     swapChainExtent.width
+                , swapChainExtent.height
+                , depthFormat
+                , 1
+                , vk::ImageTiling::eOptimal
+                , vk::ImageUsageFlagBits::eDepthStencilAttachment
+                , vk::MemoryPropertyFlagBits::eDeviceLocal
+                , depthImage
+                , depthImageMemory
+            );
 
-            depthImageView                                  = createImageView(  depthImage
+            depthImageView                                  = createImageView
+                                                                            ( 
+                                                                                depthImage
                                                                               , depthFormat
-                                                                              , vk::ImageAspectFlagBits::eDepth);
+                                                                              , vk::ImageAspectFlagBits::eDepth
+                                                                              , 1
+                                                                            );
         }
         
 
