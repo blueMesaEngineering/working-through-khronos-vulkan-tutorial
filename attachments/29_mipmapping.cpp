@@ -859,7 +859,7 @@ class HelloTriangleApplication
 
         void createDescriptorSetLayout()
         {
-            std::array   bindings
+            std::array   bindings                           =
             {
                   vk::DescriptorSetLayoutBinding
                     (
@@ -1401,6 +1401,11 @@ class HelloTriangleApplication
                     , {}
                     , barrier
                 );
+
+                if (mipWidth > 1)
+                    mipWidth /= 2;
+                if (mipHeight > 1)
+                    mipHeight /= 2;
             }
 
             barrier.subresourceRange.baseMipLevel           = mipLevels - 1;
@@ -1493,9 +1498,9 @@ class HelloTriangleApplication
 //******************************************************************************************
 
         [[nodiscard]] vk::raii::ImageView createImageView(
-              const vk::Image &image
+              const vk::raii::Image &image
             , vk::Format format
-            , vk::ImageAspectFlagBits aspectFlags
+            , vk::ImageAspectFlags aspectFlags
             , uint32_t mipLevels
         ) const
         {
@@ -1590,8 +1595,8 @@ class HelloTriangleApplication
 
         void transitionImageLayout(
               const vk::raii::Image         &image
-            , vk::ImageLayout               oldLayout
-            , vk::ImageLayout               newLayout
+            , const vk::ImageLayout               oldLayout
+            , const vk::ImageLayout               newLayout
             , uint32_t                      mipLevels
         )
         {
@@ -1601,8 +1606,6 @@ class HelloTriangleApplication
             {
                   .oldLayout                                = oldLayout
                 , .newLayout                                = newLayout
-                , .srcQueueFamilyIndex                      = vk::QueueFamilyIgnored
-                , .dstQueueFamilyIndex                      = vk::QueueFamilyIgnored
                 , .image                                    = image
                 , .subresourceRange                         = 
                 {
@@ -2057,7 +2060,7 @@ class HelloTriangleApplication
 
             bufferMemory            = vk::raii::DeviceMemory(device, allocInfo);
             
-            buffer.bindMemory(*bufferMemory, 0);
+            buffer.bindMemory(bufferMemory, 0);
         }
 
 
@@ -2140,9 +2143,9 @@ class HelloTriangleApplication
 //******************************************************************************************
 
         void copyBuffer(  
-              vk::raii::Buffer &srcBuffer
-            , vk::raii::Buffer &dstBuffer
-            , vk::DeviceSize size
+              vk::raii::Buffer  &srcBuffer
+            , vk::raii::Buffer  &dstBuffer
+            , vk::DeviceSize    size
         )
         {
             vk::CommandBufferAllocateInfo   allocInfo
@@ -2155,6 +2158,7 @@ class HelloTriangleApplication
             vk::raii::CommandBuffer       commandCopyBuffer = std::move(device.allocateCommandBuffers(allocInfo).front());
             
             commandCopyBuffer.begin(
+                vk::CommandBufferBeginInfo
                 {
                       .flags                                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
                 }
@@ -2162,9 +2166,7 @@ class HelloTriangleApplication
 
             commandCopyBuffer.copyBuffer(  *srcBuffer
                                          , *dstBuffer
-                                         , vk::BufferCopy(  0
-                                                          , 0
-                                                          , size));
+                                         , vk::BufferCopy{.size = size});
 
             commandCopyBuffer.end();
 
@@ -2389,7 +2391,7 @@ class HelloTriangleApplication
             , vk::AccessFlags2              dst_access_mask
             , vk::PipelineStageFlags2       src_stage_mask
             , vk::PipelineStageFlags2       dst_stage_mask
-            , vk::ImageAspectFlagBits       image_aspect_flags
+            , vk::ImageAspectFlags          image_aspect_flags
         )
         {
             vk::ImageMemoryBarrier2         barrier         = 
