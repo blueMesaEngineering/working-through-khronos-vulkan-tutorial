@@ -2621,7 +2621,7 @@ class HelloTriangleApplication
     {
         vk::ShaderModuleCreateInfo createInfo
         {
-              .codeSize     = code.size() * sizeof(char)
+              .codeSize     = code.size()
             , .pCode        = reinterpret_cast<const uint32_t *>(code.data())
         };
 
@@ -2725,7 +2725,7 @@ class HelloTriangleApplication
                                        , capabilities.maxImageExtent.width)
                 , std::clamp<uint32_t>(  height
                                        , capabilities.minImageExtent.height
-                                       , capabilities.minImageExtent.height)
+                                       , capabilities.maxImageExtent.height)
             };
         }
 
