@@ -962,6 +962,45 @@ depend:
 .PHONY : 28_modelLoading_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 29_mipmapping
+
+# Build rule for target.
+29_mipmapping: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 29_mipmapping
+.PHONY : 29_mipmapping
+
+# fast build rule for target.
+29_mipmapping/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/29_mipmapping.dir/build.make CMakeFiles/29_mipmapping.dir/build
+.PHONY : 29_mipmapping/fast
+
+#=============================================================================
+# Target rules for targets named 29_mipmapping_shader
+
+# Build rule for target.
+29_mipmapping_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 29_mipmapping_shader
+.PHONY : 29_mipmapping_shader
+
+# fast build rule for target.
+29_mipmapping_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/29_mipmapping_shader.dir/build.make CMakeFiles/29_mipmapping_shader.dir/build
+.PHONY : 29_mipmapping_shader/fast
+
+#=============================================================================
+# Target rules for targets named 29_mipmapping_slang_shader
+
+# Build rule for target.
+29_mipmapping_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 29_mipmapping_slang_shader
+.PHONY : 29_mipmapping_slang_shader
+
+# fast build rule for target.
+29_mipmapping_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/29_mipmapping_slang_shader.dir/build.make CMakeFiles/29_mipmapping_slang_shader.dir/build
+.PHONY : 29_mipmapping_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -2066,6 +2105,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/28_modelLoading.dir/build.make CMakeFiles/28_modelLoading.dir/28_modelLoading.cpp.s
 .PHONY : 28_modelLoading.cpp.s
 
+29_mipmapping.o: 29_mipmapping.cpp.o
+.PHONY : 29_mipmapping.o
+
+# target to build an object file
+29_mipmapping.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/29_mipmapping.dir/build.make CMakeFiles/29_mipmapping.dir/29_mipmapping.cpp.o
+.PHONY : 29_mipmapping.cpp.o
+
+29_mipmapping.i: 29_mipmapping.cpp.i
+.PHONY : 29_mipmapping.i
+
+# target to preprocess a source file
+29_mipmapping.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/29_mipmapping.dir/build.make CMakeFiles/29_mipmapping.dir/29_mipmapping.cpp.i
+.PHONY : 29_mipmapping.cpp.i
+
+29_mipmapping.s: 29_mipmapping.cpp.s
+.PHONY : 29_mipmapping.s
+
+# target to generate assembly for a file
+29_mipmapping.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/29_mipmapping.dir/build.make CMakeFiles/29_mipmapping.dir/29_mipmapping.cpp.s
+.PHONY : 29_mipmapping.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -2114,6 +2177,8 @@ help:
 	@echo "... 27_depthBuffering_slang_shader"
 	@echo "... 28_modelLoading_shader"
 	@echo "... 28_modelLoading_slang_shader"
+	@echo "... 29_mipmapping_shader"
+	@echo "... 29_mipmapping_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -2170,6 +2235,7 @@ help:
 	@echo "... 26_textureMapping"
 	@echo "... 27_depthBuffering"
 	@echo "... 28_modelLoading"
+	@echo "... 29_mipmapping"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -2255,6 +2321,9 @@ help:
 	@echo "... 28_modelLoading.o"
 	@echo "... 28_modelLoading.i"
 	@echo "... 28_modelLoading.s"
+	@echo "... 29_mipmapping.o"
+	@echo "... 29_mipmapping.i"
+	@echo "... 29_mipmapping.s"
 .PHONY : help
 
 
