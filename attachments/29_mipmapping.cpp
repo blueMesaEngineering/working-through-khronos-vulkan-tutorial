@@ -1340,7 +1340,7 @@ class HelloTriangleApplication
 
                 commandBuffer->pipelineBarrier(
                       vk::PipelineStageFlagBits::eTransfer
-                    , vk::PipelineStageFlagBits::eFragmentShader
+                    , vk::PipelineStageFlagBits::eTransfer
                     , {}
                     , {}
                     , {}
