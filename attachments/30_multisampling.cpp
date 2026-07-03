@@ -163,6 +163,7 @@ class HelloTriangleApplication
         vk::raii::DebugUtilsMessengerEXT        debugMessenger              = nullptr;
         vk::raii::SurfaceKHR                    surface                     = nullptr;
         vk::raii::PhysicalDevice                physicalDevice              = nullptr;
+        vk::SampleCountFlagBits                 msaaSamples                 = vk::SampleCountFlagBits::e1;
         vk::raii::Device                        device                      = nullptr;
         uint32_t                                queueIndex                  = ~0;
         vk::raii::Queue                         queue                       = nullptr;
@@ -175,6 +176,10 @@ class HelloTriangleApplication
         vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
         vk::raii::PipelineLayout                pipelineLayout              = nullptr;
         vk::raii::Pipeline                      graphicsPipeline            = nullptr;
+
+        vk::raii::Image                         colorImage                  = nullptr;
+        vk::raii::DeviceMemory                  colorImageMemory            = nullptr;
+        vk::raii::ImageView                     colorImageView              = nullptr;
 
         vk::raii::Image                         depthImage                  = nullptr;
         vk::raii::DeviceMemory                  depthImageMemory            = nullptr;
@@ -285,6 +290,7 @@ class HelloTriangleApplication
 //                  setupDebugMessenger
 //                  createSurface
 //                  pickPhysicalDevice
+//                  getMaxUsableSampleCount
 //                  createLogicalDevice
 //                  createSwapChain
 //                  createImageViews
@@ -314,12 +320,14 @@ class HelloTriangleApplication
             setupDebugMessenger();
             createSurface();
             pickPhysicalDevice();
+            msaaSamples = getMaxUsableSampleCount();
             createLogicalDevice();
             createSwapChain();
             createImageViews();
             createDescriptorSetLayout();
             createGraphicsPipeline();
             createCommandPool();
+            createColorResources();
             createDepthResources();
             createTextureImage();
             createTextureImageView();
@@ -430,6 +438,7 @@ class HelloTriangleApplication
             cleanupSwapChain();
             createSwapChain();
             createImageViews();
+            createColorResources();
             createDepthResources();
         }
         
@@ -961,7 +970,7 @@ class HelloTriangleApplication
 
             vk::PipelineMultisampleStateCreateInfo          multisampling
             {
-                  .rasterizationSamples                     = vk::SampleCountFlagBits::e1
+                  .rasterizationSamples                     = msaaSamples
                 , .sampleShadingEnable                      = vk::False
             };
 
@@ -1066,6 +1075,44 @@ class HelloTriangleApplication
             commandPool = vk::raii::CommandPool(  device
                                                 , poolInfo
                                                );
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           createColorResources
+//  Arguments:      N/A
+//  Returns:        
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createColorResources()
+        {
+            vk::Format colorFormat                          = swapChainSurfaceFormat.format;
+
+            createImage(
+                  swapChainExtent.width
+                , swapChainExtent.height
+                , 1
+                , msaaSamples
+                , colorFormat
+                , vk::ImageTiling::eOptimal
+                , vk::ImageUsageFlagBits::eTransientAttachment
+                | vk::ImageUsageFlagBits::eColorAttachment
+                , vk::MemoryPropertyFlagBits::eDeviceLocal
+                , colorImage
+                , colorImageMemory
+            );
+
+            colorImageView                                  = createImageView(
+                                                                                  colorImage
+                                                                                , colorFormat
+                                                                                , vk::ImageAscpetFlagBits::eColor
+                                                                                , 1
+                                                                            );
         }
         
 
