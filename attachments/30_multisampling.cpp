@@ -1110,7 +1110,7 @@ class HelloTriangleApplication
             colorImageView                                  = createImageView(
                                                                                   colorImage
                                                                                 , colorFormat
-                                                                                , vk::ImageAscpetFlagBits::eColor
+                                                                                , vk::ImageAspectFlagBits::eColor
                                                                                 , 1
                                                                             );
         }
@@ -1296,7 +1296,7 @@ class HelloTriangleApplication
                   texWidth
                 , texHeight
                 , mipLevels
-                , vk::SampleCountflagBits::e1
+                , vk::SampleCountFlagBits::e1
                 , vk::Format::eR8G8B8A8Srgb
                 , vk::ImageTiling::eOptimal
                 , vk::ImageUsageFlagBits::eTransferSrc
@@ -2392,19 +2392,24 @@ class HelloTriangleApplication
             vk::ClearValue                  clearDepth      = vk::ClearDepthStencilValue(  1.0f
                                                                                          , 0);
 
-            vk::RenderingAttachmentInfo     colorAttachmentInfo  =
+            // Color attachment (multisampled) with resolve attachment
+            vk::RenderingAttachmentInfo     colorAttachment =
             {
-                  .imageView                                = swapChainImageViews[imageIndex]
+                  .imageView                                = colorImageView
                 , .imageLayout                              = vk::ImageLayout::eColorAttachmentOptimal
+                , .resolveMode                              = vk::ResolveModeFlagBits::eAverage
+                , .resolveImageView                         = swapChainImageViews[imageIndex]
+                , .resolveImageLayout                       = vk::ImageLayout::eColorAttachmentOptimal
                 , .loadOp                                   = vk::AttachmentLoadOp::eClear
                 , .storeOp                                  = vk::AttachmentStoreOp::eStore
                 , .clearValue                               = clearColor
             };
 
-            vk::RenderingAttachmentInfo     depthAttachmentInfo  =
+            // Depth attachment
+            vk::RenderingAttachmentInfo     depthAttachment =
             {
                   .imageView                                = depthImageView
-                , .imageLayout                              = vk::ImageLayout::eDepthStencilAttachmentOptimal
+                , .imageLayout                              = vk::ImageLayout::eDepthAttachmentOptimal
                 , .loadOp                                   = vk::AttachmentLoadOp::eClear
                 , .storeOp                                  = vk::AttachmentStoreOp::eDontCare
                 , .clearValue                               = clearDepth
@@ -2419,8 +2424,8 @@ class HelloTriangleApplication
                   }
                 , .layerCount                               = 1
                 , .colorAttachmentCount                     = 1
-                , .pColorAttachments                        = &colorAttachmentInfo
-                , .pDepthAttachment                         = &depthAttachmentInfo
+                , .pColorAttachments                        = &colorAttachment
+                , .pDepthAttachment                         = &depthAttachment
             };
 
             commandBuffer.beginRendering(renderingInfo);

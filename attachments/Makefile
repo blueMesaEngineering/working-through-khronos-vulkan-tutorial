@@ -1001,6 +1001,45 @@ depend:
 .PHONY : 29_mipmapping_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 30_multisampling
+
+# Build rule for target.
+30_multisampling: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 30_multisampling
+.PHONY : 30_multisampling
+
+# fast build rule for target.
+30_multisampling/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/30_multisampling.dir/build.make CMakeFiles/30_multisampling.dir/build
+.PHONY : 30_multisampling/fast
+
+#=============================================================================
+# Target rules for targets named 30_multisampling_shader
+
+# Build rule for target.
+30_multisampling_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 30_multisampling_shader
+.PHONY : 30_multisampling_shader
+
+# fast build rule for target.
+30_multisampling_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/30_multisampling_shader.dir/build.make CMakeFiles/30_multisampling_shader.dir/build
+.PHONY : 30_multisampling_shader/fast
+
+#=============================================================================
+# Target rules for targets named 30_multisampling_slang_shader
+
+# Build rule for target.
+30_multisampling_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 30_multisampling_slang_shader
+.PHONY : 30_multisampling_slang_shader
+
+# fast build rule for target.
+30_multisampling_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/30_multisampling_slang_shader.dir/build.make CMakeFiles/30_multisampling_slang_shader.dir/build
+.PHONY : 30_multisampling_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -2129,6 +2168,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/29_mipmapping.dir/build.make CMakeFiles/29_mipmapping.dir/29_mipmapping.cpp.s
 .PHONY : 29_mipmapping.cpp.s
 
+30_multisampling.o: 30_multisampling.cpp.o
+.PHONY : 30_multisampling.o
+
+# target to build an object file
+30_multisampling.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/30_multisampling.dir/build.make CMakeFiles/30_multisampling.dir/30_multisampling.cpp.o
+.PHONY : 30_multisampling.cpp.o
+
+30_multisampling.i: 30_multisampling.cpp.i
+.PHONY : 30_multisampling.i
+
+# target to preprocess a source file
+30_multisampling.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/30_multisampling.dir/build.make CMakeFiles/30_multisampling.dir/30_multisampling.cpp.i
+.PHONY : 30_multisampling.cpp.i
+
+30_multisampling.s: 30_multisampling.cpp.s
+.PHONY : 30_multisampling.s
+
+# target to generate assembly for a file
+30_multisampling.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/30_multisampling.dir/build.make CMakeFiles/30_multisampling.dir/30_multisampling.cpp.s
+.PHONY : 30_multisampling.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -2179,6 +2242,8 @@ help:
 	@echo "... 28_modelLoading_slang_shader"
 	@echo "... 29_mipmapping_shader"
 	@echo "... 29_mipmapping_slang_shader"
+	@echo "... 30_multisampling_shader"
+	@echo "... 30_multisampling_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -2236,6 +2301,7 @@ help:
 	@echo "... 27_depthBuffering"
 	@echo "... 28_modelLoading"
 	@echo "... 29_mipmapping"
+	@echo "... 30_multisampling"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -2324,6 +2390,9 @@ help:
 	@echo "... 29_mipmapping.o"
 	@echo "... 29_mipmapping.i"
 	@echo "... 29_mipmapping.s"
+	@echo "... 30_multisampling.o"
+	@echo "... 30_multisampling.i"
+	@echo "... 30_multisampling.s"
 .PHONY : help
 
 
