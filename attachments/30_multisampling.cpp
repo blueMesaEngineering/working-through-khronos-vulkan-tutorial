@@ -1135,6 +1135,7 @@ class HelloTriangleApplication
                   swapChainExtent.width
                 , swapChainExtent.height
                 , 1
+                , msaaSamples
                 , depthFormat
                 , vk::ImageTiling::eOptimal
                 , vk::ImageUsageFlagBits::eDepthStencilAttachment
@@ -1295,6 +1296,7 @@ class HelloTriangleApplication
                   texWidth
                 , texHeight
                 , mipLevels
+                , vk::SampleCountflagBits::e1
                 , vk::Format::eR8G8B8A8Srgb
                 , vk::ImageTiling::eOptimal
                 , vk::ImageUsageFlagBits::eTransferSrc
@@ -1476,6 +1478,54 @@ class HelloTriangleApplication
 
 //******************************************************************************************
 // 
+//  Name:           getMaxUsableSampleCount
+//  Arguments:      N/A
+//  Returns:        vk::SampleCountFlagBits
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        vk::SampleCountFlagBits getMaxUsableSampleCount()
+        {
+            vk::PhysicalDeviceProperties                    physicalDeviceProperties
+                                                            = physicalDevice.getProperties();
+
+            vk::SampleCountFlags            counts          =   physicalDeviceProperties.limits.framebufferColorSampleCounts
+                                                              & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+
+            if (counts & vk::SampleCountFlagBits::e64)
+            {
+                return vk::SampleCountFlagBits::e64;
+            }
+            if (counts & vk::SampleCountFlagBits::e32)
+            {
+                return vk::SampleCountFlagBits::e32;
+            }
+            if (counts & vk::SampleCountFlagBits::e16)
+            {
+                return vk::SampleCountFlagBits::e16;
+            }
+            if (counts & vk::SampleCountFlagBits::e8)
+            {
+                return vk::SampleCountFlagBits::e8;
+            }
+            if (counts & vk::SampleCountFlagBits::e4)
+            {
+                return vk::SampleCountFlagBits::e4;
+            }
+            if (counts & vk::SampleCountFlagBits::e2)
+            {
+                return vk::SampleCountFlagBits::e2;
+            }
+
+            return vk::SampleCountFlagBits::e1;
+        }
+        
+
+//******************************************************************************************
+// 
 //  Name:           createTextureImageView
 //  Arguments:      N/A
 //  Returns:        void
@@ -1523,8 +1573,6 @@ class HelloTriangleApplication
                 , .maxAnisotropy                            = properties.limits.maxSamplerAnisotropy
                 , .compareEnable                            = vk::False
                 , .compareOp                                = vk::CompareOp::eAlways
-                , .minLod                                   = 0.0f
-                , .maxLod                                    = vk::LodClampNone
             };
 
             textureSampler                                  = vk::raii::Sampler(  device
@@ -1586,6 +1634,7 @@ class HelloTriangleApplication
               uint32_t                  width
             , uint32_t                  height
             , uint32_t                  mipLevels
+            , vk::SampleCountFlagBits   numSamples
             , vk::Format                format
             , vk::ImageTiling           tiling
             , vk::ImageUsageFlags       usage
@@ -1601,7 +1650,7 @@ class HelloTriangleApplication
                 , .extent                                   = { width, height, 1 }
                 , .mipLevels                                = mipLevels
                 , .arrayLayers                              = 1
-                , .samples                                  = vk::SampleCountFlagBits::e1
+                , .samples                                  = numSamples
                 , .tiling                                   = tiling
                 , .usage                                    = usage
                 , .sharingMode                              = vk::SharingMode::eExclusive
@@ -2300,8 +2349,7 @@ class HelloTriangleApplication
             commandBuffer.begin({});
 
             // Before stargin rendering, transition the swapchain image to vk::ImageLayout::eColorAttachmentOptimal
-            transition_image_layout
-            (
+            transition_image_layout(
                   swapChainImages[imageIndex]
                 , vk::ImageLayout::eUndefined
                 , vk::ImageLayout::eColorAttachmentOptimal
@@ -2312,9 +2360,20 @@ class HelloTriangleApplication
                 , vk::ImageAspectFlagBits::eColor
             );
 
-            // Transition depth image to depth attachment optimal layout
-            transition_image_layout
-            (
+            // Transition the multisampled color image to COLOR_ATTACHMENT_OPTIMAL
+            transition_image_layout(
+                  *colorImage
+                , vk::ImageLayout::eUndefined
+                , vk::ImageLayout::eColorAttachmentOptimal
+                , vk::AccessFlagBits2::eColorAttachmentWrite
+                , vk::AccessFlagBits2::eColorAttachmentWrite
+                , vk::PipelineStageFlagBits2::eColorAttachmentOutput
+                , vk::PipelineStageFlagBits2::eColorAttachmentOutput
+                , vk::ImageAspectFlagBits::eColor
+            );
+
+            // Transition depth image to DEPTH_ATTACHMENT_OPTIMAL
+            transition_image_layout(
                   *depthImage
                 , vk::ImageLayout::eUndefined
                 , vk::ImageLayout::eDepthAttachmentOptimal
