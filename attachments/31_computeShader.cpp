@@ -1,3 +1,6 @@
+// Sample by Sascha Willems
+// Contact: webmaster@saschawillems.de
+
 #include <algorithm>
 #include <array>
 #include <assert.h>
@@ -8,6 +11,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <random>
 #include <stdexcept>
 #include <vector>
 
@@ -21,22 +25,12 @@ import vulkan_hpp;
 #include <GLFW/glfw3.h>
 
 #define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/hash.hpp>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
 
 constexpr uint32_t                  WIDTH                   = 800;
 constexpr uint32_t                  HEIGHT                  = 600;
-const std::string                   MODEL_PATH              = "models/viking_room.obj";
-const std::string                   TEXTURE_PATH            = "textures/viking_room.png";
+constexpr uint32_t                  PARTICLE_COUNT          = 8192;
 constexpr int                       MAX_FRAMES_IN_FLIGHT    = 2;
 
 const std::vector<char const *> validationLayers = 
