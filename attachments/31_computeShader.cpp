@@ -44,22 +44,27 @@ constexpr bool enableValidationLayers = false;
 constexpr bool enableValidationLayers = true;
 #endif
 
+struct UniformBufferObject
+{
+    float                           deltaTime               = 1.0f;
+}
+
 struct Vertex
 {
-    glm::vec3 pos;
-    glm::vec3 color;
-    glm::vec2 texCoord;
+    glm::vec2 position;
+    glm::vec2 velocity;
+    glm::vec4 color;
 
     static vk::VertexInputBindingDescription getBindingDescription()
     {
         return {
               0
-            , sizeof(Vertex)
+            , sizeof(Particle)
             , vk::VertexInputRate::eVertex
         };
     }
 
-    static std::array<vk::VertexInputAttributeDescription, 3> getAttributeDescriptions()
+    static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions()
     {
         return
         {
@@ -68,63 +73,22 @@ struct Vertex
                    0
                 ,  0
                 , vk::Format::eR32G32B32Sfloat
-                , offsetof(  Vertex
-                           , pos)
+                , offsetof(  Particle
+                           , position)
             )
             , vk::VertexInputAttributeDescription
             (
                   1
                 , 0
                 , vk::Format::eR32G32B32Sfloat
-                , offsetof(  Vertex
+                , offsetof(  Particle
                            , color)
-            )
-            , vk::VertexInputAttributeDescription
-            (
-                  2
-                , 0
-                , vk::Format::eR32G32Sfloat
-                , offsetof(  Vertex
-                           , texCoord)
             )
         };
     }
-
-    bool operator==(const Vertex &other) const
-    {
-        return    pos       == other.pos 
-               && color     == other.color 
-               && texCoord  == other.texCoord;
-    }
 };
 
-template <>
-struct std::hash<Vertex>
-{
-    size_t operator()(Vertex const &vertex) const noexcept
-    {
-        return 
-        (
-            (
-                   hash<glm::vec3>()(vertex.pos) 
-                ^ (hash<glm::vec3>()(vertex.color) << 1)
-            ) >> 1
-        ) 
-        ^ 
-        (
-            hash<glm::vec2>()(vertex.texCoord) << 1
-        );
-    }
-};
-
-struct UniformBufferObject
-{
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-};
-
-class HelloTriangleApplication
+class ComputeShaderApplication
 {
     public:
 
@@ -157,7 +121,6 @@ class HelloTriangleApplication
         vk::raii::DebugUtilsMessengerEXT        debugMessenger              = nullptr;
         vk::raii::SurfaceKHR                    surface                     = nullptr;
         vk::raii::PhysicalDevice                physicalDevice              = nullptr;
-        vk::SampleCountFlagBits                 msaaSamples                 = vk::SampleCountFlagBits::e1;
         vk::raii::Device                        device                      = nullptr;
         uint32_t                                queueIndex                  = ~0;
         vk::raii::Queue                         queue                       = nullptr;
@@ -167,47 +130,32 @@ class HelloTriangleApplication
         vk::Extent2D                            swapChainExtent;
         std::vector<vk::raii::ImageView>        swapChainImageViews;
 
-        vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
         vk::raii::PipelineLayout                pipelineLayout              = nullptr;
         vk::raii::Pipeline                      graphicsPipeline            = nullptr;
-
-        vk::raii::Image                         colorImage                  = nullptr;
-        vk::raii::DeviceMemory                  colorImageMemory            = nullptr;
-        vk::raii::ImageView                     colorImageView              = nullptr;
-
-        vk::raii::Image                         depthImage                  = nullptr;
-        vk::raii::DeviceMemory                  depthImageMemory            = nullptr;
-        vk::raii::ImageView                     depthImageView              = nullptr;
-
-        uint32_t                                mipLevels                   = 0;
-        vk::raii::Image                         textureImage                = nullptr;
-        vk::raii::DeviceMemory                  textureImageMemory          = nullptr;
-        vk::raii::ImageView                     textureImageView            = nullptr;
-        vk::raii::Sampler                       textureSampler              = nullptr;
-
-        std::vector<Vertex>                     vertices;
-        std::vector<uint32_t>                   indices;
-        vk::raii::Buffer                        vertexBuffer                = nullptr;
-        vk::raii::DeviceMemory                  vertexBufferMemory          = nullptr;
-        vk::raii::Buffer                        indexBuffer                 = nullptr;
-        vk::raii::DeviceMemory                  indexBufferMemory           = nullptr;
-
+        
+        vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
+        vk::raii::PipelineLayout                computePipelineLayout       = nullptr;
+        vk::raii::Pipeline                      computePipeline             = nullptr;
+        
         std::vector<vk::raii::Buffer>           uniformBuffers;
         std::vector<vk::raii::DeviceMemory>     uniformBuffersMemory;
         std::vector<void *>                     uniformBuffersMapped;
 
         vk::raii::DescriptorPool                descriptorPool              = nullptr;
-        std::vector<vk::raii::DescriptorSet>    descriptorSets;
+        std::vector<vk::raii::DescriptorSet>    computeDescriptorSets;
 
         vk::raii::CommandPool                   commandPool                 = nullptr;
         std::vector<vk::raii::CommandBuffer>    commandBuffers;
+        std::vector<vk::raii::CommandBuffer>    computeCommandBuffers;
 
-        std::vector<vk::raii::Semaphore>        presentCompleteSemaphores;
-        std::vector<vk::raii::Semaphore>        renderFinishedSemaphores;
+        vk::raii::Semaphore                     semaphore                   = nullptr;
+        uint64_t                                timelineValue               = 0;
         std::vector<vk::raii::Fence>            inFlightFences;
         uint32_t                                frameIndex                  = 0;
 
-        bool framebufferResized                                             = false;
+        bool                                    framebufferResized          = false;
+
+        double                                  lastTime                    = 0.0f;
 
         std::vector<const char *>               requiredDeviceExtension     =
         {
