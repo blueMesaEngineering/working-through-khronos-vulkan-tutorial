@@ -153,6 +153,8 @@ class ComputeShaderApplication
         std::vector<vk::raii::Fence>            inFlightFences;
         uint32_t                                frameIndex                  = 0;
 
+        double                                  lastFrameTime               = 0.0;
+
         bool                                    framebufferResized          = false;
 
         double                                  lastTime                    = 0.0f;
@@ -197,6 +199,8 @@ class ComputeShaderApplication
                                      , this);
             glfwSetFramebufferSizeCallback(  window
                                            , framebufferResizeCallback);
+
+            lastTime                                        = glfwGetTime();
         }
         
 
@@ -211,14 +215,13 @@ class ComputeShaderApplication
 // 
 //******************************************************************************************
 
-        static void framebufferResizeCallback
-        (
+        static void framebufferResizeCallback(
               GLFWwindow *window
             , int width
             , int height
         )
         {
-            auto app                = static_cast<HelloTriangleApplication *>(glfwGetWindowUserPointer(window));
+            auto app                = static_cast<ComputeShaderApplication *>(glfwGetWindowUserPointer(window));
             app->framebufferResized = true;
         }
 
@@ -262,7 +265,6 @@ class ComputeShaderApplication
             setupDebugMessenger();
             createSurface();
             pickPhysicalDevice();
-            msaaSamples = getMaxUsableSampleCount();
             createLogicalDevice();
             createSwapChain();
             createImageViews();
