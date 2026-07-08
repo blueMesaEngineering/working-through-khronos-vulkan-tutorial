@@ -1618,14 +1618,13 @@ class ComputeShaderApplication
 //******************************************************************************************
 
         void transition_image_layout(
-              vk::Image                     image
+              uint32_t                      imageIndex
             , vk::ImageLayout               old_layout
             , vk::ImageLayout               new_layout
             , vk::AccessFlags2              src_access_mask
             , vk::AccessFlags2              dst_access_mask
             , vk::PipelineStageFlags2       src_stage_mask
             , vk::PipelineStageFlags2       dst_stage_mask
-            , vk::ImageAspectFlags          image_aspect_flags
         )
         {
             vk::ImageMemoryBarrier2         barrier         = 
@@ -1638,10 +1637,10 @@ class ComputeShaderApplication
                 , .newLayout                                = new_layout
                 , .srcQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
                 , .dstQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
-                , .image                                    = image
+                , .image                                    = swapChainImages[imageIndex]
                 , .subresourceRange                         = 
                 {
-                      .aspectMask                           = image_aspect_flags
+                      .aspectMask                           = vk::ImageAspectFlagBits::eColor
                     , .baseMipLevel                         = 0
                     , .levelCount                           = 1
                     , .baseArrayLayer                       = 0
@@ -1662,6 +1661,37 @@ class ComputeShaderApplication
 
 //******************************************************************************************
 // 
+//  Name:           recordComputeCommandBuffer
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void recordComputeCommandBuffer()
+        {
+            auto &commandBuffer                             = computeCommandBuffers[frameIndex];
+            commandBuffer.reset();
+            commandBuffer.begin({});
+            commandBuffer.bindPipeline(  vk::PipelineBindPoint::eCompute
+                                       , computePipeline
+                                      );
+            commandBuffer.bindDescriptorSets(  vk::PipelineBindPoint::eCompute
+                                             , computePipelineLayout
+                                             , 0
+                                             , {computeDescriptorSets[frameIndex]}
+                                             , {}
+                                            );
+            commandBuffer.dispatch(PARTICLE_COUNT / 256, 1, 1);
+            commandBuffer.end();
+                                    
+        }
+
+
+//******************************************************************************************
+// 
 //  Name:           createSyncObjects
 //  Arguments:      N/A
 //  Returns:        void
@@ -1673,26 +1703,25 @@ class ComputeShaderApplication
 
         void createSyncObjects()
         {
-            assert(   presentCompleteSemaphores.empty() 
-                   && renderFinishedSemaphores.empty()
-                   && inFlightFences.empty());
+		inFlightFences.clear();
 
-            for (size_t i = 0; i < swapChainImages.size(); i++)
-            {
-                renderFinishedSemaphores.emplace_back(  device
-                                                      , vk::SemaphoreCreateInfo());
-            }
+		vk::SemaphoreTypeCreateInfo	    semaphoreType
+		{
+			  .semaphoreType				                = vk::Semaphoretype::eTimeline
+			, initialValue				                    = 0
+		};
+		
+		semaphore					                        = vk::raii::Semaphore(  device
+                                                                                  , {.pNext = &semaphoreType}
+                                                                                  );
+										     
+		timelineValue					= 0;		
 
-            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-                presentCompleteSemaphores.emplace_back(  device
-                                                       , vk::SemaphoreCreateInfo());
-                inFlightFences.emplace_back(  device
-                                            , vk::FenceCreateInfo
-                                            {  
-                                                .flags = vk::FenceCreateFlagBits::eSignaled
-                                            });
-            }
+                vk::FenceCreateInfo	fenceInfo {};
+                inFlightFences.emplace_back(device, fenceInfo);
+		    }
         }
 
 
@@ -1707,33 +1736,16 @@ class ComputeShaderApplication
 // 
 //******************************************************************************************
 
-        void updateUniformBuffer(uint32_t currentImage) const
+        void updateUniformBuffer(uint32_t currentImage)
         {
-            static auto             startTime               = std::chrono::high_resolution_clock::now();
-
-            auto                    currentTime             = std::chrono::high_resolution_clock::now();
-            float                   time                    = std::chrono::duration<float>(currentTime - startTime).count();
-
             UniformBufferObject     ubo{};
 
-            ubo.model                                       = rotate(  glm::mat4(1.0f)
-                                                                     , time * glm::radians(90.0f)
-                                                                     , glm::vec3(0.0f, 0.0f, 1.0f));
+		    ubo.deltaTime                                   = static_cast<float>(lastFrameTime) * 2.0f;
             
-            ubo.view                                        = lookAt(  glm::vec3(2.0f, 2.0f, 2.0f)
-                                                                     , glm::vec3(0.0f, 0.0f, 0.0f)
-                                                                     , glm::vec3(0.0f, 0.0f, 1.0f));
-
-            ubo.proj                                        = glm::perspective(  glm::radians(45.0f)
-                                                                               , static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height)
-                                                                               , 0.1f
-                                                                               , 10.0f);
-
-            ubo.proj[1][1] *= -1;
-
             memcpy(  uniformBuffersMapped[currentImage]
                    , &ubo
-                   , sizeof(ubo));
+                   , sizeof(ubo)
+                  );
         }
 
 
@@ -1750,8 +1762,12 @@ class ComputeShaderApplication
 
         void drawFrame()
         {
-            // Note: inFlightFences, presentCompleteSemaphores, and commandBuffers are indexed by frameIndex,
-            //       while renderFinishedSemaphores is index by imageIndex
+	        auto [  result
+                  , imageIndex]                             = swapChain.acquireNextImage(  UINT64_MAX
+                                                                                         , nullptr
+                                                                                         , *inFlightFences[frameIndex]
+                                                                                        );
+
             auto fenceResult                                =  device.waitForFences(  *inFlightFences[frameIndex]
                                                                                     , vk::True
                                                                                     , UINT64_MAX);
@@ -1759,84 +1775,126 @@ class ComputeShaderApplication
             {
                 throw std::runtime_error("Failed to wait for fence!");
             }
-            
-            auto [  result
-                , imageIndex] = swapChain.acquireNextImage(  UINT64_MAX
-                    , *presentCompleteSemaphores[frameIndex]
-                    , nullptr);
+            device.resetFences(*inFlightFences[frameIndex]);            
 
-            // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
-            // here and does not need to be caugfht by and exception.
-
-            if (result == vk::Result::eErrorOutOfDateKHR)
-            {
-                recreateSwapChain();
-                return;
-            }
-
-            // On other success codes than eSuccess and eSuboptimalKHR we just throw an exception.
-            // On any error code, aquireNextImage already threw and exception.
-
-            if (   result != vk::Result::eSuccess 
-                && result != vk::Result::eSuboptimalKHR)
-            {
-                assert(  result == vk::Result::eTimeout 
-                      || result == vk::Result::eNotReady);
-                throw std::runtime_error("Failed to acquire swap chain image!");
-            }
+            // Update timeline value for this frame
+            uint64_t 		    computeWaitValue		    = timelineValue;
+            uint64_t 		    computeSignalValue		    = ++timelineValue;
+            uint64_t		    graphicsWaitValue		    = computeSignalValue;
+            uint64_t		    graphicsSignalValue		    = ++timelineValue;
 
             updateUniformBuffer(frameIndex);
 
-            // Only reset the fence if we are submitting work                    
-            device.resetFences(*inFlightFences[frameIndex]);
-
-            commandBuffers[frameIndex].reset();
-            recordCommandBuffer(imageIndex);
-
-            vk::PipelineStageFlags  waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
-
-            const vk::SubmitInfo        submitInfo
             {
-                  .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*presentCompleteSemaphores[frameIndex]
-                , .pWaitDstStageMask                        = &waitDestinationStageMask
-                , .commandBufferCount                       = 1
-                , .pCommandBuffers                          = &*commandBuffers[frameIndex]
-                , .signalSemaphoreCount                     = 1
-                , .pSignalSemaphores                        = &*renderFinishedSemaphores[imageIndex]
-            };
-
-            queue.submit(  submitInfo
-                         , *inFlightFences[frameIndex]);
-
-            const vk::PresentInfoKHR    presentInfoKHR
-            {
-                  .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*renderFinishedSemaphores[imageIndex]
-                , .swapchainCount                           = 1
-                , .pSwapchains                              = &*swapChain
-                , .pImageIndices                            = &imageIndex
-            };
-
-            result = queue.presentKHR(presentInfoKHR);
-
-            // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
-            // here and does not need to be caught by an exception.
-
-            if (   (result == vk::Result::eSuboptimalKHR) 
-                || (result == vk::Result::eErrorOutOfDateKHR) 
-                || framebufferResized)
-            {
-                framebufferResized = false;
-                recreateSwapChain();
+                recordComputeCommandBuffer();
+                
+                // Submit compute work
+                vk::TimelineSemaphoreSubmitInfo	computeTimelineInfo
+                {
+                      .waitSemaphoreValueCount		        = 1
+                    , .pWaitSemaphoreValues			        = &computeWaitValue
+                    , .signalSemaphoreValueCout		        = 1
+                    , .pSignalSemaphoreValues		        = &computeSignalValue
+                };
+                
+                vk::PipelineStageFlags		waitStages[]	= 
+                {
+                    vk::PipelineStageFlagBits::eComputeShader
+                };
+                
+                vk::SubmitInfo 			    computeSubmitInfo
+                {
+                      .pNext					            = &computeTimelineInfo
+                    , .waitSemaphoreCount			        = 1
+                    , .pWaitSemaphores			            = &*semaphore
+                    , .pWaitDstStageMask			        = waitStages
+                    , .commandBufferCount			        = 1
+                    , .pCommandBuffers			            = &*computeCommandBuffers[frameIndex]
+                    , .signalSemaphoreCount			        = 1
+                    , .pSignalSemaphores			        = &*semaphore
+                };
+                
+                queue.submit(computeSubmitInfo, nullptr);
             }
-            else
             {
-                // There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
-                assert(result == vk::Result::eSuccess);
+                // Record graphics command buffer
+
+                recordCommandBuffer(imageIndex);
+
+                // Submit graphics word (waits for compute to finish)
+                
+                vk::PipelineStageFlags  waitStage 			= vk::PipelineStageFlagBits::eVertexInput;
+                
+                vk::TimelineSemaphoreSubmitInfo	            graphicsTimelineInfo
+                {
+                      .waitSemaphoreValueCount			    = 1
+                    , .pWaitSemaphoreValues				    = &graphicsWaitValue
+                    , .signalSemaphoreValueCount			= 1
+                    , .pSignalSemaphoreValues			    = &graphicsSignalValue
+                };
+
+                vk::SubmitInfo          graphicsSubmitInfo
+                {
+                      .pNext				                = &graphicsTimelineInfo
+                    , .waitSemaphoreCount                   = 1
+                    , .pWaitSemaphores                      = &*semaphore
+                    , .pWaitDstStageMask                    = &waitStage
+                    , .commandBufferCount                   = 1
+                    , .pCommandBuffers                      = &*commandBuffers[frameIndex]
+                    , .signalSemaphoreCount                 = 1
+                    , .pSignalSemaphores                    = &*semaphore
+                };
+
+                queue.submit(  graphicsSubmitInfo
+                             , nullptr
+                            );
+
+                // Present the image (wait for graphics to finish)
+                vk::SemaphoreWaitInfo waitInfo
+                {
+                      .semaphoreCount                       = 1
+                    , .pSemaphores                          = &*semaphore
+                    , .pValues				                = &graphicsSignalValue
+                };
+                
+                // Wait for graphics to complete before presenting
+                
+                auto                result 					= device.waitSemaphores(waitInfo, UINT64_MAX);
+                if (result != vk::Result::eSuccess)
+                {
+                    throw std::runtime_error("Failed to wait for semaphore!");
+                }
+                
+                vk::PresentInfoKHR presentInfo
+                {
+                      .waitSemaphoreCount			        = 0		// No binary semaphores needed
+                    , .pWaitSemaphores			            = nullptr
+                    , .swapchainCount			            = 1
+                    , .pSwapchains				            = &*swapChain
+                    , .pImageIndices			            = &imageIndex
+                }
+
+                result = queue.presentKHR(presentInfo);
+
+                // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
+                // here and does not need to be caught by an exception.
+
+                if (   (result == vk::Result::eSuboptimalKHR) 
+                    || (result == vk::Result::eErrorOutOfDateKHR) 
+                    || framebufferResized)
+                {
+                    framebufferResized                      = false;
+                    recreateSwapChain();
+                }
+                else
+                {
+                    // There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
+                    assert(result == vk::Result::eSuccess);
+                }
+
             }
 
-            frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+            frameIndex                                      = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
         }
 
 
@@ -2067,7 +2125,7 @@ int main()
 {
     try
     {
-        HelloTriangleApplication app;
+        ComputeShaderApplication app;
         app.run();
     }
     catch (const std::exception &e)
