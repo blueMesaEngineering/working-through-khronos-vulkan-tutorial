@@ -1087,56 +1087,57 @@ class ComputeShaderApplication
                                                                         , rndDist(rndEngine)
                                                                         , 1.0f
                                                                         );
+            }
 
-                vk::DeviceSize              bufferSize      = sizeof(Particle) * PARTICLE_COUNT;
+            vk::DeviceSize              bufferSize      = sizeof(Particle) * PARTICLE_COUNT;
 
-                // Create a staging bufer used to upload data to the gpu
-                vk::raii::Buffer            stagingBuffer({});
-                vk::raii::DeviceMemory      staginBufferMemory({});
+            // Create a staging bufer used to upload data to the gpu
+            vk::raii::Buffer            stagingBuffer({});
+            vk::raii::DeviceMemory      staginBufferMemory({});
 
+            createBuffer(  bufferSize
+                         , vk::BufferUsageFlagBits::eTransferSrc
+                         , vk::MemoryPropertyFlagBits::eHostVisible
+                         | vk::MemoryPropertyFlagBits::eHostCoherent
+                         , stagingBuffer
+                         , stagingBufferMemory
+                        );
+
+            void *dataStaging                           = stagingBufferMemory.mapMemory(0, bufferSize);
+
+            memcpy(  dataStaging
+                    , particles.data()
+                    , (size_t) bufferSize
+                    );
+
+            staginBufferMemory.unmapMemory();
+
+            shaderStorageBuffers.clear();
+            shaderStorageBuffersMemory.clear();
+
+            // Copy initial particle data to all storage buffers
+            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+                vk::raii::Buffer                        shaderStorageBufferTemp({});
+                vk::raii::DeviceMemory                  shaderStorageBufferTempMemory({});
+                
                 createBuffer(  bufferSize
-                             , vk::BufferUsageFlagBits::eTransferSrc
-                             , vk::MemoryPropertyFlagBits::eHostVisible
-                             | vk::MemoryPropertyFlagBits::eHostCoherent
-                             , stagingBuffer
-                             , stagingBufferMemory);
+                             , vk::BufferUsageFlagBits::eStorageBuffer
+                             | vk::BufferUsageFlagBits::eVertexBuffer
+                             | vk::BufferUsageFlagBits::eTransferDst
+                             , vk::MemoryPropertyFlagBits::eDeviceLocal
+                             , shaderStorageBufferTemp
+                             , shaderStorageBufferTempMemory
+                            );
 
-                void *dataStaging                           = stagingBufferMemory.mapMemory(0, bufferSize);
+                copyBuffer(  stagingBuffer
+                            , shaderStorageBufferTemp
+                            , bufferSize
+                            );
 
-                memcpy(  dataStaging
-                       , particles.data()
-                       , (size_t) bufferSize
-                      );
+                shaderStorageBuffers.emplace_back(std::move(shaderStorageBufferTemp));
 
-                staginBufferMemory.unmapMemory();
-
-                shaderStorageBuffers.clear();
-                shaderStorageBuffersMemory.clear();
-
-                // Copy initial particle data to all storage buffers
-                for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-                {
-                    vk::raii::Buffer                        shaderStorageBufferTemp({});
-                    vk::raii::DeviceMemory                  shaderStorageBufferTempMemory({});
-                    
-                    createBuffer(  bufferSize
-                                 , vk::BufferUsageFlagBits::eStorageBuffer
-                                 | vk::BufferUsageFlagBits::eVertexBuffer
-                                 | vk::BufferUsageFlagBits::eTransferDst
-                                 , vk::MemoryPropertyFlagBits::eDeviceLocal
-                                 , shaderStorageBufferTemp
-                                 , shaderStorageBufferTempMemory
-                                );
-
-                    copyBuffer(  stagingBuffer
-                               , shaderStorageBufferTemp
-                               , bufferSize
-                              );
-
-                    shaderStorageBuffers.emplace_back(std::move(shaderStorageBufferTemp));
-
-                    shaderStorageBuffersMemory.emplace_back(std::move(shaderStorageBufferTempMemory));
-                }
+                shaderStorageBuffersMemory.emplace_back(std::move(shaderStorageBufferTempMemory));
             }
         }
         
@@ -1297,7 +1298,6 @@ class ComputeShaderApplication
 			            , .pBufferInfo				        = &storageBufferInfoCurrentFrame
 			            , .pTexelBufferView			        = nullptr
                     }
-		    
                 };
 
                 device.updateDescriptorSets(  descriptorWrites
@@ -1323,29 +1323,27 @@ class ComputeShaderApplication
             , vk::MemoryPropertyFlags   properties
             , vk::raii::Buffer          &buffer
             , vk::raii::DeviceMemory    &bufferMemory
-        )
+        ) const
         {
-            vk::BufferCreateInfo bufferInfo
-            {
-                  .size                                     = size
-                , .usage                                    = usage
-                , .sharingMode                              = vk::SharingMode::eExclusive
-            };
+            vk::BufferCreateInfo bufferInfo{};
+
+            bufferInfo.size                                 = size;
+            bufferInfo.usage                                = usage;
+            bufferInfo.sharingMode                          = vk::SharingMode::eExclusive;
 
             buffer                                          = vk::raii::Buffer(device, bufferInfo);
 
             vk::MemoryRequirements  memRequirements         = buffer.getMemoryRequirements();
 
-            vk::MemoryAllocateInfo  allocInfo
-            {
-                  .allocationSize                           = memRequirements.size
-                , .memoryTypeIndex                          = findMemoryType(
+            vk::MemoryAllocateInfo  allocInfo {};
+
+            allocInfo.allocationSize                        = memRequirements.size;
+            allocInfo.memoryTypeIndex                       = findMemoryType(
                                                                                memRequirements.memoryTypeBits
                                                                              , properties
-                                                                            )
-            };
+                                                                            );
 
-            bufferMemory            = vk::raii::DeviceMemory(device, allocInfo);
+            bufferMemory                                    = vk::raii::DeviceMemory(device, allocInfo);
             
             buffer.bindMemory(bufferMemory, 0);
         }
@@ -1355,36 +1353,28 @@ class ComputeShaderApplication
 // 
 //  Name:           beginSingleTimeCommands
 //  Arguments:      N/A
-//  Returns:        std::unique_ptr<vk::raii::CommandBuffer>
+//  Returns:        vk::raii::CommandBuffer
 //  Calls:          
 //  Called by:      
 //  Description:    
 // 
 //******************************************************************************************
 
-        std::unique_ptr<vk::raii::CommandBuffer> beginSingleTimeCommands()
+        vk::raii::CommandBuffer beginSingleTimeCommands() const
         {
-            vk::CommandBufferAllocateInfo   allocInfo
-            {
-                  .commandPool                              = commandPool
-                , .level                                    = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount                       = 1
-            };
+            vk::CommandBufferAllocateInfo   allocInfo{}
 
-            std::unique_ptr<vk::raii::CommandBuffer>        commandBuffer 
-                                                            = std::make_unique<vk::raii::CommandBuffer>(
-                                                              std::move(
-                                                                        vk::raii::CommandBuffers(  
-                                                                              device
-                                                                            , allocInfo).front()
-                                                                        )
-                                                              );
+            allocInfo.commandPool                           = commandPool;
+            allocInfo.level                                 = vk::CommandBufferLevel::ePrimary;
+            allocInfo.commandBufferCount                    = 1;
+		    vk::raii::CommandBuffer         commandBuffer	= std::move(vk::raii::CommandBuffers(device, allocInfo).front());
+
             vk::CommandBufferBeginInfo      beginInfo
             {
                   .flags                                    = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
             };
 
-            commandBuffer->begin(beginInfo);
+            commandBuffer.begin(beginInfo);
 
             return commandBuffer;
         }
@@ -1405,14 +1395,13 @@ class ComputeShaderApplication
         {
             commandBuffer.end();
 
-            vk::SubmitInfo                  submitInfo
-            {
-                  .commandBufferCount                       = 1
-                , .pCommandBuffers                          = &*commandBuffer
-            };
+            vk::SubmitInfo                  submitInfo{}
+	        submitInfo.commandBufferCount                   = 1;
+            submitInfo.pCommandBuffers                      = &*commandBuffer;
 
             queue.submit(  submitInfo
-                         , nullptr);
+                         , nullptr
+			            );
 
             queue.waitIdle();
         }
@@ -1430,42 +1419,19 @@ class ComputeShaderApplication
 //******************************************************************************************
 
         void copyBuffer(  
-              vk::raii::Buffer  &srcBuffer
-            , vk::raii::Buffer  &dstBuffer
-            , vk::DeviceSize    size
-        )
+              const vk::raii::Buffer  &srcBuffer
+            , const vk::raii::Buffer  &dstBuffer
+            , vk::DeviceSize          size
+        ) const
         {
-            vk::CommandBufferAllocateInfo   allocInfo
-            {
-                  .commandPool                              = commandPool
-                , .level                                    = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount                       = 1
-            };
+            vk::raii::CommandBuffer       commandCopyBuffer = beginSingleTimeCommands();
+	    
+            commandCopyBuffer.copyBuffer(  srcBuffer
+                                         , dstBuffer
+                                         , vk::BufferCopy(0, 0, size));
 
-            vk::raii::CommandBuffer       commandCopyBuffer = std::move(device.allocateCommandBuffers(allocInfo).front());
-            
-            commandCopyBuffer.begin(
-                vk::CommandBufferBeginInfo
-                {
-                      .flags                                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-                }
-            );
-
-            commandCopyBuffer.copyBuffer(  *srcBuffer
-                                         , *dstBuffer
-                                         , vk::BufferCopy{.size = size});
-
-            commandCopyBuffer.end();
-
-            queue.submit(vk::SubmitInfo
-            {
-                  .commandBufferCount                       = 1
-                , .pCommandBuffers                          = &*commandCopyBuffer
-            }
-            , nullptr);
-
-            queue.waitIdle();
-        }
+            endSingleTimeCommands(commandCopyBuffer);
+    	}
         
 
 //******************************************************************************************
@@ -1479,10 +1445,10 @@ class ComputeShaderApplication
 // 
 //******************************************************************************************
 
-        uint32_t findMemoryType(
-              uint32_t typeFilter
-            , vk::MemoryPropertyFlags properties
-        )
+        [[nodiscard]] uint32_t findMemoryType(
+              uint32_t                  typeFilter
+            , vk::MemoryPropertyFlags   properties
+        ) const
         {
             vk::PhysicalDeviceMemoryProperties              memProperties = physicalDevice.getMemoryProperties();
 
@@ -1512,14 +1478,33 @@ class ComputeShaderApplication
         void createCommandBuffers()
         {
             commandBuffers.clear();
-            vk::CommandBufferAllocateInfo allocInfo
-            {
-                  .commandPool                              = commandPool
-                , .level                                    = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount                       = MAX_FRAMES_IN_FLIGHT
-            };
-            commandBuffers                                  = vk::raii::CommandBuffers(  device
-                                                                                       , allocInfo);
+            vk::CommandBufferAllocateInfo allocInfo{}
+            allocInfo.commandPool                           = *commandPool;
+            allocInfo.level                                 = vk::CommandBufferLevel::ePrimary;
+            allocInfo.commandBufferCount                    = MAX_FRAMES_IN_FLIGHT;
+            commandBuffers                                  = vk::raii::CommandBuffers(device, allocInfo);
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           recordCommandBuffer
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createComputeCommandBuffers()
+        {
+            computeCommandBuffers.clear();
+            vk::CommandBufferAllocateInfo   allocInfo{};
+            allocInfo.commandPool                           = *commandPool;
+            allocInfo.level                                 = vk::CommandBufferLevel::ePrimary;
+            allocInfo.commandBufferCount                    = MAX_FRAMES_IN_FLIGHT;
+            computeCommandBuffers                           = vk::raii::CommandBuffers(device, allocInfo);
         }
         
 
@@ -1537,42 +1522,18 @@ class ComputeShaderApplication
         void recordCommandBuffer(uint32_t imageIndex)
         {
             auto &commandBuffer                             = commandBuffers[frameIndex];
+	    commandBuffer.reset();
             commandBuffer.begin({});
 
-            // Before stargin rendering, transition the swapchain image to vk::ImageLayout::eColorAttachmentOptimal
+            // Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
             transition_image_layout(
-                  swapChainImages[imageIndex]
+                  imageIndex
                 , vk::ImageLayout::eUndefined
                 , vk::ImageLayout::eColorAttachmentOptimal
                 , {}                                                    // scrAccessMask (No need to wait for previous operations)
                 , vk::AccessFlagBits2::eColorAttachmentWrite            // dstAccessMask
                 , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // srcStage
                 , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // dstStage
-                , vk::ImageAspectFlagBits::eColor
-            );
-
-            // Transition the multisampled color image to COLOR_ATTACHMENT_OPTIMAL
-            transition_image_layout(
-                  *colorImage
-                , vk::ImageLayout::eUndefined
-                , vk::ImageLayout::eColorAttachmentOptimal
-                , vk::AccessFlagBits2::eColorAttachmentWrite
-                , vk::AccessFlagBits2::eColorAttachmentWrite
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput
-                , vk::ImageAspectFlagBits::eColor
-            );
-
-            // Transition depth image to DEPTH_ATTACHMENT_OPTIMAL
-            transition_image_layout(
-                  *depthImage
-                , vk::ImageLayout::eUndefined
-                , vk::ImageLayout::eDepthAttachmentOptimal
-                , vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-                , vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-                , vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests
-                , vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests
-                , vk::ImageAspectFlagBits::eDepth
             );
 
             vk::ClearValue                  clearColor      = vk::ClearColorValue(  0.0f
@@ -1580,30 +1541,13 @@ class ComputeShaderApplication
                                                                                   , 0.0f
                                                                                   , 1.0f);
 
-            vk::ClearValue                  clearDepth      = vk::ClearDepthStencilValue(  1.0f
-                                                                                         , 0);
-
-            // Color attachment (multisampled) with resolve attachment
-            vk::RenderingAttachmentInfo     colorAttachment =
+            vk::RenderingAttachmentInfo     attachmentInfo  =
             {
-                  .imageView                                = colorImageView
+                  .imageView                                = swapChainImageViews[imageIndex]
                 , .imageLayout                              = vk::ImageLayout::eColorAttachmentOptimal
-                , .resolveMode                              = vk::ResolveModeFlagBits::eAverage
-                , .resolveImageView                         = swapChainImageViews[imageIndex]
-                , .resolveImageLayout                       = vk::ImageLayout::eColorAttachmentOptimal
-                , .loadOp                                   = vk::AttachmentLoadOp::eClear
-                , .storeOp                                  = vk::AttachmentStoreOp::eStore
-                , .clearValue                               = clearColor
-            };
-
-            // Depth attachment
-            vk::RenderingAttachmentInfo     depthAttachment =
-            {
-                  .imageView                                = depthImageView
-                , .imageLayout                              = vk::ImageLayout::eDepthAttachmentOptimal
-                , .loadOp                                   = vk::AttachmentLoadOp::eClear
-                , .storeOp                                  = vk::AttachmentStoreOp::eDontCare
-                , .clearValue                               = clearDepth
+		, .loadOp                                   = vk::AttachmentLoadOp::eClear
+		, .storeOp                                  = vk::AttachmentStoreOp::eStore
+		, .clearValue                               = clearColor
             };
 
             vk::RenderingInfo               renderingInfo   = 
@@ -1615,8 +1559,7 @@ class ComputeShaderApplication
                   }
                 , .layerCount                               = 1
                 , .colorAttachmentCount                     = 1
-                , .pColorAttachments                        = &colorAttachment
-                , .pDepthAttachment                         = &depthAttachment
+                , .pColorAttachments                        = &attachmentInfo
             };
 
             commandBuffer.beginRendering(renderingInfo);
@@ -1638,22 +1581,12 @@ class ComputeShaderApplication
                                      , swapChainExtent));
 
             commandBuffer.bindVertexBuffers(  0
-                                            , *vertexBuffer
-                                            , {0});
+                                            , {shaderStorageBuffers[frameIndex]}
+                                            , {0}
+					    );
 
-            commandBuffer.bindIndexBuffer(  *indexBuffer
-                                          , 0
-                                          , vk::IndexType::eUint32);
-
-            commandBuffer.bindDescriptorSets(  vk::PipelineBindPoint::eGraphics
-                                             , pipelineLayout
-                                             , 0
-                                             , *descriptorSets[frameIndex]
-                                             , nullptr);
-
-            commandBuffer.drawIndexed(  indices.size()
+            commandBuffer.draw(  PARTICLE_COUNT
                                       , 1
-                                      , 0
                                       , 0
                                       , 0);
             
@@ -1661,14 +1594,13 @@ class ComputeShaderApplication
 
             // After rendering, transition the swapchain image to PRESENT_SRC
             transition_image_layout(
-                  swapChainImages[imageIndex]
+                  imageIndex
                 , vk::ImageLayout::eColorAttachmentOptimal
                 , vk::ImageLayout::ePresentSrcKHR
                 , vk::AccessFlagBits2::eColorAttachmentWrite            // srcAccessMask
                 , {}                                                    // dstAccessMask
                 , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // srcStage
                 , vk::PipelineStageFlagBits2::eBottomOfPipe             // dstStage
-                , vk::ImageAspectFlagBits::eColor
             );
             commandBuffer.end();
         }
