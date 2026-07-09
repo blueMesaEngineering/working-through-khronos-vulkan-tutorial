@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments
+CMAKE_SOURCE_DIR = /home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments
+CMAKE_BINARY_DIR = /home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -152,9 +152,9 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments/CMakeFiles /home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments/CMakeFiles /home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -1038,6 +1038,45 @@ depend:
 30_multisampling_slang_shader/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/30_multisampling_slang_shader.dir/build.make CMakeFiles/30_multisampling_slang_shader.dir/build
 .PHONY : 30_multisampling_slang_shader/fast
+
+#=============================================================================
+# Target rules for targets named 31_computeShader
+
+# Build rule for target.
+31_computeShader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 31_computeShader
+.PHONY : 31_computeShader
+
+# fast build rule for target.
+31_computeShader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/31_computeShader.dir/build.make CMakeFiles/31_computeShader.dir/build
+.PHONY : 31_computeShader/fast
+
+#=============================================================================
+# Target rules for targets named 31_computeShader_shader
+
+# Build rule for target.
+31_computeShader_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 31_computeShader_shader
+.PHONY : 31_computeShader_shader
+
+# fast build rule for target.
+31_computeShader_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/31_computeShader_shader.dir/build.make CMakeFiles/31_computeShader_shader.dir/build
+.PHONY : 31_computeShader_shader/fast
+
+#=============================================================================
+# Target rules for targets named 31_computeShader_slang_shader
+
+# Build rule for target.
+31_computeShader_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 31_computeShader_slang_shader
+.PHONY : 31_computeShader_slang_shader
+
+# fast build rule for target.
+31_computeShader_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/31_computeShader_slang_shader.dir/build.make CMakeFiles/31_computeShader_slang_shader.dir/build
+.PHONY : 31_computeShader_slang_shader/fast
 
 #=============================================================================
 # Target rules for targets named tinyobjloader
@@ -2192,6 +2231,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/30_multisampling.dir/build.make CMakeFiles/30_multisampling.dir/30_multisampling.cpp.s
 .PHONY : 30_multisampling.cpp.s
 
+31_computeShader.o: 31_computeShader.cpp.o
+.PHONY : 31_computeShader.o
+
+# target to build an object file
+31_computeShader.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/31_computeShader.dir/build.make CMakeFiles/31_computeShader.dir/31_computeShader.cpp.o
+.PHONY : 31_computeShader.cpp.o
+
+31_computeShader.i: 31_computeShader.cpp.i
+.PHONY : 31_computeShader.i
+
+# target to preprocess a source file
+31_computeShader.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/31_computeShader.dir/build.make CMakeFiles/31_computeShader.dir/31_computeShader.cpp.i
+.PHONY : 31_computeShader.cpp.i
+
+31_computeShader.s: 31_computeShader.cpp.s
+.PHONY : 31_computeShader.s
+
+# target to generate assembly for a file
+31_computeShader.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/31_computeShader.dir/build.make CMakeFiles/31_computeShader.dir/31_computeShader.cpp.s
+.PHONY : 31_computeShader.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -2244,6 +2307,8 @@ help:
 	@echo "... 29_mipmapping_slang_shader"
 	@echo "... 30_multisampling_shader"
 	@echo "... 30_multisampling_slang_shader"
+	@echo "... 31_computeShader_shader"
+	@echo "... 31_computeShader_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -2302,6 +2367,7 @@ help:
 	@echo "... 28_modelLoading"
 	@echo "... 29_mipmapping"
 	@echo "... 30_multisampling"
+	@echo "... 31_computeShader"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -2393,6 +2459,9 @@ help:
 	@echo "... 30_multisampling.o"
 	@echo "... 30_multisampling.i"
 	@echo "... 30_multisampling.s"
+	@echo "... 31_computeShader.o"
+	@echo "... 31_computeShader.i"
+	@echo "... 31_computeShader.s"
 .PHONY : help
 
 

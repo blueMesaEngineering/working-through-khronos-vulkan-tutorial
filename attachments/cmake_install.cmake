@@ -1,4 +1,4 @@
-# Install script for directory: /home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments
+# Install script for directory: /home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -44,28 +44,28 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments/_deps/tinyobjloader-build/cmake_install.cmake")
+  include("/home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments/_deps/tinyobjloader-build/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments/_deps/nlohmann_json-build/cmake_install.cmake")
+  include("/home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments/_deps/nlohmann_json-build/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments/_deps/tinygltf-build/cmake_install.cmake")
+  include("/home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments/_deps/tinygltf-build/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments/_deps/ktx-build/cmake_install.cmake")
+  include("/home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments/_deps/ktx-build/cmake_install.cmake")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments/install_local_manifest.txt"
+  file(WRITE "/home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()
 if(CMAKE_INSTALL_COMPONENT)
@@ -81,6 +81,6 @@ else()
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/home/nik/Code/Vulkan/WorkingThroughKhronosOfficialVulkanTutorial/working-through-khronos-vulkan-tutorial/attachments/${CMAKE_INSTALL_MANIFEST}"
+  file(WRITE "/home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

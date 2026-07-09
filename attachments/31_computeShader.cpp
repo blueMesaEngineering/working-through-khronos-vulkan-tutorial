@@ -47,9 +47,9 @@ constexpr bool enableValidationLayers = true;
 struct UniformBufferObject
 {
     float                           deltaTime               = 1.0f;
-}
+};
 
-struct Vertex
+struct Particle
 {
     glm::vec2 position;
     glm::vec2 velocity;
@@ -133,9 +133,12 @@ class ComputeShaderApplication
         vk::raii::PipelineLayout                pipelineLayout              = nullptr;
         vk::raii::Pipeline                      graphicsPipeline            = nullptr;
         
-        vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
+        vk::raii::DescriptorSetLayout           computeDescriptorSetLayout  = nullptr;
         vk::raii::PipelineLayout                computePipelineLayout       = nullptr;
         vk::raii::Pipeline                      computePipeline             = nullptr;
+
+        std::vector<vk::raii::Buffer>           shaderStorageBuffers;
+        std::vector<vk::raii::DeviceMemory>     shaderStorageBuffersMemory;
         
         std::vector<vk::raii::Buffer>           uniformBuffers;
         std::vector<vk::raii::DeviceMemory>     uniformBuffersMemory;
@@ -575,7 +578,7 @@ class ComputeShaderApplication
             // Check if the physicalDevice supports the required features
             auto features                   = physicalDevice.template getFeatures2<  vk::PhysicalDeviceFeatures2
                                                                                    , vk::PhysicalDeviceVulkan13Features
-                                                                                   , vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>
+                                                                                   , vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
                                                                                    , vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR>();
             bool supportsRequiredFeatures   =    features.template get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy 
                                               && features.template get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering 
@@ -679,7 +682,7 @@ class ComputeShaderApplication
                             .extendedDynamicState           = true
                         }                                           // vk::PhysicalDeviceExtendedDynamicsStateFeaturesEXT
                     , {
-                        timelineSemaphore                   = true
+                            .timelineSemaphore              = true
                     }
                 };
 
@@ -1077,7 +1080,7 @@ class ComputeShaderApplication
                 float                       r               = 0.25f * sqrtf(rndDist(rndEngine));
                 float                       theta           = rndDist(rndEngine) * 2.0f * 3.14149265358979323846f;
                 float                       x               = r * cosf(theta) * HEIGHT / WIDTH;
-                float                       Yes             = r * sinf(theta);
+                float                       y               = r * sinf(theta);
                 
                 particle.position                           = glm::vec2(x, y);
                 particle.velocity                           = normalize(glm::vec2(x, y)) * 0.00025f;
@@ -1093,7 +1096,7 @@ class ComputeShaderApplication
 
             // Create a staging bufer used to upload data to the gpu
             vk::raii::Buffer            stagingBuffer({});
-            vk::raii::DeviceMemory      staginBufferMemory({});
+            vk::raii::DeviceMemory      stagingBufferMemory({});
 
             createBuffer(  bufferSize
                          , vk::BufferUsageFlagBits::eTransferSrc
@@ -1110,7 +1113,7 @@ class ComputeShaderApplication
                     , (size_t) bufferSize
                     );
 
-            staginBufferMemory.unmapMemory();
+            stagingBufferMemory.unmapMemory();
 
             shaderStorageBuffers.clear();
             shaderStorageBuffersMemory.clear();
@@ -1362,9 +1365,9 @@ class ComputeShaderApplication
 
         vk::raii::CommandBuffer beginSingleTimeCommands() const
         {
-            vk::CommandBufferAllocateInfo   allocInfo{}
+            vk::CommandBufferAllocateInfo   allocInfo{};
 
-            allocInfo.commandPool                           = commandPool;
+            allocInfo.commandPool                           = *commandPool;
             allocInfo.level                                 = vk::CommandBufferLevel::ePrimary;
             allocInfo.commandBufferCount                    = 1;
 		    vk::raii::CommandBuffer         commandBuffer	= std::move(vk::raii::CommandBuffers(device, allocInfo).front());
@@ -1395,7 +1398,8 @@ class ComputeShaderApplication
         {
             commandBuffer.end();
 
-            vk::SubmitInfo                  submitInfo{}
+            vk::SubmitInfo                  submitInfo{};
+
 	        submitInfo.commandBufferCount                   = 1;
             submitInfo.pCommandBuffers                      = &*commandBuffer;
 
@@ -1478,7 +1482,8 @@ class ComputeShaderApplication
         void createCommandBuffers()
         {
             commandBuffers.clear();
-            vk::CommandBufferAllocateInfo allocInfo{}
+            vk::CommandBufferAllocateInfo allocInfo{};
+
             allocInfo.commandPool                           = *commandPool;
             allocInfo.level                                 = vk::CommandBufferLevel::ePrimary;
             allocInfo.commandBufferCount                    = MAX_FRAMES_IN_FLIGHT;
@@ -1707,8 +1712,8 @@ class ComputeShaderApplication
 
 		vk::SemaphoreTypeCreateInfo	    semaphoreType
 		{
-			  .semaphoreType				                = vk::Semaphoretype::eTimeline
-			, initialValue				                    = 0
+			  .semaphoreType				                = vk::SemaphoreType::eTimeline
+			, .initialValue				                    = 0
 		};
 		
 		semaphore					                        = vk::raii::Semaphore(  device
@@ -1793,7 +1798,7 @@ class ComputeShaderApplication
                 {
                       .waitSemaphoreValueCount		        = 1
                     , .pWaitSemaphoreValues			        = &computeWaitValue
-                    , .signalSemaphoreValueCout		        = 1
+                    , .signalSemaphoreValueCount	        = 1
                     , .pSignalSemaphoreValues		        = &computeSignalValue
                 };
                 
@@ -1872,7 +1877,7 @@ class ComputeShaderApplication
                     , .swapchainCount			            = 1
                     , .pSwapchains				            = &*swapChain
                     , .pImageIndices			            = &imageIndex
-                }
+                };
 
                 result = queue.presentKHR(presentInfo);
 
