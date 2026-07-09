@@ -8,6 +8,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <vector>
 
@@ -39,16 +40,16 @@ const std::string                   MODEL_PATH              = "models/viking_roo
 const std::string                   TEXTURE_PATH            = "textures/viking_room.png";
 constexpr int                       MAX_FRAMES_IN_FLIGHT    = 2;
 
-const std::vector<char const *> validationLayers = 
-{
-    "VK_LAYER_KHRONOS_validation"
-};
+// Validation layers are now managed by vulkanconfig instead of being hard-coded
+// See the Ecosystem Utilities chapter for details on using vulkanconfig
 
-#ifdef NDEBUG
-constexpr bool enableValidationLayers = false;
-#else
-constexpr bool enableValidationLayers = true;
-#endif
+// Application info structure to store feature support flags
+struct AppInfo
+{
+    bool            dynamicRenderingSupported               = false;
+    bool            timelineSemaphoresSupported             = false;
+    bool            synchronization2Supported               = false;
+};
 
 struct Vertex
 {
@@ -157,6 +158,9 @@ class HelloTriangleApplication
         }
 
     private:
+        AppInfo                                 appInfo;
+
+        // Initial set up and swapchain
         GLFWwindow                              *window                     = nullptr;
         vk::raii::Context                       context;
         vk::raii::Instance                      instance                    = nullptr;
@@ -173,24 +177,33 @@ class HelloTriangleApplication
         vk::Extent2D                            swapChainExtent;
         std::vector<vk::raii::ImageView>        swapChainImageViews;
 
+        // Traditional render pass (fallback for non-dynamic rendering)
+        vk::raii::RenderPass                    renderPass                  = nullptr;
+        std::vectore<vk::raii::Framebuffer>     swapChainFramebuffers;
+        
+        // Descriptor sets and pipeline
         vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
         vk::raii::PipelineLayout                pipelineLayout              = nullptr;
         vk::raii::Pipeline                      graphicsPipeline            = nullptr;
 
+        // Color management
         vk::raii::Image                         colorImage                  = nullptr;
         vk::raii::DeviceMemory                  colorImageMemory            = nullptr;
         vk::raii::ImageView                     colorImageView              = nullptr;
 
+        // Depth management
         vk::raii::Image                         depthImage                  = nullptr;
         vk::raii::DeviceMemory                  depthImageMemory            = nullptr;
         vk::raii::ImageView                     depthImageView              = nullptr;
 
+        // Mipmapping
         uint32_t                                mipLevels                   = 0;
         vk::raii::Image                         textureImage                = nullptr;
         vk::raii::DeviceMemory                  textureImageMemory          = nullptr;
         vk::raii::ImageView                     textureImageView            = nullptr;
         vk::raii::Sampler                       textureSampler              = nullptr;
 
+        // Vertices
         std::vector<Vertex>                     vertices;
         std::vector<uint32_t>                   indices;
         vk::raii::Buffer                        vertexBuffer                = nullptr;
@@ -198,23 +211,30 @@ class HelloTriangleApplication
         vk::raii::Buffer                        indexBuffer                 = nullptr;
         vk::raii::DeviceMemory                  indexBufferMemory           = nullptr;
 
+        // Uniform buffers
         std::vector<vk::raii::Buffer>           uniformBuffers;
         std::vector<vk::raii::DeviceMemory>     uniformBuffersMemory;
         std::vector<void *>                     uniformBuffersMapped;
 
+        // Descriptor pool
         vk::raii::DescriptorPool                descriptorPool              = nullptr;
         std::vector<vk::raii::DescriptorSet>    descriptorSets;
 
+        // Command pool
         vk::raii::CommandPool                   commandPool                 = nullptr;
         std::vector<vk::raii::CommandBuffer>    commandBuffers;
 
+        // Synchronization objects - Semaphores and fences
         std::vector<vk::raii::Semaphore>        presentCompleteSemaphores;
         std::vector<vk::raii::Semaphore>        renderFinishedSemaphores;
         std::vector<vk::raii::Fence>            inFlightFences;
         uint32_t                                frameIndex                  = 0;
+        vk::raii::Semaphore                     timelineSemaphore           = nullptr;
+        uint64_t                                timelineValue               = 0;
 
         bool framebufferResized                                             = false;
 
+        // Required extensions
         std::vector<const char *>               requiredDeviceExtension     =
         {
               vk::KHRSwapchainExtensionName
@@ -230,6 +250,8 @@ class HelloTriangleApplication
 //                  glfwWindowHint
 //                  glfwWindowHint
 //                  glfwCreateWindow
+//                  glfwSetWindowUserPointer
+//                  glfwSetFramebufferSizeCallback
 //  Called by:      
 //  Description:    Calls glfw functions to initialize a window to be displayed 
 //                  on the screen.
@@ -247,7 +269,7 @@ class HelloTriangleApplication
 
             window = glfwCreateWindow(  WIDTH
                                       , HEIGHT
-                                      , "Vulkan"
+                                      , "Vulkan Compatibility Example"
                                       , nullptr
                                       , nullptr);
 
@@ -269,8 +291,7 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        static void framebufferResizeCallback
-        (
+        static void framebufferResizeCallback(
               GLFWwindow *window
             , int width
             , int height
@@ -290,7 +311,7 @@ class HelloTriangleApplication
 //                  setupDebugMessenger
 //                  createSurface
 //                  pickPhysicalDevice
-//                  getMaxUsableSampleCount
+//                  detectFeatureSupport
 //                  createLogicalDevice
 //                  createSwapChain
 //                  createImageViews
@@ -320,10 +341,18 @@ class HelloTriangleApplication
             setupDebugMessenger();
             createSurface();
             pickPhysicalDevice();
-            msaaSamples = getMaxUsableSampleCount();
+            detectFeatureSupport();
             createLogicalDevice();
             createSwapChain();
             createImageViews();
+
+            // Create tradition render pass if dynamic rendering is not supported
+            if (!appInfo.dynamicRenderingSupported)
+            {
+                createRenderPass();
+                createFramebuffers();
+            }
+
             createDescriptorSetLayout();
             createGraphicsPipeline();
             createCommandPool();
@@ -340,6 +369,13 @@ class HelloTriangleApplication
             createDescriptorSets();
             createCommandBuffers();
             createSyncObjects();
+
+            // Print feature support summary
+
+            std::cout << "\nFeature support summary:\n";
+            std::cout << "- Dynamic Rendering: "    << (appInfo.dynamicRenderingSupported   ? "Yes" : "No") << "\n";
+            std::cout << "- Timeline Semaphores: "  << (appInfo.timelineSemaphoresSupported ? "Yes" : "No") << "\n";
+            std::cout << "- synchronization2: "     << (appInfo.synchronization2Supported   ? "Yes" : "No") << "\n";
         }
         
 
