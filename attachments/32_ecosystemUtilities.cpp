@@ -416,6 +416,7 @@ class HelloTriangleApplication
         
         void cleanupSwapChain()
         {
+            swapChainFramebuffers.clear();
             swapChainImageViews.clear();
             swapChain = nullptr;
         }
@@ -474,6 +475,14 @@ class HelloTriangleApplication
             cleanupSwapChain();
             createSwapChain();
             createImageViews();
+
+            // Recreate traditional render pass and framebuffers if dynamic rendering is not supported
+            if (!appInfo.dynamiceRenderingSupported)
+            {
+                createRenderPass();
+                createFramebuffers();
+            }
+            
             createColorResources();
             createDepthResources();
         }
