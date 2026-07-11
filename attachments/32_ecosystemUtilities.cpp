@@ -1082,7 +1082,7 @@ class HelloTriangleApplication
                                                               | vk::PipelineStageFlagBits::eEarlyFragmentTests
                 , .dstStageMask                             =   vk::PipelineStageFlagBits::eColorAttachmentOutput
                                                               | vk::PipelineStageFlagBits::eEarlyFragmentTests
-                , .srcAccessMask                            = vk::AccessFlagBits::eNone
+                , .srcAccessMask                            =   vk::AccessFlagBits::eNone
                 , .dstAccessMask                            =   vk::AccessFlagBits::eColorAttachmentWrite
                                                               | vk::AccessFlagBits::eDepthStencilAttachmentWrite
             };
