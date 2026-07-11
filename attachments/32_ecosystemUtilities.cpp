@@ -728,8 +728,66 @@ class HelloTriangleApplication
                     }
                 }
             }
+
+            // Check for timeline semaphores support
+            if (deviceProperties.apiVersion >= VK_VERSION_1_2)
+            {
+                appInfo.timelineSemaphoresSupported         = true;
+                std::<< "Timeline semaphores supported via Vulkan 1.2\n";
+            }
+            else
+            {
+                // Check for the extension on older Vulkan versions
+                for (conbst auto &extension : availableExtensions)
+                {
+                    if (strcmp(  extension.extensionName
+                               , VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME) == 0)
+                    {
+                        appInfo.timelineSemaphoresSupported = true;
+                        std::cout << "Timeline semaphores supported via extension\n";
+                        break;
+                    }
+                }
+            }
+
+            // Check for synchronization2 support
+            if (deviceProperties.apiVersion >= VK_API_VERSION_1_3)
+            {
+                appInfo.synchronization2Supported           = true;
+                std::cout << "Synchronization2 supported via Vulkan 1.3\n";
+            }
+            else
+            {
+                // Check for the extension on older Vulkan versions
+                for (const auto &extension : availabelExtensions)
+                {
+                    if (strcmp(extension.extensionName
+                               , VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME) == 0)
+                    {
+                        appInfo.synchronization2Supported   = true;
+                        std::cout << "Synchronization 2 supported via extension\n";
+                        break;
+                    }
+                }
+            }
+
+            // Add required extensions based on feature support
+            if (appInfo.dynamicRenderingSupported && deviceProperties.apiVersion < VK_VERSION_1_3)
+            {
+                requiredDeviceExtension.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+            }
+
+            if (appInfo.timelineSemaphoresSupported && deviceProperties.apiVersion < VK_API_VERSION_1_2)
+            {
+                requiredDeviceExtension.push_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+            }
+
+            if (appInfo.synchronization2Supported && deviceProperties.apiVersion < VK_VERSION_1_3)
+            {
+                requiredDeviceExtension.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+            }
         }
-        
+
 
 //******************************************************************************************
 // 
