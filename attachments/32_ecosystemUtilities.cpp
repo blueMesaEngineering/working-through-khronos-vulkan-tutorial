@@ -503,6 +503,8 @@ class HelloTriangleApplication
 
         void createInstance()
         {
+		    // Validation layers are now managed by vulkanconfig instead of being hard-coded
+
             constexpr vk::ApplicationInfo appInfo
             {
                   .pApplicationName     = "Hello Triangle"
@@ -512,59 +514,14 @@ class HelloTriangleApplication
                 , .apiVersion           = vk::ApiVersion14
             };
 
-            // Get the required layers
-            std::vector<char const *> requiredLayers;
-            if (enableValidationLayers)
-            {
-                requiredLayers.assign(  validationLayers.begin()
-                                      , validationLayers.end());
-            }
-
-            // Check if the required layers are supported by the Vulkan implementation.
-            auto layerProperties    = context.enumerateInstanceLayerProperties();
-            auto unsupportedLayerIt = std::ranges::find_if(  requiredLayers
-                                                           , [&layerProperties](auto const &requiredLayer)
-                                                            {
-                                                                return std::ranges::none_of(  layerProperties
-                                                                                            , [requiredLayer](auto const &layerProperty)
-                                                                                            {
-                                                                                                return strcmp(  layerProperty.layerName
-                                                                                                              , requiredLayer) == 0;
-                                                                                            });
-                                                            });
-            if (unsupportedLayerIt != requiredLayers.end())
-            {
-                throw std::runtime_error("Required layer not supported: " + std::string(*unsupportedLayerIt));
-            }
-
             // Get the required extensions.
-            auto requiredExtensions = getRequiredInstanceExtensions();
-            
-            // Check if the required GLFW extensions are supported by the Vulkan Implementation.
-            auto extensionProperties = context.enumerateInstanceExtensionProperties();
-            auto unsupportedPropertyIt =
-                std::ranges::find_if(  requiredExtensions
-                                     , [&extensionProperties](auto const &requiredExtension)
-                                     {
-                                        return std::ranges::none_of(  extensionProperties
-								                                    , [requiredExtension](auto const &extensionProperty)
-								        {
-                                            return strcmp(  extensionProperty.extensionName
-                                                          , requiredExtension) == 0;
-                                        });
-                                     });
-            if (unsupportedPropertyIt != requiredExtensions.end())
-            {
-                throw std::runtime_error("Required extension not supported: " + std::string(*unsupportedPropertyIt));
-            }            
-            
+            auto extensions = getRequiredInstanceExtensions();
+
             vk::InstanceCreateInfo createInfo
             {
                   .pApplicationInfo         = &appInfo
-                , .enabledLayerCount        = static_cast<uint32_t>(requiredLayers.size())
-                , .ppEnabledLayerNames      = requiredLayers.data()
-                , .enabledExtensionCount    = static_cast<uint32_t>(requiredExtensions.size())
-                , .ppEnabledExtensionNames  = requiredExtensions.data()
+                , .enabledExtensionCount    = static_cast<uint32_t>(extensions.size())
+		        , .ppEnabledExtensionNames  = extensions.data()
             };
             
             instance = vk::raii::Instance(  context
@@ -586,21 +543,36 @@ class HelloTriangleApplication
                     
         void setupDebugMessenger()
         {
-            if (!enableValidationLayers)
-                return;
-
-            vk::DebugUtilsMessageSeverityFlagsEXT   severityFlags(  vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning 
-                                                                  | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
-            vk::DebugUtilsMessageTypeFlagsEXT       messageTypeFlags(  vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral 
-                                                                     | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance 
-                                                                     | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation);
+		// Always set up the debug messenger
+		// It will only be used if validation layers are enabled via vulkanconfig
+		
+            vk::DebugUtilsMessageSeverityFlagsEXT   severityFlags(
+		          vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
+		        | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning 
+		        | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
+		
+            vk::DebugUtilsMessageTypeFlagsEXT       messageTypeFlags(  
+		          vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral 
+                | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance 
+                | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation);
+		
             vk::DebugUtilsMessengerCreateInfoEXT    debugUtilsMessengerCreateInfoEXT
             {
                   .messageSeverity  = severityFlags
                 , .messageType      = messageTypeFlags
                 , .pfnUserCallback  = &debugCallback
             };
-            debugMessenger = instance.createDebugUtilsMessengerEXT(debugUtilsMessengerCreateInfoEXT);
+	    
+            try
+            {
+                debugMessenger = instance.createDebugUtilsMessengerEXT(debugUtilsMessengerCreateInfoEXT);
+            }
+            catch (vk::SystemError &err)
+            {
+                // If the debug utils extension is not available, this will fail.
+                // That's Okay; it just means validation layers aren't enabled.
+                std::count << "Debug messenger not available.  Validation layers may not be enabled." << std::endl;
+            }
         }
         
 
@@ -679,18 +651,9 @@ class HelloTriangleApplication
                                                                     }
                                                                   );
                                     });
-
-            // Check if the physicalDevice supports the required features
-            auto features                   = physicalDevice.template getFeatures2<  vk::PhysicalDeviceFeatures2
-                                                                                   , vk::PhysicalDeviceVulkan11Features
-                                                                                   , vk::PhysicalDeviceVulkan13Features
-                                                                                   , vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
-            bool supportsRequiredFeatures   =    features.template get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy 
-                                              && features.template get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering 
-                                              && features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
-                                              
+                   
             // Return true if the physicalDevice meets all the criteria
-            return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions && supportsRequiredFeatures;
+            return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions;
         }
         
 
@@ -719,7 +682,52 @@ class HelloTriangleApplication
             {
                 throw std::runtime_error("Failed to find a suitable GPU!");
             }
-            physicalDevice = *devIter;
+            
+            physicalDevice                                          = *devIter;
+            msaaSamples                                             = getMaxUsableSampleCount();
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           detectFeatureSupport
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void detectFeatureSupport()
+        {
+            // Get device properties to check Vulkan version
+            vk::PhysicalDeviceProperties deviceProperties   = physicalDevice.getProperties();
+
+            // Get available extensions
+            std::vector<vk::ExtensionProperties>            availableExtensions
+                                                            = physicalDevice.enumerateDeviceExtensionProperties();
+
+            // Check for dynamic rendering support
+            if (deviceProperties.apiVersion >= VK_VERSION_1_3)
+            {
+                appInfo.dynamiceRenderingSupported          = true;
+                std::cout << "Dynamic rendering supported via Vulkan 1.3\n";
+            }
+            else
+            {
+                // Check for the extension on older Vulkan versions
+                for (const auto &extension : available : availableExtensions)
+                {
+                    if (strcmp(  extension.extensionName,
+                               , VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME) == 0)
+                    {
+                        appInfo.dynamicRenderingSupported   = true;
+                        std::cout << "Dynamic rendering supported via extension\n";
+                        break;
+                    }
+                }
+            }
         }
         
 
