@@ -831,28 +831,47 @@ class HelloTriangleApplication
                 throw std::runtime_error("Could not find a queue for graphics and present -> terminating...");
             }
 
-            // Query for Vulkan 1.3 features
-            vk::StructureChain<  vk::PhysicalDeviceFeatures2
-                               , vk::PhysicalDeviceVulkan13Features
-                               , vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>
-                featureChain = 
+            // Create device with appropriate features
+            auto features                                   = physicalDevice.getFeatures2();
+            
+            // Setup feature chain based on detected support
+            void *pNext	                                    = nullptr;
+            
+            // Add dynamic rendering if supported
+            vk::PhysicalDeviceVulkan13Features		        vulkan13Features;
+            vk::PhysicalDeviceDynamicRenderingFeatures	    dynamicRenderingFeatures;
+            
+            if (appInfo.dynamicRenderingSupported)
+            {
+                if (appInfo.synchronization2Supported)
                 {
-                      {
-                            .features = 
-                            {
-                                .samplerAnisotropy = true
-                            }
-                        }                                           // vk::PhysicalDeviceFeatures2
-                    , {  
-                            .synchronization2 = true 
-                          , .dynamicRendering = true
-                        }                                           // vk::PhysicalDeviceVulkan13Features
-                    , {
-                            .extendedDynamicState = true
-                        }                                           // vk::PhysicalDeviceExtendedDynamicsStateFeaturesEXT
-                };
-
-            // Create a device
+                    vulkan13Features.dynamicRendering       = vk::True;
+                    vulkan13Features.synchronization2       = vk::True;
+                    vulkan13Features.pNext		            = pNext;
+                    pNext				                    = &vulkan13Features;
+                }
+                else
+                {
+                    dynamicRenderingFeatures.dynamicRendering 
+                                                            = vk::True;
+                    dynamicRenderingFeatures.pNext		    = pNext;
+                    pNext					                = &dynamicRenderingFeatures;
+                }
+            }
+            
+            // Add timeline semaphores if supported
+            vk::PhysicalDeviceTimelineSemaphoreFeatures	timelineSemaphoreFeatures;
+            if (appInfo.timelineSemaphoresSupported)
+            {
+                timelineSemaphoreFeatures.timelineSemaphore	= vk::True;
+                timelineSemaphoreFeatures.pNext			    = pNext;
+                pNext						                = &timelineSemaphoreFeatures;
+            }
+            
+            features.pNext						            = pNext;
+            
+            // Create a Device
+            
             float                       queuePriority       = 0.5f;
             vk::DeviceQueueCreateInfo   deviceQueueCreateInfo 
             {
@@ -863,18 +882,18 @@ class HelloTriangleApplication
 
             vk::DeviceCreateInfo        deviceCreateInfo 
             {
-                  .pNext                                    = &featureChain.get<vk::PhysicalDeviceFeatures2>()
+                  .pNext                                    = &features
                 , .queueCreateInfoCount                     = 1
                 , .pQueueCreateInfos                        = &deviceQueueCreateInfo
                 , .enabledExtensionCount                    = static_cast<uint32_t>(requiredDeviceExtension.size())
                 , .ppEnabledExtensionNames                  = requiredDeviceExtension.data()
             };
 
-            device          = vk::raii::Device(  physicalDevice
-                                               , deviceCreateInfo);
-            queue           = vk::raii::Queue(  device
-                                              , queueIndex
-                                              , 0);
+            device                                          = vk::raii::Device(  physicalDevice
+                                                                               , deviceCreateInfo);
+            queue                                           = vk::raii::Queue(  device
+                                                                              , queueIndex
+                                                                              , 0);
         }
         
 
@@ -963,6 +982,130 @@ class HelloTriangleApplication
                     , imageViewCreateInfo
                 );
             }
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           createRenderPass
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createRenderPass()
+        {
+            if (appInfo.dynamicRenderingSupported)
+            {
+                // No render pass needed with dynamic rendering
+                std::cout << "Using dynamic rendering, skipping render pass creation\n";
+                return;
+            }
+
+            std::cout << "Creating traditional render pass\n";
+
+            // Color attachment description
+            vk::AttachmentDescription   colorAttachment
+            {
+                  .format                                   = swapChainSurfaceFormat.format
+                , .samples                                  = msaaSamples
+                , .loadOp                                   = vk::AttachmentLoadOp::eClear
+                , .storeOp                                  = vk::AttachmentStoreOp::eStore
+                , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
+                , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
+                , .initialLayout                            = vk::ImageLayout::eUndefined
+                , .finalLayout                              = vk::ImageLayout::eColorAttachmentOptimal
+            };
+
+            vk::AttachmentDescription   depthAttachment
+            {
+                  .format                                   = findDepthFormat()
+                , .samples                                  = msaaSamples
+                , .loadOp                                   = vk::AttachmentLoadOp::eClear
+                , .storeOp                                  = vk::AttachmentStoreOp::eDontCare
+                , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
+                , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
+                , .initialLayout                            = vk::ImageLayout::eUndefined
+                , .finalLayout                              = vk::ImageLayout::eDepthStencilAttachmentOptimal
+            };
+
+            vk::AttachmentDescription   colorAttachmentResolve
+            {
+                  .format                                   = swapChainSurfaceFormat.format
+                , .samples                                  = vk::SampleCountFlagBits::e1
+                , .loadOp                                   = vk::AttachmentLoadOp::eDontCare
+                , .storeOp                                  = vk::AttachmentStoreOp::eStore
+                , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
+                , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
+                , .initialLayout                            = vk::ImageLayout::eUndefined
+                , .finalLayout                              = vk::ImageLayout::ePresentSrcKHR
+            };
+
+            // Subpass references
+            vk::AttachmentReference     colorAttachmentRef
+            {
+                  .attachment                               = 0
+                , .layout                                   = vk::ImageLayout::eColorAttachmentOptimal
+            };
+
+            vk::AttachmentReference     depthAttachmentRef
+            {
+                  .attachment                               = 1
+                , .layout                                   = vk::ImageLayout::eDepthStencilAttachmentOptimal
+            };
+
+            vk::AttachmentReference     colorAttachmentResolveRef
+            {
+                  .attachment                               = 2
+                , .layout                                   = vk::ImageLayout::eColorAttachmentOptimal
+            };
+
+            // Subpass description
+            vk::SubpassDescription      subpass
+            {
+                  .pipelineBindPoint                        = vk::PipelineBindPoint::eGraphics
+                , .colorAttachmentCount                     = 1
+                , .pColorAttachments                        = &colorAttachmentRef
+                , .pResolveAttachments                      = &colorAttachmentResolveRef
+                , .pDepthStencilAttachment                  = &depthAttachmentRef
+            };
+
+            // Dependency to ensure proper image layout transitions
+            vk::SubpassDependency       dependency
+            {
+                  .srcSubpass                               = VK_SUBPASS_EXTERNAL
+                , .dstSubpass                               = 0
+                , .srcStageMask                             =   vk::PipelineStageFlagBits::eColorAttachmentOutput
+                                                              | vk::PipelineStageFlagBits::eEarlyFragmentTests
+                , .dstStageMask                             =   vk::PipelineStageFlagBits::eColorAttachmentOutput
+                                                              | vk::PipelineStageFlagBits::eEarlyFragmentTests
+                , .srcAccessMask                            = vk::AccessFlagBits::eNone
+                , .dstAccessMask                            =   vk::AccessFlagBits::eColorAttachmentWrite
+                                                              | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+            };
+
+            // Create the render pass
+            std::array                  attachments         =
+            {
+                  colorAttachment
+                , depthAttachment
+                , colorAttachmentResolve
+            };
+
+            vk::RenderPassCreateInfo    renderPassInfo
+            {
+                  .attachmentCount                          = static_cast<uint32_t>(attachments.size())
+                , .pAttachments                             = attachments.data()
+                , .subpassCount                             = 1
+                , .pSubpasses                               = &subpass
+                , .dependencyCount                          = 1
+                , .pDependencies                            = &dependency
+            };
+
+            renderPass                                      = vk::raii::RenderPass(device, renderPassInfo);
         }
         
 
