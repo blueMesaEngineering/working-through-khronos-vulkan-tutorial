@@ -1111,6 +1111,54 @@ class HelloTriangleApplication
 
 //******************************************************************************************
 // 
+//  Name:           createFramebuffers
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createFramebuffers()
+        {
+            if (appInfo.dynamicRenderingSupported)
+            {
+                // No framebuffers needed with dynamic rendering
+                std::cout << "Using dynamic rendering, skipping framebuffer creation\n";
+                return;
+            }
+
+            std::cout << "Creating traditional framebuffers\n";
+
+            swapChainFramebuffers.clear();
+
+            for (size_t i = 0; i < swapChainImageViews.size(); i++)
+            {
+                std::array                  attachments     =
+                {
+                      *colorImageView
+                    , *depthImageView
+                    , *swapChainImageViews[i]
+                };
+
+                vk::FramebufferCreateInfo   framebufferInfo =
+                {
+                      .renderPass                           = *renderPass
+                    , .attachmentCount                      = static_cast<uint32_t>(attachments.size())
+                    , .pAttachments                         = attachments.data()
+                    , .width                                = swapChainExtent.width
+                    , .height                               = swapChainExtent.height
+                    , .layers                               = 1
+                };
+
+                swapChainFramebuffers.emplace_back(device, framebufferInfo);
+            }
+        }
+
+
+//******************************************************************************************
+// 
 //  Name:           createDescriptorSetLayout
 //  Arguments:      N/A
 //  Returns:        void
@@ -1274,9 +1322,7 @@ class HelloTriangleApplication
             };
 
             pipelineLayout                                  = vk::raii::PipelineLayout(  device
-                                                                                   , pipelineLayoutInfo);
-
-            vk::Format          depthFormat                 = findDepthFormat();
+                                                                                       , pipelineLayoutInfo);
 
             vk::StructureChain<  vk::GraphicsPipelineCreateInfo
                                , vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain =
@@ -1298,15 +1344,26 @@ class HelloTriangleApplication
                 {
                       .colorAttachmentCount                 = 1
                     , .pColorAttachmentFormats              = &swapChainSurfaceFormat.format
-                    , .depthAttachmentFormat                = depthFormat
+                    , .depthAttachmentFormat                = findDepthFormat()
                 }
             };
+	    
+	    if (appInfo.dynamicRenderingSupported)
+	    {
+		    std::cout << "Configuring pipeline for dynamic rendering\n";
+	    }
+	    else
+	    {
+            std::cout << "Configuring pipeline for traditional render pass\n";
+            pipelineCreateInfoChain.unlink<vk::PipelineRenderingCreateInfo>();
+            pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().renderPass = *renderPass;
+	    }
 
             graphicsPipeline = vk::raii::Pipeline(  device
                                                   , nullptr
-                                                  , pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
+                                                  , pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>()
+                                                 );
         }
-        
 
 //******************************************************************************************
 // 
@@ -1945,61 +2002,114 @@ class HelloTriangleApplication
 
         void transitionImageLayout(
               const vk::raii::Image         &image
-            , const vk::ImageLayout               oldLayout
-            , const vk::ImageLayout               newLayout
+            , const vk::ImageLayout         oldLayout
+            , const vk::ImageLayout         newLayout
             , uint32_t                      mipLevels
         )
         {
             const auto                      commandBuffer   = beginSingleTimeCommands();
 
-            vk::ImageMemoryBarrier          barrier         
+            if (appInfo.synchronization2Supported)
             {
-                  .oldLayout                                = oldLayout
-                , .newLayout                                = newLayout
-                , .image                                    = image
-                , .subresourceRange                         = 
+                // Use Synchronization2 API
+                vk::ImageMemoryBarrier2     barrier         
                 {
-                      vk::ImageAspectFlagBits::eColor
-                    , 0
-                    , mipLevels
-                    , 0
-                    , 1
+                      .srcStageMask					        = vk::PipelineStageFlagBits2::eAllCommands
+                    , .dstStageMask					        = vk::PipelineStageFlagBits2::eAllCommands
+                    , .oldLayout                            = oldLayout
+                    , .newLayout                            = newLayout
+                    , .image                                = image
+                    , .subresourceRange                     = 
+                    {
+                          vk::ImageAspectFlagBits::eColor
+                        , 0
+                        , mipLevels
+                        , 0
+                        , 1
+                    }
+                };
+            
+                if (   oldLayout == vk::ImageLayout::eUndefined
+                    && newLayout == vk::ImageLayout::eTransferDstOptimal)
+                {
+                    barrier.srcAccessMask				    = vk::AccessFlagBits2::eNone;
+                    barrier.dstAccessMask				    = vk::AccessFlagBits2::eTransferWrite;
+                    barrier.srcStageMask				    = vk::PipelineStageFlagBits2::eTopOfPipe;
+                    barrier.dstStageMask				    = vk::PipelineStageFlagBits2::eTransfer;
                 }
-            };
-
-            vk::PipelineStageFlags sourceStage;
-            vk::PipelineStageFlags destinationStage;
-
-            if (   oldLayout == vk::ImageLayout::eUndefined 
-                && newLayout == vk::ImageLayout::eTransferDstOptimal)
-            {
-                barrier.srcAccessMask                       = {};
-                barrier.dstAccessMask                       = vk::AccessFlagBits::eTransferWrite;
-
-                sourceStage                                 = vk::PipelineStageFlagBits::eTopOfPipe;
-                destinationStage                            = vk::PipelineStageFlagBits::eTransfer;
-            }
-            else if (   oldLayout == vk::ImageLayout::eTransferDstOptimal
-                     && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
-            {
-                barrier.srcAccessMask                       = vk::AccessFlagBits::eTransferWrite;
-                barrier.dstAccessMask                       = vk::AccessFlagBits::eShaderRead;
-
-                sourceStage                                 = vk::PipelineStageFlagBits::eTransfer;
-                destinationStage                            = vk::PipelineStageFlagBits::eFragmentShader;
+                else if (   oldLayout == vk::ImageLayout::eTransferDstOptimal
+                         && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+                {
+                    barrier.srcAccessMask				    = vk::AccessFlagBits2::eTransferWrite;
+                    barrier.dstAccessMask				    = vk::AccessFlagBits2::eShaderRead;
+                    barrier.srcStageMask				    = vk::PipelineStageFlagBits2::eTransfer;
+                    barrier.dstStageMask				    = vk::PipelineStageFlagBits2::eFragmentShader;
+                }
+                else
+                {
+                    throw std::invalid_argument("Unsupported layout transition!");
+                }
+                
+                vk::DependencyInfo 		    dependencyInfo
+                {
+                      .imageMemoryBarrierCount			    = 1
+                    , .pImageMemoryBarriers				    = &barrier
+                };
+                
+                commandBuffer->pipelineBarrier2(dependencyInfo);
             }
             else
             {
-                throw std::invalid_argument("Unsupported layout transition!");
-            }
+                // Use traditional synchronization API
+                vk::ImageMemoryBarrier	    barrier
+                {
+                      .oldLayout				            = oldLayout
+                    , .newLayout				            = newLayout
+                    , .image				                = image
+                    , .subresourceRange			            =
+                    {
+                          vk::ImageAspectFlagBits::eColor
+                        , 0
+                        , mipLevels
+                        , 0
+                        , 1
+                    }
+                };
+        
+                vk::PipelineStageFlags      sourceStage;
+                vk::PipelineStageFlags      destinationStage;
 
-            commandBuffer->pipelineBarrier(  sourceStage
-                                           , destinationStage
-                                           , {}
-                                           , {}
-                                           , nullptr
-                                           , barrier
-                                          );
+                if (   oldLayout == vk::ImageLayout::eUndefined 
+                    && newLayout == vk::ImageLayout::eTransferDstOptimal)
+                {
+                    barrier.srcAccessMask                   = {};
+                    barrier.dstAccessMask                   = vk::AccessFlagBits::eTransferWrite;
+
+                    sourceStage                             = vk::PipelineStageFlagBits::eTopOfPipe;
+                    destinationStage                        = vk::PipelineStageFlagBits::eTransfer;
+                }
+                else if (   oldLayout == vk::ImageLayout::eTransferDstOptimal
+                         && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+                {
+                    barrier.srcAccessMask                   = vk::AccessFlagBits::eTransferWrite;
+                    barrier.dstAccessMask                   = vk::AccessFlagBits::eShaderRead;
+
+                    sourceStage                             = vk::PipelineStageFlagBits::eTransfer;
+                    destinationStage                        = vk::PipelineStageFlagBits::eFragmentShader;
+                }
+                else
+                {
+                    throw std::invalid_argument("Unsupported layout transition!");
+                }
+
+                commandBuffer->pipelineBarrier(  sourceStage
+                                               , destinationStage
+                                               , {}
+                                               , {}
+                                               , nullptr
+                                               , barrier
+                                               );
+	        }
 
             endSingleTimeCommands(*commandBuffer);
         }
