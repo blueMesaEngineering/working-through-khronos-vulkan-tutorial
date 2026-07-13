@@ -2711,89 +2711,237 @@ class HelloTriangleApplication
         {
             auto &commandBuffer                             = commandBuffers[frameIndex];
             commandBuffer.begin({});
-
-            // Before stargin rendering, transition the swapchain image to vk::ImageLayout::eColorAttachmentOptimal
-            transition_image_layout(
-                  swapChainImages[imageIndex]
-                , vk::ImageLayout::eUndefined
-                , vk::ImageLayout::eColorAttachmentOptimal
-                , {}                                                    // scrAccessMask (No need to wait for previous operations)
-                , vk::AccessFlagBits2::eColorAttachmentWrite            // dstAccessMask
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // srcStage
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // dstStage
-                , vk::ImageAspectFlagBits::eColor
-            );
-
-            // Transition the multisampled color image to COLOR_ATTACHMENT_OPTIMAL
-            transition_image_layout(
-                  *colorImage
-                , vk::ImageLayout::eUndefined
-                , vk::ImageLayout::eColorAttachmentOptimal
-                , vk::AccessFlagBits2::eColorAttachmentWrite
-                , vk::AccessFlagBits2::eColorAttachmentWrite
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput
-                , vk::ImageAspectFlagBits::eColor
-            );
-
-            // Transition depth image to DEPTH_ATTACHMENT_OPTIMAL
-            transition_image_layout(
-                  *depthImage
-                , vk::ImageLayout::eUndefined
-                , vk::ImageLayout::eDepthAttachmentOptimal
-                , vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-                , vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-                , vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests
-                , vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests
-                , vk::ImageAspectFlagBits::eDepth
-            );
-
+	    
             vk::ClearValue                  clearColor      = vk::ClearColorValue(  0.0f
                                                                                   , 0.0f
                                                                                   , 0.0f
-                                                                                  , 1.0f);
+                                                                                  , 1.0f
+										  );
 
             vk::ClearValue                  clearDepth      = vk::ClearDepthStencilValue(  1.0f
-                                                                                         , 0);
+                                                                                         , 0
+											 );
+	
+	std::array<vk::ClearValue, 2> clearValues = 
+	{
+		clearColor
+		, clearDepth
+	};
+	
+	if (appInfo.dynamicRenderingSupported)
+	{
+		// Transition attachments to the correct layout
+		if (appInfo.synchronization2Supported)
+		{
+			// Use Synchronization2 API for image transitions
+			vk::ImageMemoryBarrier2 colorBarrier
+			{
+				.srcStageMask			= vk::PipelineStageFlagBits2::eColorAttachmentOutput
+				, .srcAccessMask		= vk::AccessFlagBits2::eColorAttachmentWrite
+				, .dstStageMask			= vk::PipelineStageFlagBits2::eColorAttachmentOutput
+				, .dstAccessMask		= vk::AccessFlagBits2::eColorAttachmentWrite
+				, .oldLayout			= vk::ImageLayout::eUndefined
+				, .newLayout			= vk::ImageLayout::eColorAttachmentOptimal
+				, .image			= *colorImage
+				, .subresourceRange		=
+				{
+					vk::ImageAspectFlagBits::eColor
+					, 0
+					, 1
+					, 0
+					, 1
+				}
+			};
 
-            // Color attachment (multisampled) with resolve attachment
-            vk::RenderingAttachmentInfo     colorAttachment =
-            {
-                  .imageView                                = colorImageView
-                , .imageLayout                              = vk::ImageLayout::eColorAttachmentOptimal
-                , .resolveMode                              = vk::ResolveModeFlagBits::eAverage
-                , .resolveImageView                         = swapChainImageViews[imageIndex]
-                , .resolveImageLayout                       = vk::ImageLayout::eColorAttachmentOptimal
-                , .loadOp                                   = vk::AttachmentLoadOp::eClear
-                , .storeOp                                  = vk::AttachmentStoreOp::eStore
-                , .clearValue                               = clearColor
-            };
+			vk::ImageMemoryBarrier2		depthBarrier
+			{
+				.srcStageMask			=   vk::PipelineStageFlagBits2::eEarlyFragmentTests
+								  | vk::PipelineStageFlagBits2::eLateFragmentTests
+				, .srcAccessMask		= vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+				, .dstStageMask			= vk::PipelineStageFlagBits2::eEarlyFragmentTests
+								  | vk::PipelineStageFlagBits2::eLateFragmentTests
+				, .dstAccessMask		= vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+				, .oldLayout			= vk::ImageLayout::eUndefined
+				, .newLayout			= vk::ImageLayout::eDepthStencilAttachmentOptimal
+				, .image			= *depthImage
+				, .subresourceRange		= 
+				{
+					vk::ImageAspectFlagBits::eDepth
+					, 0
+					, 1
+					, 0
+					, 1
+				}
+			};
 
-            // Depth attachment
-            vk::RenderingAttachmentInfo     depthAttachment =
-            {
-                  .imageView                                = depthImageView
-                , .imageLayout                              = vk::ImageLayout::eDepthAttachmentOptimal
-                , .loadOp                                   = vk::AttachmentLoadOp::eClear
-                , .storeOp                                  = vk::AttachmentStoreOp::eDontCare
-                , .clearValue                               = clearDepth
-            };
+			vk::ImageMemoryBarrier2		swapchainBarrier
+			{
+				.srcStageMask			= vk::PipelineStageFlagBits2::eColorAttachmentOutput
+				, .srcAccessMask		= vk::AccessFlagBits2::eNone
+				, .dstStageMask			= vk::PipelineStageFlagBits2::eColorAttachmentOutput
+				, .dstAccessMask		= vk::AccessFlagBits2::eColorAttachmentWrite
+				, .oldLayout			= vk::ImageLayout::eUndefined
+				, .newLayout			= vk::ImageLayout::eColorAttachmentOptimal
+				, .image			= swapChainImages[imageIndex]
+				, .subresourceRange		= 
+				{
+					vk::ImageAspectFlagBits::eColor
+					, 0
+					, 1
+					, 0
+					, 1
+					}
+				};
+				
+				std::array<vk::ImageMemoryBarrier2, 3> barriers	= 
+				{
+					colorBarrier
+					, depthBarrier
+					, swapchainBarrier
+				};
+				
+				vk::DependencyInfo		dependencyInfo
+				{
+					.imageMemoryBarrierCount	= static_cast<uint32_t>(barriers.size())
+					, .pImageMemoryBarriers		= barriers.data()
+				};
+				
+				commandBuffer.pipelineBarrier2(dependencyInfo);
+			}
+			else
+			{
+				// Use traditional synchronization API
+				vk::ImageMemoryBarrier	colorBarrier
+				{
+					.srcAccessMask			= vk::AccessFlagBits::eNone
+					, .dstAccessMask		= vk::AccessFlagBits::eColorAttachmentWrite
+					, .oldLayout			= vk::ImageLayout::eUndefined
+					, .newLayout			= vk::ImageLayout::eColorAttachmentOptimal
+					, .srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
+					, .dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
+					, .image			= *colorImage
+					, .subresourceRange		= 
+					{
+						vk::ImageAspectFlagBits::eColor
+						, 0
+						, 1
+						, 0
+						, 1
+					}
+				};
+				
+				vk::ImageMemoryBarrier		depthBarrier
+				{
+					.srcAccessMask			= vk::AccessFlagBits::eNone
+					, .dstAccessMask		= vk::AccessFlagBits::eDepthStencilAttachmentWrite
+					, .oldLayout			= vk::ImageLayout::eUndefined
+					, .newLayout			= vk::ImageLayout::eDepthStencilAttachmentOptimal
+					, .srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
+					, .dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
+					, .image			= *depthImage
+					, .subresourceRange		= 
+					{
+						vk::ImageAspectFlagBits::eDepth
+						, 0
+						, 1
+						, 0
+						, 1
+					}
+				};
+				
+				vk::ImageMemoryBarrier		swapchainBarrier
+				{
+					.srcAccessMask			= vk::AccessFlagBits::eNone
+					, .dstAccessMask		= vk::AccessFlagBits::eColorAttachmentWrite
+					, .oldLayout			= vk::ImageLayout::eUndefined
+					, .newLayout			= vk::ImageLayout::eColorAttachmentOptimal
+					, .srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
+					, .dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
+					, .image			= swapChainImage[imageIndex]
+					, .subresourceRange		= 
+					{
+						vk::ImageAspectFlagBits::eColor
+						, 0
+						, 1
+						, 0
+						, 1
+					}
+				};
 
-            vk::RenderingInfo               renderingInfo   = 
-            {
-                  .renderArea                               = 
-                  {
-                      .offset                               = {0, 0}
-                    , .extent                               = swapChainExtent
-                  }
-                , .layerCount                               = 1
-                , .colorAttachmentCount                     = 1
-                , .pColorAttachments                        = &colorAttachment
-                , .pDepthAttachment                         = &depthAttachment
-            };
+				std::array<vk::ImageMemoryBarrier, 3> barriers =
+				{
+					colorBarrier
+					, depthBarrier
+					, swapchainBarrier
+				};
+				
+				commandBuffer.pipelineBarrier(
+					vk::PipelineStageFlagBits::eTopOfPipe
+					, vk::PipelineStageFlagBits::eColorAttachmentOutput
+						| vk::PipelineStageFlagBits::eEarlyFragmentTests
+					, vk::DependencyFlagBits::eByRegion
+					, {}
+					, {}
+					, barriers
+					);
+			}
 
-            commandBuffer.beginRendering(renderingInfo);
+		    // Setup rendering attachments
+		    vk::RenderingAttachmentInfo     colorAttachment
+		    {
+			  .imageView                                = *colorImageView
+			, .imageLayout                              = vk::ImageLayout::eColorAttachmentOptimal
+			, .resolveMode                              = vk::ResolveModeFlagBits::eAverage
+			, .resolveImageView                         = swapChainImageViews[imageIndex]
+			, .resolveImageLayout                       = vk::ImageLayout::eColorAttachmentOptimal
+			, .loadOp                                   = vk::AttachmentLoadOp::eClear
+			, .storeOp                                  = vk::AttachmentStoreOp::eStore
+			, .clearValue                               = clearColor
+		    };
 
+		    vk::RenderingAttachmentInfo     depthAttachment
+		    {
+			  .imageView                                = *depthImageView
+			, .imageLayout                              = vk::ImageLayout::eDepthStencilAttachmentOptimal
+			, .loadOp                                   = vk::AttachmentLoadOp::eClear
+			, .storeOp                                  = vk::AttachmentStoreOp::eDontCare
+			, .clearValue                               = clearDepth
+		    };
+
+		    vk::RenderingInfo               renderingInfo   
+		    {
+			  .renderArea                               = 
+			  {
+					                                {{0, 0}
+									, swapChainExtent
+			  }
+			, .layerCount                               = 1
+			, .colorAttachmentCount                     = 1
+			, .pColorAttachments                        = &colorAttachment
+			, .pDepthAttachment                         = &depthAttachment
+		    };
+
+		    commandBuffer.beginRendering(renderingInfo);
+		}
+		else
+		{
+			// Use traditional render pass
+			std::cout << "Recording command buffer with traditional render pass\n";
+			
+			vk::RenderPassBeginInfo		renderPassInfo
+			{
+				.renderPass				= *renderPass
+				, .frameBuffer				= *swapChainFramebuffers[imageIndex]
+				, .renderArea				= {{0, 0}, swapChainExtent}
+				, .clearValueCount			= static_cast<uint32_t>(clearValues.size())
+				, .pClearValues				= clearValues.data()
+			};
+			
+			commandBuffer.beginRenderPass(  renderPassInfo
+							, vk::SubpassContents::eInline);
+		}
+			
+		// Common rendering commands
             commandBuffer.bindPipeline(  vk::PipelineBindPoint::eGraphics
                                        , *graphicsPipeline);
 
@@ -2808,41 +2956,103 @@ class HelloTriangleApplication
 
             commandBuffer.setScissor(  0
                                      , vk::Rect2D(vk::Offset2D(0, 0)
-                                     , swapChainExtent));
+                                     , swapChainExtent)
+                                    );
 
             commandBuffer.bindVertexBuffers(  0
                                             , *vertexBuffer
-                                            , {0});
+                                            , {0}
+                                        );
 
             commandBuffer.bindIndexBuffer(  *indexBuffer
                                           , 0
-                                          , vk::IndexType::eUint32);
+                                          , vk::IndexType::eUint32
+                                        );
 
             commandBuffer.bindDescriptorSets(  vk::PipelineBindPoint::eGraphics
                                              , pipelineLayout
                                              , 0
                                              , *descriptorSets[frameIndex]
-                                             , nullptr);
+                                             , nullptr
+                                            );
 
             commandBuffer.drawIndexed(  indices.size()
                                       , 1
                                       , 0
                                       , 0
-                                      , 0);
+                                      , 0
+                                    );
             
-            commandBuffer.endRendering();
-
-            // After rendering, transition the swapchain image to PRESENT_SRC
-            transition_image_layout(
-                  swapChainImages[imageIndex]
-                , vk::ImageLayout::eColorAttachmentOptimal
-                , vk::ImageLayout::ePresentSrcKHR
-                , vk::AccessFlagBits2::eColorAttachmentWrite            // srcAccessMask
-                , {}                                                    // dstAccessMask
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // srcStage
-                , vk::PipelineStageFlagBits2::eBottomOfPipe             // dstStage
-                , vk::ImageAspectFlagBits::eColor
-            );
+		if (appInfo.dynamicRenderingSupported)
+		{
+	            commandBuffer.endRendering();
+		    
+		    // Transition swapchain image to present layout
+		    if (appInfo.synchronization2Supported)
+		    {
+			vk::ImageMemoryBarrier2 barrier
+			{
+				.srcStageMask			= vk::PipelineStageFlagBits2::eColorAttachmentOutput
+				, .srcAccessMask			= vk::AccessFlagBits2::eColorAttachmentWrite
+				, .dstStageMask				= vk::PipelineStageFlagBits2::eBottomOfPipe
+				, .dstAccessMask			= vk::AccessFlagBits2::eNone
+				, .oldLayout				= vk::ImageLayout::eColorAttachmentOptimal
+				, .newLayout				= vk::ImageLayout::ePresentSrcKHR
+				, .image				= swapChainImages[imageIndex]
+				, .subresourceRange			= 
+				{
+					vk::ImageAspectFlagBits::eColor
+					, 0
+					, 1
+					, 0
+					, 1
+					}
+				};
+				
+				vk::DependencyInfo	dependencyInfo
+				{
+					.imageMemoryBarrierCount 	= 1
+					, .pImageMemoryBarriers		= &barrier
+				};
+				
+				commandBuffer.pipelineBarrier2(dependencyInfo);
+			}
+			else
+			{
+				vk::ImageMemoryBarrier	barrier
+				{
+					.srcAccessMask			= vk::AccessFlagBits::eColorAttachmentWrite
+					, .dstAccessMask		= vk::AccessFlagBits::eNone
+					, .oldLayout			= vk::ImageLayout::eColorAttachmentOptimal
+					, .newLayout			= vk::ImageLayout::ePresentSrcKHR
+					, .srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
+					, .dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
+					, .image			= swapChainImages[imageIndex]
+					, .subresourceRange		=
+					{
+						vk::ImageAspectFlagBits::eColor
+						, 0
+						, 1
+						, 0
+						, 1
+					}
+				};
+				
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eColorAttachmentOutput
+				, vk::PipelineStageFlagBits::eBottomOfPipe
+				, vk::DependencyFlagBits::eByRegion
+				, {}
+				, {}
+				, {barrier}
+				);
+			}
+		}
+		else
+		{
+			commandBuffer.endRenderPass();
+		}
+				
             commandBuffer.end();
         }
 
