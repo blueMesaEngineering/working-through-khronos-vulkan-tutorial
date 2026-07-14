@@ -3563,7 +3563,7 @@ class HelloTriangleApplication
 
 //******************************************************************************************
 // 
-//  Name:           getRequiredInstanceExtensions
+//  Name:           debugCallback
 //  Arguments:      N/A
 //  Returns:        static VKAPI_ATTR vk::Bool32 VKAPI_CALL
 //  Calls:          
