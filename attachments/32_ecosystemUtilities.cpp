@@ -179,7 +179,7 @@ class HelloTriangleApplication
 
         // Traditional render pass (fallback for non-dynamic rendering)
         vk::raii::RenderPass                    renderPass                  = nullptr;
-        std::vectore<vk::raii::Framebuffer>     swapChainFramebuffers;
+        std::vector<vk::raii::Framebuffer>      swapChainFramebuffers;
         
         // Descriptor sets and pipeline
         vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
@@ -477,7 +477,7 @@ class HelloTriangleApplication
             createImageViews();
 
             // Recreate traditional render pass and framebuffers if dynamic rendering is not supported
-            if (!appInfo.dynamiceRenderingSupported)
+            if (!appInfo.dynamicRenderingSupported)
             {
                 createRenderPass();
                 createFramebuffers();
@@ -571,7 +571,7 @@ class HelloTriangleApplication
             {
                 // If the debug utils extension is not available, this will fail.
                 // That's Okay; it just means validation layers aren't enabled.
-                std::count << "Debug messenger not available.  Validation layers may not be enabled." << std::endl;
+                std::cout << "Debug messenger not available.  Validation layers may not be enabled." << std::endl;
             }
         }
         
@@ -711,15 +711,15 @@ class HelloTriangleApplication
             // Check for dynamic rendering support
             if (deviceProperties.apiVersion >= VK_VERSION_1_3)
             {
-                appInfo.dynamiceRenderingSupported          = true;
+                appInfo.dynamicRenderingSupported           = true;
                 std::cout << "Dynamic rendering supported via Vulkan 1.3\n";
             }
             else
             {
                 // Check for the extension on older Vulkan versions
-                for (const auto &extension : available : availableExtensions)
+                for (const auto &extension : availableExtensions)
                 {
-                    if (strcmp(  extension.extensionName,
+                    if (strcmp(  extension.extensionName
                                , VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME) == 0)
                     {
                         appInfo.dynamicRenderingSupported   = true;
@@ -733,12 +733,12 @@ class HelloTriangleApplication
             if (deviceProperties.apiVersion >= VK_VERSION_1_2)
             {
                 appInfo.timelineSemaphoresSupported         = true;
-                std::<< "Timeline semaphores supported via Vulkan 1.2\n";
+                std::cout << "Timeline semaphores supported via Vulkan 1.2\n";
             }
             else
             {
                 // Check for the extension on older Vulkan versions
-                for (conbst auto &extension : availableExtensions)
+                for (const auto &extension : availableExtensions)
                 {
                     if (strcmp(  extension.extensionName
                                , VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME) == 0)
@@ -759,7 +759,7 @@ class HelloTriangleApplication
             else
             {
                 // Check for the extension on older Vulkan versions
-                for (const auto &extension : availabelExtensions)
+                for (const auto &extension : availableExtensions)
                 {
                     if (strcmp(extension.extensionName
                                , VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME) == 0)
@@ -2709,250 +2709,257 @@ class HelloTriangleApplication
 
         void recordCommandBuffer(uint32_t imageIndex)
         {
-            auto &commandBuffer                             = commandBuffers[frameIndex];
+            auto                            &commandBuffer  = commandBuffers[frameIndex];
             commandBuffer.begin({});
 	    
             vk::ClearValue                  clearColor      = vk::ClearColorValue(  0.0f
                                                                                   , 0.0f
                                                                                   , 0.0f
                                                                                   , 1.0f
-										  );
+										                                          );
 
             vk::ClearValue                  clearDepth      = vk::ClearDepthStencilValue(  1.0f
                                                                                          , 0
-											 );
+											                                            );
 	
-	std::array<vk::ClearValue, 2> clearValues = 
-	{
-		clearColor
-		, clearDepth
-	};
-	
-	if (appInfo.dynamicRenderingSupported)
-	{
-		// Transition attachments to the correct layout
-		if (appInfo.synchronization2Supported)
-		{
-			// Use Synchronization2 API for image transitions
-			vk::ImageMemoryBarrier2 colorBarrier
-			{
-				.srcStageMask			= vk::PipelineStageFlagBits2::eColorAttachmentOutput
-				, .srcAccessMask		= vk::AccessFlagBits2::eColorAttachmentWrite
-				, .dstStageMask			= vk::PipelineStageFlagBits2::eColorAttachmentOutput
-				, .dstAccessMask		= vk::AccessFlagBits2::eColorAttachmentWrite
-				, .oldLayout			= vk::ImageLayout::eUndefined
-				, .newLayout			= vk::ImageLayout::eColorAttachmentOptimal
-				, .image			= *colorImage
-				, .subresourceRange		=
-				{
-					vk::ImageAspectFlagBits::eColor
-					, 0
-					, 1
-					, 0
-					, 1
-				}
-			};
+            std::array<vk::ClearValue, 2>   clearValues     = 
+            {
+                  clearColor
+                , clearDepth
+            };
+            
+            if (appInfo.dynamicRenderingSupported)
+            {
+                // Transition attachments to the correct layout
+                if (appInfo.synchronization2Supported)
+                {
+                    // Use Synchronization2 API for image transitions
+                    vk::ImageMemoryBarrier2 colorBarrier
+                    {
+                          .srcStageMask			            = vk::PipelineStageFlagBits2::eColorAttachmentOutput
+                        , .srcAccessMask		            = vk::AccessFlagBits2::eColorAttachmentWrite
+                        , .dstStageMask	            		= vk::PipelineStageFlagBits2::eColorAttachmentOutput
+                        , .dstAccessMask            		= vk::AccessFlagBits2::eColorAttachmentWrite
+                        , .oldLayout			            = vk::ImageLayout::eUndefined
+                        , .newLayout			            = vk::ImageLayout::eColorAttachmentOptimal
+                        , .image			                = *colorImage
+                        , .subresourceRange		            =
+                            {
+                                  vk::ImageAspectFlagBits::eColor
+                                , 0
+                                , 1
+                                , 0
+                                , 1
+                            }
+                    };
 
-			vk::ImageMemoryBarrier2		depthBarrier
-			{
-				.srcStageMask			=   vk::PipelineStageFlagBits2::eEarlyFragmentTests
-								  | vk::PipelineStageFlagBits2::eLateFragmentTests
-				, .srcAccessMask		= vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-				, .dstStageMask			= vk::PipelineStageFlagBits2::eEarlyFragmentTests
-								  | vk::PipelineStageFlagBits2::eLateFragmentTests
-				, .dstAccessMask		= vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-				, .oldLayout			= vk::ImageLayout::eUndefined
-				, .newLayout			= vk::ImageLayout::eDepthStencilAttachmentOptimal
-				, .image			= *depthImage
-				, .subresourceRange		= 
-				{
-					vk::ImageAspectFlagBits::eDepth
-					, 0
-					, 1
-					, 0
-					, 1
-				}
-			};
+                    vk::ImageMemoryBarrier2 depthBarrier
+                    {
+                          .srcStageMask			            =   vk::PipelineStageFlagBits2::eEarlyFragmentTests
+                                                              | vk::PipelineStageFlagBits2::eLateFragmentTests
+                        , .srcAccessMask		            = vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+                        , .dstStageMask			            = vk::PipelineStageFlagBits2::eEarlyFragmentTests
+                                                              | vk::PipelineStageFlagBits2::eLateFragmentTests
+                        , .dstAccessMask		            = vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+                        , .oldLayout			            = vk::ImageLayout::eUndefined
+                        , .newLayout			            = vk::ImageLayout::eDepthStencilAttachmentOptimal
+                        , .image			                = *depthImage
+                        , .subresourceRange		            = 
+                        {
+                              vk::ImageAspectFlagBits::eDepth
+                            , 0
+                            , 1
+                            , 0
+                            , 1
+                        }
+                    };
 
-			vk::ImageMemoryBarrier2		swapchainBarrier
-			{
-				.srcStageMask			= vk::PipelineStageFlagBits2::eColorAttachmentOutput
-				, .srcAccessMask		= vk::AccessFlagBits2::eNone
-				, .dstStageMask			= vk::PipelineStageFlagBits2::eColorAttachmentOutput
-				, .dstAccessMask		= vk::AccessFlagBits2::eColorAttachmentWrite
-				, .oldLayout			= vk::ImageLayout::eUndefined
-				, .newLayout			= vk::ImageLayout::eColorAttachmentOptimal
-				, .image			= swapChainImages[imageIndex]
-				, .subresourceRange		= 
-				{
-					vk::ImageAspectFlagBits::eColor
-					, 0
-					, 1
-					, 0
-					, 1
-					}
-				};
-				
-				std::array<vk::ImageMemoryBarrier2, 3> barriers	= 
-				{
-					colorBarrier
-					, depthBarrier
-					, swapchainBarrier
-				};
-				
-				vk::DependencyInfo		dependencyInfo
-				{
-					.imageMemoryBarrierCount	= static_cast<uint32_t>(barriers.size())
-					, .pImageMemoryBarriers		= barriers.data()
-				};
-				
-				commandBuffer.pipelineBarrier2(dependencyInfo);
-			}
-			else
-			{
-				// Use traditional synchronization API
-				vk::ImageMemoryBarrier	colorBarrier
-				{
-					.srcAccessMask			= vk::AccessFlagBits::eNone
-					, .dstAccessMask		= vk::AccessFlagBits::eColorAttachmentWrite
-					, .oldLayout			= vk::ImageLayout::eUndefined
-					, .newLayout			= vk::ImageLayout::eColorAttachmentOptimal
-					, .srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
-					, .dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
-					, .image			= *colorImage
-					, .subresourceRange		= 
-					{
-						vk::ImageAspectFlagBits::eColor
-						, 0
-						, 1
-						, 0
-						, 1
-					}
-				};
-				
-				vk::ImageMemoryBarrier		depthBarrier
-				{
-					.srcAccessMask			= vk::AccessFlagBits::eNone
-					, .dstAccessMask		= vk::AccessFlagBits::eDepthStencilAttachmentWrite
-					, .oldLayout			= vk::ImageLayout::eUndefined
-					, .newLayout			= vk::ImageLayout::eDepthStencilAttachmentOptimal
-					, .srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
-					, .dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
-					, .image			= *depthImage
-					, .subresourceRange		= 
-					{
-						vk::ImageAspectFlagBits::eDepth
-						, 0
-						, 1
-						, 0
-						, 1
-					}
-				};
-				
-				vk::ImageMemoryBarrier		swapchainBarrier
-				{
-					.srcAccessMask			= vk::AccessFlagBits::eNone
-					, .dstAccessMask		= vk::AccessFlagBits::eColorAttachmentWrite
-					, .oldLayout			= vk::ImageLayout::eUndefined
-					, .newLayout			= vk::ImageLayout::eColorAttachmentOptimal
-					, .srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
-					, .dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
-					, .image			= swapChainImage[imageIndex]
-					, .subresourceRange		= 
-					{
-						vk::ImageAspectFlagBits::eColor
-						, 0
-						, 1
-						, 0
-						, 1
-					}
-				};
+                    vk::ImageMemoryBarrier2		swapchainBarrier
+                    {
+                          .srcStageMask			            = vk::PipelineStageFlagBits2::eColorAttachmentOutput
+                        , .srcAccessMask		            = vk::AccessFlagBits2::eNone
+                        , .dstStageMask			            = vk::PipelineStageFlagBits2::eColorAttachmentOutput
+                        , .dstAccessMask		            = vk::AccessFlagBits2::eColorAttachmentWrite
+                        , .oldLayout			            = vk::ImageLayout::eUndefined
+                        , .newLayout			            = vk::ImageLayout::eColorAttachmentOptimal
+                        , .image			                = swapChainImages[imageIndex]
+                        , .subresourceRange		            = 
+                            {
+                                  vk::ImageAspectFlagBits::eColor
+                                , 0
+                                , 1
+                                , 0
+                                , 1
+                            }
+                    };
+                    
+                    std::array<vk::ImageMemoryBarrier2, 3> barriers	= 
+                    {
+                          colorBarrier
+                        , depthBarrier
+                        , swapchainBarrier
+                    };
+                    
+                    vk::DependencyInfo		dependencyInfo
+                    {
+                          .imageMemoryBarrierCount	        = static_cast<uint32_t>(barriers.size())
+                        , .pImageMemoryBarriers		        = barriers.data()
+                    };
+                    
+                    commandBuffer.pipelineBarrier2(dependencyInfo);
+                }
+                else
+                {
+                    // Use traditional synchronization API
+                    vk::ImageMemoryBarrier	colorBarrier
+                    {
+                          .srcAccessMask			        = vk::AccessFlagBits::eNone
+                        , .dstAccessMask		            = vk::AccessFlagBits::eColorAttachmentWrite
+                        , .oldLayout			            = vk::ImageLayout::eUndefined
+                        , .newLayout			            = vk::ImageLayout::eColorAttachmentOptimal
+                        , .srcQueueFamilyIndex		        = VK_QUEUE_FAMILY_IGNORED
+                        , .dstQueueFamilyIndex		        = VK_QUEUE_FAMILY_IGNORED
+                        , .image			                = *colorImage
+                        , .subresourceRange		            = 
+                            {
+                                  vk::ImageAspectFlagBits::eColor
+                                , 0
+                                , 1
+                                , 0
+                                , 1
+                            }
+                    };
+                    
+                    vk::ImageMemoryBarrier	depthBarrier
+                    {
+                          .srcAccessMask			        = vk::AccessFlagBits::eNone
+                        , .dstAccessMask		            = vk::AccessFlagBits::eDepthStencilAttachmentWrite
+                        , .oldLayout			            = vk::ImageLayout::eUndefined
+                        , .newLayout			            = vk::ImageLayout::eDepthStencilAttachmentOptimal
+                        , .srcQueueFamilyIndex		        = VK_QUEUE_FAMILY_IGNORED
+                        , .dstQueueFamilyIndex		        = VK_QUEUE_FAMILY_IGNORED
+                        , .image			                = *depthImage
+                        , .subresourceRange		            = 
+                            {
+                                    vk::ImageAspectFlagBits::eDepth
+                                , 0
+                                , 1
+                                , 0
+                                , 1
+                            }
+                    };
+                    
+                    vk::ImageMemoryBarrier	swapchainBarrier
+                    {
+                          .srcAccessMask			        = vk::AccessFlagBits::eNone
+                        , .dstAccessMask		            = vk::AccessFlagBits::eColorAttachmentWrite
+                        , .oldLayout			            = vk::ImageLayout::eUndefined
+                        , .newLayout			            = vk::ImageLayout::eColorAttachmentOptimal
+                        , .srcQueueFamilyIndex		        = VK_QUEUE_FAMILY_IGNORED
+                        , .dstQueueFamilyIndex		        = VK_QUEUE_FAMILY_IGNORED
+                        , .image			                = swapChainImages[imageIndex]
+                        , .subresourceRange		            = 
+                            {
+                                  vk::ImageAspectFlagBits::eColor
+                                , 0
+                                , 1
+                                , 0
+                                , 1
+                            }
+                    };
 
-				std::array<vk::ImageMemoryBarrier, 3> barriers =
-				{
-					colorBarrier
-					, depthBarrier
-					, swapchainBarrier
-				};
-				
-				commandBuffer.pipelineBarrier(
-					vk::PipelineStageFlagBits::eTopOfPipe
-					, vk::PipelineStageFlagBits::eColorAttachmentOutput
-						| vk::PipelineStageFlagBits::eEarlyFragmentTests
-					, vk::DependencyFlagBits::eByRegion
-					, {}
-					, {}
-					, barriers
-					);
-			}
+                    std::array<vk::ImageMemoryBarrier, 3> barriers =
+                    {
+                          colorBarrier
+                        , depthBarrier
+                        , swapchainBarrier
+                    };
+                    
+                    commandBuffer.pipelineBarrier(
+                          vk::PipelineStageFlagBits::eTopOfPipe
+                        , vk::PipelineStageFlagBits::eColorAttachmentOutput
+                            | vk::PipelineStageFlagBits::eEarlyFragmentTests
+                        , vk::DependencyFlagBits::eByRegion
+                        , {}
+                        , {}
+                        , barriers
+                        );
+                }
 
-		    // Setup rendering attachments
-		    vk::RenderingAttachmentInfo     colorAttachment
-		    {
-			  .imageView                                = *colorImageView
-			, .imageLayout                              = vk::ImageLayout::eColorAttachmentOptimal
-			, .resolveMode                              = vk::ResolveModeFlagBits::eAverage
-			, .resolveImageView                         = swapChainImageViews[imageIndex]
-			, .resolveImageLayout                       = vk::ImageLayout::eColorAttachmentOptimal
-			, .loadOp                                   = vk::AttachmentLoadOp::eClear
-			, .storeOp                                  = vk::AttachmentStoreOp::eStore
-			, .clearValue                               = clearColor
-		    };
+                // Setup rendering attachments
+                vk::RenderingAttachmentInfo     colorAttachment
+                {
+                      .imageView                            = *colorImageView
+                    , .imageLayout                          = vk::ImageLayout::eColorAttachmentOptimal
+                    , .resolveMode                          = vk::ResolveModeFlagBits::eAverage
+                    , .resolveImageView                     = swapChainImageViews[imageIndex]
+                    , .resolveImageLayout                   = vk::ImageLayout::eColorAttachmentOptimal
+                    , .loadOp                               = vk::AttachmentLoadOp::eClear
+                    , .storeOp                              = vk::AttachmentStoreOp::eStore
+                    , .clearValue                           = clearColor
+                };
 
-		    vk::RenderingAttachmentInfo     depthAttachment
-		    {
-			  .imageView                                = *depthImageView
-			, .imageLayout                              = vk::ImageLayout::eDepthStencilAttachmentOptimal
-			, .loadOp                                   = vk::AttachmentLoadOp::eClear
-			, .storeOp                                  = vk::AttachmentStoreOp::eDontCare
-			, .clearValue                               = clearDepth
-		    };
+                vk::RenderingAttachmentInfo     depthAttachment
+                {
+                      .imageView                            = *depthImageView
+                    , .imageLayout                          = vk::ImageLayout::eDepthStencilAttachmentOptimal
+                    , .loadOp                               = vk::AttachmentLoadOp::eClear
+                    , .storeOp                              = vk::AttachmentStoreOp::eDontCare
+                    , .clearValue                           = clearDepth
+                };
 
-		    vk::RenderingInfo               renderingInfo   
-		    {
-			  .renderArea                               = 
-			  {
-					                                {{0, 0}
-									, swapChainExtent
-			  }
-			, .layerCount                               = 1
-			, .colorAttachmentCount                     = 1
-			, .pColorAttachments                        = &colorAttachment
-			, .pDepthAttachment                         = &depthAttachment
-		    };
+                vk::RenderingInfo               renderingInfo   
+                {
+                    .renderArea                             = 
+                        {
+                        
+                                {0, 0}
+                            , swapChainExtent
+                        }
+                        , .layerCount                       = 1
+                        , .colorAttachmentCount             = 1
+                        , .pColorAttachments                = &colorAttachment
+                        , .pDepthAttachment                 = &depthAttachment
+                };
 
-		    commandBuffer.beginRendering(renderingInfo);
-		}
-		else
-		{
-			// Use traditional render pass
-			std::cout << "Recording command buffer with traditional render pass\n";
-			
-			vk::RenderPassBeginInfo		renderPassInfo
-			{
-				.renderPass				= *renderPass
-				, .frameBuffer				= *swapChainFramebuffers[imageIndex]
-				, .renderArea				= {{0, 0}, swapChainExtent}
-				, .clearValueCount			= static_cast<uint32_t>(clearValues.size())
-				, .pClearValues				= clearValues.data()
-			};
-			
-			commandBuffer.beginRenderPass(  renderPassInfo
-							, vk::SubpassContents::eInline);
-		}
-			
-		// Common rendering commands
+                commandBuffer.beginRendering(renderingInfo);
+            }
+            else
+            {
+                // Use traditional render pass
+                std::cout << "Recording command buffer with traditional render pass\n";
+                
+                vk::RenderPassBeginInfo		renderPassInfo
+                {
+                      .renderPass				            = *renderPass
+                    , .framebuffer				            = *swapChainFramebuffers[imageIndex]
+                    , .renderArea				            = 
+                        {
+                                {0, 0}
+                            , swapChainExtent
+                        }
+                    , .clearValueCount			            = static_cast<uint32_t>(clearValues.size())
+                    , .pClearValues				            = clearValues.data()
+                };
+                
+                commandBuffer.beginRenderPass(  renderPassInfo
+                                              , vk::SubpassContents::eInline
+                                             );
+            }
+                
+            // Common rendering commands
             commandBuffer.bindPipeline(  vk::PipelineBindPoint::eGraphics
                                        , *graphicsPipeline);
 
             commandBuffer.setViewport(  0
-                                      , vk::Viewport(  0.0f
-                                                     , 0.0f
-                                                     , static_cast<float>(swapChainExtent.width)
-                                                     , static_cast<float>(swapChainExtent.height)
-                                                     , 0.0f
-                                                     , 1.0f)
-                                     );
+                                        , vk::Viewport(  0.0f
+                                                       , 0.0f
+                                                       , static_cast<float>(swapChainExtent.width)
+                                                       , static_cast<float>(swapChainExtent.height)
+                                                       , 0.0f
+                                                       , 1.0f
+                                                      )
+                                      );
 
             commandBuffer.setScissor(  0
                                      , vk::Rect2D(vk::Offset2D(0, 0)
@@ -2962,12 +2969,12 @@ class HelloTriangleApplication
             commandBuffer.bindVertexBuffers(  0
                                             , *vertexBuffer
                                             , {0}
-                                        );
+                                            );
 
             commandBuffer.bindIndexBuffer(  *indexBuffer
                                           , 0
                                           , vk::IndexType::eUint32
-                                        );
+                                         );
 
             commandBuffer.bindDescriptorSets(  vk::PipelineBindPoint::eGraphics
                                              , pipelineLayout
@@ -2981,77 +2988,77 @@ class HelloTriangleApplication
                                       , 0
                                       , 0
                                       , 0
-                                    );
-            
-		if (appInfo.dynamicRenderingSupported)
-		{
-	            commandBuffer.endRendering();
-		    
-		    // Transition swapchain image to present layout
-		    if (appInfo.synchronization2Supported)
-		    {
-			vk::ImageMemoryBarrier2 barrier
-			{
-				.srcStageMask			= vk::PipelineStageFlagBits2::eColorAttachmentOutput
-				, .srcAccessMask			= vk::AccessFlagBits2::eColorAttachmentWrite
-				, .dstStageMask				= vk::PipelineStageFlagBits2::eBottomOfPipe
-				, .dstAccessMask			= vk::AccessFlagBits2::eNone
-				, .oldLayout				= vk::ImageLayout::eColorAttachmentOptimal
-				, .newLayout				= vk::ImageLayout::ePresentSrcKHR
-				, .image				= swapChainImages[imageIndex]
-				, .subresourceRange			= 
-				{
-					vk::ImageAspectFlagBits::eColor
-					, 0
-					, 1
-					, 0
-					, 1
-					}
-				};
-				
-				vk::DependencyInfo	dependencyInfo
-				{
-					.imageMemoryBarrierCount 	= 1
-					, .pImageMemoryBarriers		= &barrier
-				};
-				
-				commandBuffer.pipelineBarrier2(dependencyInfo);
-			}
-			else
-			{
-				vk::ImageMemoryBarrier	barrier
-				{
-					.srcAccessMask			= vk::AccessFlagBits::eColorAttachmentWrite
-					, .dstAccessMask		= vk::AccessFlagBits::eNone
-					, .oldLayout			= vk::ImageLayout::eColorAttachmentOptimal
-					, .newLayout			= vk::ImageLayout::ePresentSrcKHR
-					, .srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
-					, .dstQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED
-					, .image			= swapChainImages[imageIndex]
-					, .subresourceRange		=
-					{
-						vk::ImageAspectFlagBits::eColor
-						, 0
-						, 1
-						, 0
-						, 1
-					}
-				};
-				
-			commandBuffer.pipelineBarrier(
-				vk::PipelineStageFlagBits::eColorAttachmentOutput
-				, vk::PipelineStageFlagBits::eBottomOfPipe
-				, vk::DependencyFlagBits::eByRegion
-				, {}
-				, {}
-				, {barrier}
-				);
-			}
-		}
-		else
-		{
-			commandBuffer.endRenderPass();
-		}
+                                     );
+                
+            if (appInfo.dynamicRenderingSupported)
+            {
+                commandBuffer.endRendering();
+                
+                // Transition swapchain image to present layout
+                if (appInfo.synchronization2Supported)
+                {
+                    vk::ImageMemoryBarrier2 barrier
+                    {
+                          .srcStageMask			            = vk::PipelineStageFlagBits2::eColorAttachmentOutput
+                        , .srcAccessMask			        = vk::AccessFlagBits2::eColorAttachmentWrite
+                        , .dstStageMask				        = vk::PipelineStageFlagBits2::eBottomOfPipe
+                        , .dstAccessMask			        = vk::AccessFlagBits2::eNone
+                        , .oldLayout				        = vk::ImageLayout::eColorAttachmentOptimal
+                        , .newLayout				        = vk::ImageLayout::ePresentSrcKHR
+                        , .image				            = swapChainImages[imageIndex]
+                        , .subresourceRange			        = 
+                            {
+                                vk::ImageAspectFlagBits::eColor
+                                , 0
+                                , 1
+                                , 0
+                                , 1
+                            }
+                    };
+                        
+                        vk::DependencyInfo	dependencyInfo
+                        {
+                              .imageMemoryBarrierCount 	    = 1
+                            , .pImageMemoryBarriers		    = &barrier
+                        };
+                        
+                        commandBuffer.pipelineBarrier2(dependencyInfo);
+                }
+                else
+                {
+                    vk::ImageMemoryBarrier	barrier
+                    {
+                          .srcAccessMask			        = vk::AccessFlagBits::eColorAttachmentWrite
+                        , .dstAccessMask		            = vk::AccessFlagBits::eNone
+                        , .oldLayout			            = vk::ImageLayout::eColorAttachmentOptimal
+                        , .newLayout			            = vk::ImageLayout::ePresentSrcKHR
+                        , .srcQueueFamilyIndex		        = VK_QUEUE_FAMILY_IGNORED
+                        , .dstQueueFamilyIndex		        = VK_QUEUE_FAMILY_IGNORED
+                        , .image			                = swapChainImages[imageIndex]
+                        , .subresourceRange		            =
+                        {
+                              vk::ImageAspectFlagBits::eColor
+                            , 0
+                            , 1
+                            , 0
+                            , 1
+                        }
+                    };
+                    
+                    commandBuffer.pipelineBarrier(
+                          vk::PipelineStageFlagBits::eColorAttachmentOutput
+                        , vk::PipelineStageFlagBits::eBottomOfPipe
+                        , vk::DependencyFlagBits::eByRegion
+                        , {}
+                        , {}
+                        , {barrier}
+                        );
+                }
+            }
+            else
+            {
+                commandBuffer.endRenderPass();
+            }
 				
             commandBuffer.end();
         }
@@ -3126,12 +3133,34 @@ class HelloTriangleApplication
         {
             assert(   presentCompleteSemaphores.empty() 
                    && renderFinishedSemaphores.empty()
-                   && inFlightFences.empty());
+                   && inFlightFences.empty()
+                  );
 
+            if (appInfo.timelineSemaphoresSupported)
+            {
+                // Create timeline semaphore
+                std::cout << "Creatinig timeline semaphores\n";
+                vk::SemaphoreTypeCreateInfo 	timelineCreateInfo
+                {
+                    .semaphoreType		= vk::SemaphoreType::eTimeline
+                    , .initialValue		= 0
+                };
+                
+                vk::SemaphoreCreateInfo		semaphoreInfo
+                {
+                    .pNext		= &timelineCreateInfo
+                };
+                
+                timelineSemaphore		= vk::raii::Semaphore(	device
+                                                              , semaphoreInfo
+                                                             );
+            }
+		
             for (size_t i = 0; i < swapChainImages.size(); i++)
             {
                 renderFinishedSemaphores.emplace_back(  device
-                                                      , vk::SemaphoreCreateInfo());
+                                                      , vk::SemaphoreCreateInfo()
+                                                     );
             }
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -3140,9 +3169,10 @@ class HelloTriangleApplication
                                                        , vk::SemaphoreCreateInfo());
                 inFlightFences.emplace_back(  device
                                             , vk::FenceCreateInfo
-                                            {  
-                                                .flags = vk::FenceCreateFlagBits::eSignaled
-                                            });
+                                                {  
+                                                    .flags = vk::FenceCreateFlagBits::eSignaled
+                                                }
+                                           );
             }
         }
 
@@ -3202,22 +3232,24 @@ class HelloTriangleApplication
         void drawFrame()
         {
             // Note: inFlightFences, presentCompleteSemaphores, and commandBuffers are indexed by frameIndex,
-            //       while renderFinishedSemaphores is index by imageIndex
+            //       while renderFinishedSemaphores is indexed by imageIndex
             auto fenceResult                                =  device.waitForFences(  *inFlightFences[frameIndex]
-                                                                                    , vk::True
-                                                                                    , UINT64_MAX);
+                                                                                     , vk::True
+                                                                                     , UINT64_MAX
+                                                                                    );
             if (fenceResult != vk::Result::eSuccess)
             {
                 throw std::runtime_error("Failed to wait for fence!");
             }
             
             auto [  result
-                , imageIndex] = swapChain.acquireNextImage(  UINT64_MAX
-                    , *presentCompleteSemaphores[frameIndex]
-                    , nullptr);
+                  , imageIndex]                             = swapChain.acquireNextImage(  UINT64_MAX
+                                                                                        , *presentCompleteSemaphores[frameIndex]
+                                                                                        , nullptr
+                                                                                        );
 
             // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
-            // here and does not need to be caugfht by and exception.
+            // here and does not need to be caugfht by an exception.
 
             if (result == vk::Result::eErrorOutOfDateKHR)
             {
@@ -3244,50 +3276,119 @@ class HelloTriangleApplication
             commandBuffers[frameIndex].reset();
             recordCommandBuffer(imageIndex);
 
-            vk::PipelineStageFlags  waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
-
-            const vk::SubmitInfo        submitInfo
+            if (appInfo.timelineSemaphoresSupported)
             {
-                  .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*presentCompleteSemaphores[frameIndex]
-                , .pWaitDstStageMask                        = &waitDestinationStageMask
-                , .commandBufferCount                       = 1
-                , .pCommandBuffers                          = &*commandBuffers[frameIndex]
-                , .signalSemaphoreCount                     = 1
-                , .pSignalSemaphores                        = &*renderFinishedSemaphores[imageIndex]
-            };
-
-            queue.submit(  submitInfo
-                         , *inFlightFences[frameIndex]);
-
-            const vk::PresentInfoKHR    presentInfoKHR
-            {
-                  .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*renderFinishedSemaphores[imageIndex]
-                , .swapchainCount                           = 1
-                , .pSwapchains                              = &*swapChain
-                , .pImageIndices                            = &imageIndex
-            };
-
-            result = queue.presentKHR(presentInfoKHR);
-
-            // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
-            // here and does not need to be caught by an exception.
-
-            if (   (result == vk::Result::eSuboptimalKHR) 
-                || (result == vk::Result::eErrorOutOfDateKHR) 
-                || framebufferResized)
-            {
-                framebufferResized = false;
-                recreateSwapChain();
+                // Use timeline semaphores for GPU synchronization
+                uint64_t	            waitValue	        = timelineValue;
+                uint64_t	            signalValue	        = ++timelineValue;
+                
+                vk::TimelineSemaphoreSubmitInfo	timelineInfo
+                {
+                      .waitSemaphoreValueCount	= 0	// We'll still use binary semaphore for swapchain
+                    , .signalSemaphoreValueCount	= 1
+                    , .pSignalSemaphoreValues	= &signalValue
+                };
+                
+                std::array<vk::Semaphore, 2> waitSemaphores =
+                {
+                      *presentCompleteSemaphores[frameIndex]
+                    , *timelineSemaphore
+                };
+                
+                std::array<vk::PipelineStageFlags, 2> waitStages	= 
+                {
+                      vk::PipelineStageFlagBits::eColorAttachmentOutput
+                    , vk::PipelineStageFlagBits::eVertexInput
+                };
+                
+                std::array<uint64_t, 2>		waitValues	    =
+                {
+                    0
+                    , waitValue
+                };				// Binary semaphore value is ignored
+                
+                std::array<vk::Semaphore, 2> signalSemaphores =
+                {
+                      *renderFinishedSemaphores[imageIndex]
+                    , *timelineSemaphore
+                };
+                
+                std::array<uint64_t, 2> 	signalValues	= 
+                {
+                      0
+                    , signalValue
+                };				// Binary semaphore value is ignored
+                
+                timelineInfo.waitSemaphoreValueCount		= 2;
+                timelineInfo.pWaitSemaphoreValues		    = waitValues.data();
+                timelineInfo.signalSemaphoreValueCount		= 2;
+                timelineInfo.pSignalSemaphoreValues		    = signalValues.data();
+                
+                vk::SubmitInfo		        submitInfo
+                {
+                      .pNext			                    = &timelineInfo
+                    , .waitSemaphoreCount		            = 2
+                    , .pWaitSemaphores		                = waitSemaphores.data()
+                    , .pWaitDstStageMask		            = waitStages.data()
+                    , .commandBufferCount		            = 1
+                    , .pCommandBuffers		                = &*commandBuffers[frameIndex]
+                    , .signalSemaphoreCount		            = 2
+                    , .pSignalSemaphores		            = signalSemaphores.data()
+                };
+                
+                queue.submit(  submitInfo
+                             , *inFlightFences[frameIndex]
+                            );
             }
             else
             {
-                // There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
-                assert(result == vk::Result::eSuccess);
-            }
+                // Use traditional binary semaphores
+                vk::PipelineStageFlags  waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
 
-            frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+                const vk::SubmitInfo        submitInfo
+                {
+                      .waitSemaphoreCount                   = 1
+                    , .pWaitSemaphores                      = &*presentCompleteSemaphores[frameIndex]
+                    , .pWaitDstStageMask                    = &waitDestinationStageMask
+                    , .commandBufferCount                   = 1
+                    , .pCommandBuffers                      = &*commandBuffers[frameIndex]
+                    , .signalSemaphoreCount                 = 1
+                    , .pSignalSemaphores                    = &*renderFinishedSemaphores[imageIndex]
+                };
+
+                queue.submit(  submitInfo
+                            , *inFlightFences[frameIndex]
+                            );
+
+                const vk::PresentInfoKHR    presentInfoKHR
+                {
+                      .waitSemaphoreCount                   = 1
+                    , .pWaitSemaphores                      = &*renderFinishedSemaphores[imageIndex]
+                    , .swapchainCount                       = 1
+                    , .pSwapchains                          = &*swapChain
+                    , .pImageIndices                        = &imageIndex
+                };
+
+                result = queue.presentKHR(presentInfoKHR);
+
+                // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
+                // here and does not need to be caught by an exception.
+
+                if (   (result == vk::Result::eSuboptimalKHR) 
+                    || (result == vk::Result::eErrorOutOfDateKHR) 
+                    || framebufferResized)
+                {
+                    framebufferResized = false;
+                    recreateSwapChain();
+                }
+                else
+                {
+                    // There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
+                    assert(result == vk::Result::eSuccess);
+                }
+
+                frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+            }
         }
 
 
@@ -3419,23 +3520,41 @@ class HelloTriangleApplication
 // 
 //  Name:           getRequiredInstanceExtensions
 //  Arguments:      N/A
-//  Returns:        std::vector<const char *>
+//  Returns:        [[nodiscard]] std::vector<const char *>    const
 //  Calls:          
 //  Called by:      
 //  Description:    
 // 
 //******************************************************************************************
         
-        [[nodiscard]] std::vector<const char *> getRequiredInstanceExtensions()
+        [[nodiscard]] std::vector<const char *> getRequiredInstanceExtensions() const
         {
-            uint32_t    glfwExtensionCount = 0;
-            auto        glfwExtensions     = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+		    // Get the required extensinos from GLFW
+            uint32_t                glfwExtensionCount      = 0;
+            auto                    glfwExtensions          = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
             std::vector extensions(  glfwExtensions
-                                   , glfwExtensions + glfwExtensionCount);
-            if (enableValidationLayers)
+                                   , glfwExtensions + glfwExtensionCount
+                                   );
+
+            // Check if the debug utils extension is available
+            std::vector<vk::ExtensionProperties>	props	= context.enumerateInstanceExtensionProperties();
+            bool					debugUtilsAvailable	    = std::ranges::any_of(  props
+                                                                                  , [](vk::ExtensionProperties const &ep)
+                                                                                    {
+                                                                                        return strcmp(ep.extensionName, vk::EXTDebugUtilsExtensionName) == 0;
+                                                                                    }
+                                                                                 );
+
+            // Always include the debug utils extension if available
+            // This allows validation layers to be enabled via vulkanconfig
+            if (debugUtilsAvailable)
             {
                 extensions.push_back(vk::EXTDebugUtilsExtensionName);
+            }
+            else
+            {
+                std::cout << "VK_EXT_debug_utils extension not available. Validation layers may not work." << std::endl;
             }
 
             return extensions;

@@ -1079,6 +1079,45 @@ depend:
 .PHONY : 31_computeShader_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 32_ecosystemUtilities
+
+# Build rule for target.
+32_ecosystemUtilities: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 32_ecosystemUtilities
+.PHONY : 32_ecosystemUtilities
+
+# fast build rule for target.
+32_ecosystemUtilities/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/32_ecosystemUtilities.dir/build.make CMakeFiles/32_ecosystemUtilities.dir/build
+.PHONY : 32_ecosystemUtilities/fast
+
+#=============================================================================
+# Target rules for targets named 32_ecosystemUtilities_shader
+
+# Build rule for target.
+32_ecosystemUtilities_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 32_ecosystemUtilities_shader
+.PHONY : 32_ecosystemUtilities_shader
+
+# fast build rule for target.
+32_ecosystemUtilities_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/32_ecosystemUtilities_shader.dir/build.make CMakeFiles/32_ecosystemUtilities_shader.dir/build
+.PHONY : 32_ecosystemUtilities_shader/fast
+
+#=============================================================================
+# Target rules for targets named 32_ecosystemUtilities_slang_shader
+
+# Build rule for target.
+32_ecosystemUtilities_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 32_ecosystemUtilities_slang_shader
+.PHONY : 32_ecosystemUtilities_slang_shader
+
+# fast build rule for target.
+32_ecosystemUtilities_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/32_ecosystemUtilities_slang_shader.dir/build.make CMakeFiles/32_ecosystemUtilities_slang_shader.dir/build
+.PHONY : 32_ecosystemUtilities_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -2255,6 +2294,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/31_computeShader.dir/build.make CMakeFiles/31_computeShader.dir/31_computeShader.cpp.s
 .PHONY : 31_computeShader.cpp.s
 
+32_ecosystemUtilities.o: 32_ecosystemUtilities.cpp.o
+.PHONY : 32_ecosystemUtilities.o
+
+# target to build an object file
+32_ecosystemUtilities.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/32_ecosystemUtilities.dir/build.make CMakeFiles/32_ecosystemUtilities.dir/32_ecosystemUtilities.cpp.o
+.PHONY : 32_ecosystemUtilities.cpp.o
+
+32_ecosystemUtilities.i: 32_ecosystemUtilities.cpp.i
+.PHONY : 32_ecosystemUtilities.i
+
+# target to preprocess a source file
+32_ecosystemUtilities.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/32_ecosystemUtilities.dir/build.make CMakeFiles/32_ecosystemUtilities.dir/32_ecosystemUtilities.cpp.i
+.PHONY : 32_ecosystemUtilities.cpp.i
+
+32_ecosystemUtilities.s: 32_ecosystemUtilities.cpp.s
+.PHONY : 32_ecosystemUtilities.s
+
+# target to generate assembly for a file
+32_ecosystemUtilities.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/32_ecosystemUtilities.dir/build.make CMakeFiles/32_ecosystemUtilities.dir/32_ecosystemUtilities.cpp.s
+.PHONY : 32_ecosystemUtilities.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -2309,6 +2372,8 @@ help:
 	@echo "... 30_multisampling_slang_shader"
 	@echo "... 31_computeShader_shader"
 	@echo "... 31_computeShader_slang_shader"
+	@echo "... 32_ecosystemUtilities_shader"
+	@echo "... 32_ecosystemUtilities_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -2368,6 +2433,7 @@ help:
 	@echo "... 29_mipmapping"
 	@echo "... 30_multisampling"
 	@echo "... 31_computeShader"
+	@echo "... 32_ecosystemUtilities"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -2462,6 +2528,9 @@ help:
 	@echo "... 31_computeShader.o"
 	@echo "... 31_computeShader.i"
 	@echo "... 31_computeShader.s"
+	@echo "... 32_ecosystemUtilities.o"
+	@echo "... 32_ecosystemUtilities.i"
+	@echo "... 32_ecosystemUtilities.s"
 .PHONY : help
 
 
