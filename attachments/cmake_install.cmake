@@ -49,11 +49,6 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments/_deps/nlohmann_json-build/cmake_install.cmake")
-endif()
-
-if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for the subdirectory.
   include("/home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments/_deps/tinygltf-build/cmake_install.cmake")
 endif()
 

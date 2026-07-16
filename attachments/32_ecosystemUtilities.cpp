@@ -3138,7 +3138,7 @@ class HelloTriangleApplication
             if (appInfo.timelineSemaphoresSupported)
             {
                 // Create timeline semaphore
-                std::cout << "Creatinig timeline semaphores\n";
+                std::cout << "Creating timeline semaphores\n";
                 vk::SemaphoreTypeCreateInfo 	timelineCreateInfo
                 {
                     .semaphoreType		= vk::SemaphoreType::eTimeline
@@ -3358,36 +3358,36 @@ class HelloTriangleApplication
                 queue.submit(  submitInfo
                             , *inFlightFences[frameIndex]
                             );
-
-                const vk::PresentInfoKHR    presentInfoKHR
-                {
-                      .waitSemaphoreCount                   = 1
-                    , .pWaitSemaphores                      = &*renderFinishedSemaphores[imageIndex]
-                    , .swapchainCount                       = 1
-                    , .pSwapchains                          = &*swapChain
-                    , .pImageIndices                        = &imageIndex
-                };
-
-                result = queue.presentKHR(presentInfoKHR);
-
-                // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
-                // here and does not need to be caught by an exception.
-
-                if (   (result == vk::Result::eSuboptimalKHR) 
-                    || (result == vk::Result::eErrorOutOfDateKHR) 
-                    || framebufferResized)
-                {
-                    framebufferResized = false;
-                    recreateSwapChain();
-                }
-                else
-                {
-                    // There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
-                    assert(result == vk::Result::eSuccess);
-                }
-
-                frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
             }
+
+            const vk::PresentInfoKHR    presentInfoKHR
+            {
+                  .waitSemaphoreCount                       = 1
+                , .pWaitSemaphores                          = &*renderFinishedSemaphores[imageIndex]
+                , .swapchainCount                           = 1
+                , .pSwapchains                              = &*swapChain
+                , .pImageIndices                            = &imageIndex
+            };
+
+            result = queue.presentKHR(presentInfoKHR);
+
+            // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
+            // here and does not need to be caught by an exception.
+
+            if (   (result == vk::Result::eSuboptimalKHR) 
+                || (result == vk::Result::eErrorOutOfDateKHR) 
+                || framebufferResized)
+            {
+                framebufferResized = false;
+                recreateSwapChain();
+            }
+            else
+            {
+                // There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
+                assert(result == vk::Result::eSuccess);
+            }
+
+            frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
         }
 
 

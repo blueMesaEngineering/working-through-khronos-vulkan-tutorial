@@ -636,7 +636,7 @@ glm_INCLUDE_DIR:PATH=/usr/include
 nlohmann_json_BINARY_DIR:STATIC=/home/nik/Code/Vulkan/working-through-khronos-vulkan-tutorial/attachments/_deps/nlohmann_json-build
 
 //Path to a file.
-nlohmann_json_INCLUDE_DIR:PATH=nlohmann_json_INCLUDE_DIR-NOTFOUND
+nlohmann_json_INCLUDE_DIR:PATH=/usr/include
 
 //Value Computed by CMake
 nlohmann_json_IS_TOP_LEVEL:STATIC=OFF
@@ -823,7 +823,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=9
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=8
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP
@@ -944,27 +944,37 @@ PC_glm_glm_INCLUDEDIR:INTERNAL=
 PC_glm_glm_LIBDIR:INTERNAL=
 PC_glm_glm_PREFIX:INTERNAL=
 PC_glm_glm_VERSION:INTERNAL=
-PC_nlohmann_json_CFLAGS:INTERNAL=
+PC_nlohmann_json_CFLAGS:INTERNAL=-I/usr/include
 PC_nlohmann_json_CFLAGS_I:INTERNAL=
 PC_nlohmann_json_CFLAGS_OTHER:INTERNAL=
-PC_nlohmann_json_FOUND:INTERNAL=
-PC_nlohmann_json_INCLUDEDIR:INTERNAL=
+PC_nlohmann_json_FOUND:INTERNAL=1
+PC_nlohmann_json_INCLUDEDIR:INTERNAL=/usr/include
+PC_nlohmann_json_INCLUDE_DIRS:INTERNAL=/usr/include
+PC_nlohmann_json_LDFLAGS:INTERNAL=
+PC_nlohmann_json_LDFLAGS_OTHER:INTERNAL=
 PC_nlohmann_json_LIBDIR:INTERNAL=
+PC_nlohmann_json_LIBRARIES:INTERNAL=
+PC_nlohmann_json_LIBRARY_DIRS:INTERNAL=
 PC_nlohmann_json_LIBS:INTERNAL=
 PC_nlohmann_json_LIBS_L:INTERNAL=
 PC_nlohmann_json_LIBS_OTHER:INTERNAL=
 PC_nlohmann_json_LIBS_PATHS:INTERNAL=
-PC_nlohmann_json_MODULE_NAME:INTERNAL=
-PC_nlohmann_json_PREFIX:INTERNAL=
-PC_nlohmann_json_STATIC_CFLAGS:INTERNAL=
+PC_nlohmann_json_MODULE_NAME:INTERNAL=nlohmann_json
+PC_nlohmann_json_PREFIX:INTERNAL=/usr
+PC_nlohmann_json_STATIC_CFLAGS:INTERNAL=-I/usr/include
 PC_nlohmann_json_STATIC_CFLAGS_I:INTERNAL=
 PC_nlohmann_json_STATIC_CFLAGS_OTHER:INTERNAL=
+PC_nlohmann_json_STATIC_INCLUDE_DIRS:INTERNAL=/usr/include
+PC_nlohmann_json_STATIC_LDFLAGS:INTERNAL=
+PC_nlohmann_json_STATIC_LDFLAGS_OTHER:INTERNAL=
 PC_nlohmann_json_STATIC_LIBDIR:INTERNAL=
+PC_nlohmann_json_STATIC_LIBRARIES:INTERNAL=
+PC_nlohmann_json_STATIC_LIBRARY_DIRS:INTERNAL=
 PC_nlohmann_json_STATIC_LIBS:INTERNAL=
 PC_nlohmann_json_STATIC_LIBS_L:INTERNAL=
 PC_nlohmann_json_STATIC_LIBS_OTHER:INTERNAL=
 PC_nlohmann_json_STATIC_LIBS_PATHS:INTERNAL=
-PC_nlohmann_json_VERSION:INTERNAL=
+PC_nlohmann_json_VERSION:INTERNAL=3.12.0
 PC_nlohmann_json_nlohmann_json_INCLUDEDIR:INTERNAL=
 PC_nlohmann_json_nlohmann_json_LIBDIR:INTERNAL=
 PC_nlohmann_json_nlohmann_json_PREFIX:INTERNAL=
@@ -1041,6 +1051,7 @@ Vulkan_Layer_SYNC2-ADVANCED:INTERNAL=1
 Vulkan_Layer_VALIDATION-ADVANCED:INTERNAL=1
 //CMAKE_INSTALL_PREFIX during last run
 _GNUInstallDirs_LAST_CMAKE_INSTALL_PREFIX:INTERNAL=/usr/local
+__pkg_config_arguments_PC_nlohmann_json:INTERNAL=QUIET;nlohmann_json
 __pkg_config_checked_PC_glm:INTERNAL=1
 __pkg_config_checked_PC_nlohmann_json:INTERNAL=1
 __pkg_config_checked_PC_stb:INTERNAL=1
@@ -1049,6 +1060,7 @@ __pkg_config_checked_PC_tinyobjloader:INTERNAL=1
 glm_INCLUDE_DIR-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: nlohmann_json_INCLUDE_DIR
 nlohmann_json_INCLUDE_DIR-ADVANCED:INTERNAL=1
+prefix_result:INTERNAL=
 //ADVANCED property for variable: stb_INCLUDE_DIR
 stb_INCLUDE_DIR-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: tinygltf_INCLUDE_DIR
