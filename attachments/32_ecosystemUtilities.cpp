@@ -627,7 +627,7 @@ class HelloTriangleApplication
         bool isDeviceSuitable(vk::raii::PhysicalDevice const &physicalDevice)
         {
             // Check if the physicalDevice supports the Vulkan 1.3 API version
-            bool supportsVulkan1_3 = physicalDevice.getProperties().apiVersion >= VK_VERSION_1_3;
+            bool supportsVulkan1_3 = physicalDevice.getProperties().apiVersion >= VK_API_VERSION_1_3;
 
             // Check if any of the queue families support graphics operations
             auto queueFamilies      = physicalDevice.getQueueFamilyProperties();
@@ -751,7 +751,7 @@ class HelloTriangleApplication
             }
 
             // Check for synchronization2 support
-            if (deviceProperties.apiVersion >= VK_API_VERSION_1_3)
+            if (deviceProperties.apiVersion >= VK_VERSION_1_3)
             {
                 appInfo.synchronization2Supported           = true;
                 std::cout << "Synchronization2 supported via Vulkan 1.3\n";
@@ -777,7 +777,7 @@ class HelloTriangleApplication
                 requiredDeviceExtension.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
             }
 
-            if (appInfo.timelineSemaphoresSupported && deviceProperties.apiVersion < VK_API_VERSION_1_2)
+            if (appInfo.timelineSemaphoresSupported && deviceProperties.apiVersion < VK_VERSION_1_2)
             {
                 requiredDeviceExtension.push_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
             }
@@ -1475,8 +1475,7 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        vk::Format findSupportedFormat
-        (
+        vk::Format findSupportedFormat(
               const std::vector<vk::Format>  &candidates
             , vk::ImageTiling                tiling
             , vk::FormatFeatureFlags         features
