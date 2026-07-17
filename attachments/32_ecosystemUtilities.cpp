@@ -3454,7 +3454,7 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(std::vector<vk::SurfaceFormatKHR> const &availableFormats)
+        static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats)
         {
             assert(!availableFormats.empty());
             const auto formatIt = std::ranges::find_if(  availableFormats
@@ -3462,8 +3462,21 @@ class HelloTriangleApplication
                                                        {
                                                             return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
                                                        });
+
             return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
         }
+        
+
+//******************************************************************************************
+// 
+//  Name:           chooseSwapPresentMode
+//  Arguments:      N/A
+//  Returns:        static vk::SurfaceFormatKHR
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
 
         static vk::PresentModeKHR chooseSwapPresentMode(std::vector<vk::PresentModeKHR> const &availablePresentModes)
         {
@@ -3472,6 +3485,7 @@ class HelloTriangleApplication
                                     {
                                         return presentMode == vk::PresentModeKHR::eFifo;
                                     }));
+
             return std::ranges::any_of(  availablePresentModes
                                        , [](const vk::PresentModeKHR value)
                                     {
