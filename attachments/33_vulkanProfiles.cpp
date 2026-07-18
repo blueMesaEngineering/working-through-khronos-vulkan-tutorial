@@ -159,6 +159,8 @@ class HelloTriangleApplication
         }
 
     private:
+
+        // Initial set up and swapchain
         GLFWwindow                              *window                     = nullptr;
         vk::raii::Context                       context;
         vk::raii::Instance                      instance                    = nullptr;
@@ -174,59 +176,62 @@ class HelloTriangleApplication
         vk::Extent2D                            swapChainExtent;
         std::vector<vk::raii::ImageView>        swapChainImageViews;
 
-	    vk::raii::RenderPass			        renderPass		            = nullptr;
+        // Traditional render pass (fallback for non-dynamic rendering)
+        vk::raii::RenderPass                    renderPass                  = nullptr;
+
+        // Descriptor sets and pipeline
         vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
         vk::raii::PipelineLayout                pipelineLayout              = nullptr;
         vk::raii::Pipeline                      graphicsPipeline            = nullptr;
-	
-        std::vector<<vk::raii::Framebuffer>	    swapChainFramebuffers;
-        vk::raii::CommandPool			        commandPool		            = nullptr;
-        std::vector<vk::raii::CommandBuffer>	commandBuffers;
-        std::vector<vk::raii::Semaphore>	    imageAvailableSemaphores;
-        std::vector<vk::raii::Semaphore>	    renderFinishedSemaphores;
+        std::vector<vk::raii::Framebuffer>      swapChainFramebuffers;
 
-        vk::raii::Image                         colorImage                  = nullptr;
-        vk::raii::DeviceMemory                  colorImageMemory            = nullptr;
-        vk::raii::ImageView                     colorImageView              = nullptr;
+        // Command pool
+        vk::raii::CommandPool                   commandPool                 = nullptr;
+        std::vector<vk::raii::CommandBuffer>    commandBuffers;
 
-        vk::raii::Image                         depthImage                  = nullptr;
-        vk::raii::DeviceMemory                  depthImageMemory            = nullptr;
-        vk::raii::ImageView                     depthImageView              = nullptr;
+        // Synchronization objects - Semaphores and fences
+	    std::vector<vk::raii::Semaphore>	    imageAvailableSemaphores;
+        std::vector<vk::raii::Semaphore>        renderFinishedSemaphores;
+        std::vector<vk::raii::Fence>            inFlightFences;
+        std::vector<vk::raii::Semaphore>        presentCompleteSemaphore;
+        uint32_t                                frameIndex                  = 0;
 
-        uint32_t                                mipLevels                   = 0;
-        vk::raii::Image                         textureImage                = nullptr;
-        vk::raii::DeviceMemory                  textureImageMemory          = nullptr;
-        vk::raii::ImageView                     textureImageView            = nullptr;
-        vk::raii::Sampler                       textureSampler              = nullptr;
+        bool framebufferResized                                             = false;
 
-        std::vector<Vertex>                     vertices;
-        std::vector<uint32_t>                   indices;
         vk::raii::Buffer                        vertexBuffer                = nullptr;
         vk::raii::DeviceMemory                  vertexBufferMemory          = nullptr;
         vk::raii::Buffer                        indexBuffer                 = nullptr;
         vk::raii::DeviceMemory                  indexBufferMemory           = nullptr;
 
+        // Uniform buffers
         std::vector<vk::raii::Buffer>           uniformBuffers;
         std::vector<vk::raii::DeviceMemory>     uniformBuffersMemory;
         std::vector<void *>                     uniformBuffersMapped;
 
+        // Descriptor pool
         vk::raii::DescriptorPool                descriptorPool              = nullptr;
         std::vector<vk::raii::DescriptorSet>    descriptorSets;
 
-        vk::raii::CommandPool                   commandPool                 = nullptr;
-        std::vector<vk::raii::CommandBuffer>    commandBuffers;
-
-        std::vector<vk::raii::Semaphore>        presentCompleteSemaphores;
-        std::vector<vk::raii::Semaphore>        renderFinishedSemaphores;
-        std::vector<vk::raii::Fence>            inFlightFences;
-        uint32_t                                frameIndex                  = 0;
-
-        bool framebufferResized                                             = false;
-
-        std::vector<const char *>               requiredDeviceExtension     =
-        {
-              vk::KHRSwapchainExtensionName
-        };
+        // Mipmapping
+        vk::raii::Image                         textureImage                = nullptr;
+        vk::raii::DeviceMemory                  textureImageMemory          = nullptr;
+        vk::raii::ImageView                     textureImageView            = nullptr;
+        vk::raii::Sampler                       textureSampler              = nullptr;
+	
+        // Depth management
+        vk::raii::Image                         depthImage                  = nullptr;
+        vk::raii::DeviceMemory                  depthImageMemory            = nullptr;
+        vk::raii::ImageView                     depthImageView              = nullptr;
+	
+        // Vertices
+        std::vector<Vertex>                     vertices;
+        std::vector<uint32_t>                   indices;
+        vk::SampleCountFlagBits                 msaaSamples                 = vk::SampleCountFlagBits::e1;
+	
+        // Color management
+        vk::raii::Image                         colorImage                  = nullptr;
+        vk::raii::DeviceMemory                  colorImageMemory            = nullptr;
+        vk::raii::ImageView                     colorImageView              = nullptr;
 
 
 //******************************************************************************************
