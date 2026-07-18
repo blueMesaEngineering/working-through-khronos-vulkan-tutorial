@@ -233,6 +233,21 @@ class HelloTriangleApplication
         vk::raii::DeviceMemory                  colorImageMemory            = nullptr;
         vk::raii::ImageView                     colorImageView              = nullptr;
 
+        // Application info to store profile support
+        AppInfo appInfo                                                     = {};
+
+        struct SwapChainSupportDetails
+        {
+            vk::SurfaceCapabilitiesKHR          capabilities;
+            std::vector<vk::SurfaceFormatKHR>   formats;
+            std::vector<vk::PresentModeKHR>     presentModes;
+        };
+
+        const std::vector<const char *>         requiredDeviceExtension     =
+        {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        };
+
 
 //******************************************************************************************
 // 
@@ -282,15 +297,14 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        static void framebufferResizeCallback
-        (
+        static void framebufferResizeCallback(
               GLFWwindow *window
-            , int width
-            , int height
+            , int
+            , int
         )
         {
-            auto app                = static_cast<HelloTriangleApplication *>(glfwGetWindowUserPointer(window));
-            app->framebufferResized = true;
+            auto app                                        = static_cast<HelloTriangleApplication *>(glfwGetWindowUserPointer(window));
+            app->framebufferResized                         = true;
         }
 
 
@@ -333,12 +347,26 @@ class HelloTriangleApplication
             setupDebugMessenger();
             createSurface();
             pickPhysicalDevice();
-            msaaSamples = getMaxUsableSampleCount();
+	        checkFeatureSupport();
             createLogicalDevice();
             createSwapChain();
             createImageViews();
+	    
+            // Create render pass only if not using dynamic rendering
+            if (!appInfo.profileSupported)
+            {
+                createRenderPass();
+            }
+	    
             createDescriptorSetLayout();
             createGraphicsPipeline();
+	    
+            // Create framebuffers only if not using dynamic rendering
+            if (!appInfo.profileSupported)
+            {
+                createFramebuffers();
+            }
+	    
             createCommandPool();
             createColorResources();
             createDepthResources();
@@ -376,6 +404,7 @@ class HelloTriangleApplication
                 glfwPollEvents();
                 drawFrame();
             }
+            
             device.waitIdle();      // Wait for device to finish operations before destroying resources
         }
         
