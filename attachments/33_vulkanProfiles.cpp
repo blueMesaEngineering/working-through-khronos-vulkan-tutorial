@@ -490,10 +490,28 @@ class HelloTriangleApplication
             device.waitIdle();
 
             cleanupSwapChain();
+	    
             createSwapChain();
             createImageViews();
+	    
+            // Recreate traditional render pass and framebuffers if not using profiles
+            if (!appInfo.profileSupported)
+            {
+                createRenderPass();
+                createFramebuffers();
+            }
+            
             createColorResources();
             createDepthResources();
+            
+            // Recreate per-swapchain-image present semaphores after resize
+            presentCompleteSemaphore.reserve(swapChainImages.size());
+            vk::SemaphoreCreateInfo semaphoreInfo{};
+
+            for (size_t i = 0; i < swapChainImages.size(); ++i)
+            {
+                presentCompleteSemaphore.push_back(device.createSemaphore(semaphoreInfo));
+            }
         }
         
 
