@@ -404,7 +404,7 @@ class HelloTriangleApplication
                 glfwPollEvents();
                 drawFrame();
             }
-            
+
             device.waitIdle();      // Wait for device to finish operations before destroying resources
         }
         
@@ -422,9 +422,21 @@ class HelloTriangleApplication
         
         void cleanupSwapChain()
         {
+            swapChainFramebuffers.clear();
+            swapChainImageViews.clear();
+            
+            // Semaphores tied to swapchain image indices need to be rebuilt on resize
+            presentCompleteSemaphore.clear();
+            
+            for (auto &imageView : swapChainImageViews)
+            {
+                imageView			                        = nullptr;
+            }
+            
             swapChainImageViews.clear();
             swapChain = nullptr;
         }
+
 
 
 //******************************************************************************************
@@ -439,7 +451,7 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        void cleanup() const
+        void cleanup()
         {
             glfwDestroyWindow(window);
 
