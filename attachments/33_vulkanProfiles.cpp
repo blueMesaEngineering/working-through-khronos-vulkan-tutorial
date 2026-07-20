@@ -824,7 +824,7 @@ class HelloTriangleApplication
 
             if (appInfo.profileSupported)
             {
-                // Create a device with Best Practices profile
+                // Create device with Best Practices profile
                 
                 // Enable required features
                 vk::PhysicalDeviceFeatures2	                features2;
@@ -879,7 +879,6 @@ class HelloTriangleApplication
             queue                                           = device.getQueue(  queueIndex
                                                                               , 0);
         }
-
         
 
 //******************************************************************************************
@@ -905,28 +904,26 @@ class HelloTriangleApplication
             std::vector<vk::PresentModeKHR> availablePresentModes   = physicalDevice.getSurfacePresentModesKHR(*surface);
             vk::PresentModeKHR              presentMode             = chooseSwapPresentMode(availablePresentModes);
 
-            vk::SwapchainCreateInfoKHR swapChainCreateInfo 
+            vk::SwapchainCreateInfoKHR      swapChainCreateInfo 
             {  
-                  .surface          = *surface
-                , .minImageCount    = minImageCount
-                , .imageFormat      = swapChainSurfaceFormat.format
-                , .imageColorSpace  = swapChainSurfaceFormat.colorSpace
-                , .imageExtent      = swapChainExtent
-                , .imageArrayLayers = 1
-                , .imageUsage       = vk::ImageUsageFlagBits::eColorAttachment
-                , .imageSharingMode = vk::SharingMode::eExclusive
-                , .preTransform     = surfaceCapabilities.currentTransform
-                , .compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque
-                , .presentMode      = presentMode
-                , .clipped          = true
+                  .surface                                          = *surface
+                , .minImageCount                                    = minImageCount
+                , .imageFormat                                      = swapChainSurfaceFormat.format
+                , .imageColorSpace                                  = swapChainSurfaceFormat.colorSpace
+                , .imageExtent                                      = swapChainExtent
+                , .imageArrayLayers                                 = 1
+                , .imageUsage                                       = vk::ImageUsageFlagBits::eColorAttachment
+                , .imageSharingMode                                 = vk::SharingMode::eExclusive
+                , .preTransform                                     = surfaceCapabilities.currentTransform
+                , .compositeAlpha                                   = vk::CompositeAlphaFlagBitsKHR::eOpaque
+                , .presentMode                                      = presentMode
+                , .clipped                                          = true
 
             };
 
-            swapChain       = vk::raii::SwapchainKHR(  device
-                                                     , swapChainCreateInfo
-                                                    );
+            swapChain                                               = device.createSwapchainKHR(swapChainCreateInfo);
 
-            swapChainImages = swapChain.getImages();
+            swapChainImages                                         = swapChain.getImages();
         }
         
 
@@ -944,30 +941,18 @@ class HelloTriangleApplication
         void createImageViews()
         {
             assert(swapChainImageViews.empty());
-
-            vk::ImageViewCreateInfo                         imageViewCreateInfo
+	    swapChainImageViews.reserve(swapChainImages.size());
+	    
+	    for (const auto &image : swapChainImages)
             {
-                  .viewType                                 = vk::ImageViewType::e2D
-                , .format                                   = swapChainSurfaceFormat.format
-                , .subresourceRange                         = 
-                {
-                      vk::ImageAspectFlagBits::eColor
-                    , 0
-                    , 1
-                    , 0
-                    , 1
-                }
-            };
-
-            for ( auto &image : swapChainImages)
-            {
-                imageViewCreateInfo.image                   = image;
-                swapChainImageViews.emplace_back(  
-                      device
-                    , imageViewCreateInfo
-                );
+                swapChainImageViews.push_back(createImageView(  image
+                                                              , swapChainSurfaceFormat.format
+                                                              , vk::ImageAspectFlagBits::eColor
+                                                              , 1)
+                                                            );
             }
         }
+
         
 
 //******************************************************************************************

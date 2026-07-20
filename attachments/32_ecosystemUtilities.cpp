@@ -627,7 +627,7 @@ class HelloTriangleApplication
         bool isDeviceSuitable(vk::raii::PhysicalDevice const &physicalDevice)
         {
             // Check if the physicalDevice supports the Vulkan 1.3 API version
-            bool supportsVulkan1_3 = physicalDevice.getProperties().apiVersion >= VK_API_VERSION_1_3;
+            bool supportsVulkan1_3 = physicalDevice.getProperties().apiVersion >= VK_VERSION_1_3;
 
             // Check if any of the queue families support graphics operations
             auto queueFamilies      = physicalDevice.getQueueFamilyProperties();
@@ -751,7 +751,7 @@ class HelloTriangleApplication
             }
 
             // Check for synchronization2 support
-            if (deviceProperties.apiVersion >= VK_VERSION_1_3)
+            if (deviceProperties.apiVersion >= VK_API_VERSION_1_3)
             {
                 appInfo.synchronization2Supported           = true;
                 std::cout << "Synchronization2 supported via Vulkan 1.3\n";
@@ -777,7 +777,7 @@ class HelloTriangleApplication
                 requiredDeviceExtension.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
             }
 
-            if (appInfo.timelineSemaphoresSupported && deviceProperties.apiVersion < VK_VERSION_1_2)
+            if (appInfo.timelineSemaphoresSupported && deviceProperties.apiVersion < VK_API_VERSION_1_2)
             {
                 requiredDeviceExtension.push_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
             }
@@ -1475,7 +1475,8 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        vk::Format findSupportedFormat(
+        vk::Format findSupportedFormat
+        (
               const std::vector<vk::Format>  &candidates
             , vk::ImageTiling                tiling
             , vk::FormatFeatureFlags         features
@@ -3138,7 +3139,7 @@ class HelloTriangleApplication
             if (appInfo.timelineSemaphoresSupported)
             {
                 // Create timeline semaphore
-                std::cout << "Creating timeline semaphores\n";
+                std::cout << "Creatinig timeline semaphores\n";
                 vk::SemaphoreTypeCreateInfo 	timelineCreateInfo
                 {
                     .semaphoreType		= vk::SemaphoreType::eTimeline
@@ -3358,36 +3359,36 @@ class HelloTriangleApplication
                 queue.submit(  submitInfo
                             , *inFlightFences[frameIndex]
                             );
+
+                const vk::PresentInfoKHR    presentInfoKHR
+                {
+                      .waitSemaphoreCount                   = 1
+                    , .pWaitSemaphores                      = &*renderFinishedSemaphores[imageIndex]
+                    , .swapchainCount                       = 1
+                    , .pSwapchains                          = &*swapChain
+                    , .pImageIndices                        = &imageIndex
+                };
+
+                result = queue.presentKHR(presentInfoKHR);
+
+                // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
+                // here and does not need to be caught by an exception.
+
+                if (   (result == vk::Result::eSuboptimalKHR) 
+                    || (result == vk::Result::eErrorOutOfDateKHR) 
+                    || framebufferResized)
+                {
+                    framebufferResized = false;
+                    recreateSwapChain();
+                }
+                else
+                {
+                    // There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
+                    assert(result == vk::Result::eSuccess);
+                }
+
+                frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
             }
-
-            const vk::PresentInfoKHR    presentInfoKHR
-            {
-                  .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*renderFinishedSemaphores[imageIndex]
-                , .swapchainCount                           = 1
-                , .pSwapchains                              = &*swapChain
-                , .pImageIndices                            = &imageIndex
-            };
-
-            result = queue.presentKHR(presentInfoKHR);
-
-            // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
-            // here and does not need to be caught by an exception.
-
-            if (   (result == vk::Result::eSuboptimalKHR) 
-                || (result == vk::Result::eErrorOutOfDateKHR) 
-                || framebufferResized)
-            {
-                framebufferResized = false;
-                recreateSwapChain();
-            }
-            else
-            {
-                // There are no other success codes than eSuccess; on any error code, presentKHR already threw an exception.
-                assert(result == vk::Result::eSuccess);
-            }
-
-            frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
         }
 
 
@@ -3454,7 +3455,7 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats)
+        static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(std::vector<vk::SurfaceFormatKHR> const &availableFormats)
         {
             assert(!availableFormats.empty());
             const auto formatIt = std::ranges::find_if(  availableFormats
@@ -3462,21 +3463,8 @@ class HelloTriangleApplication
                                                        {
                                                             return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
                                                        });
-
             return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
         }
-        
-
-//******************************************************************************************
-// 
-//  Name:           chooseSwapPresentMode
-//  Arguments:      N/A
-//  Returns:        static vk::SurfaceFormatKHR
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
 
         static vk::PresentModeKHR chooseSwapPresentMode(std::vector<vk::PresentModeKHR> const &availablePresentModes)
         {
@@ -3485,7 +3473,6 @@ class HelloTriangleApplication
                                     {
                                         return presentMode == vk::PresentModeKHR::eFifo;
                                     }));
-
             return std::ranges::any_of(  availablePresentModes
                                        , [](const vk::PresentModeKHR value)
                                     {
