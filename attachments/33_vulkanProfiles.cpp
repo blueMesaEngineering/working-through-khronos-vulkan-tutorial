@@ -303,7 +303,7 @@ class HelloTriangleApplication
             , int
         )
         {
-            auto app                                        = static_cast<HelloTriangleApplication *>(glfwGetWindowUserPointer(window));
+            auto app                                        = reinterpret_cast<HelloTriangleApplication *>(glfwGetWindowUserPointer(window));
             app->framebufferResized                         = true;
         }
 
@@ -952,7 +952,130 @@ class HelloTriangleApplication
                                                             );
             }
         }
+        
 
+//******************************************************************************************
+// 
+//  Name:           createRenderPass
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createRenderPass()
+        {
+            if (appInfo.dynamicRenderingSupported)
+            {
+                // No render pass needed with dynamic rendering
+                std::cout << "Using dynamic rendering, skipping render pass creation\n";
+                return;
+            }
+
+            std::cout << "Creating traditional render pass\n";
+
+            // Color attachment description
+            vk::AttachmentDescription   colorAttachment
+            {
+                  .format                                   = swapChainSurfaceFormat.format
+                , .samples                                  = msaaSamples
+                , .loadOp                                   = vk::AttachmentLoadOp::eClear
+                , .storeOp                                  = vk::AttachmentStoreOp::eStore
+                , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
+                , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
+                , .initialLayout                            = vk::ImageLayout::eUndefined
+                , .finalLayout                              = vk::ImageLayout::eColorAttachmentOptimal
+            };
+
+            vk::AttachmentDescription   depthAttachment
+            {
+                  .format                                   = findDepthFormat()
+                , .samples                                  = msaaSamples
+                , .loadOp                                   = vk::AttachmentLoadOp::eClear
+                , .storeOp                                  = vk::AttachmentStoreOp::eDontCare
+                , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
+                , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
+                , .initialLayout                            = vk::ImageLayout::eUndefined
+                , .finalLayout                              = vk::ImageLayout::eDepthStencilAttachmentOptimal
+            };
+
+            vk::AttachmentDescription   colorAttachmentResolve
+            {
+                  .format                                   = swapChainSurfaceFormat.format
+                , .samples                                  = vk::SampleCountFlagBits::e1
+                , .loadOp                                   = vk::AttachmentLoadOp::eDontCare
+                , .storeOp                                  = vk::AttachmentStoreOp::eStore
+                , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
+                , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
+                , .initialLayout                            = vk::ImageLayout::eUndefined
+                , .finalLayout                              = vk::ImageLayout::ePresentSrcKHR
+            };
+
+            // Subpass references
+            vk::AttachmentReference     colorAttachmentRef
+            {
+                  .attachment                               = 0
+                , .layout                                   = vk::ImageLayout::eColorAttachmentOptimal
+            };
+
+            vk::AttachmentReference     depthAttachmentRef
+            {
+                  .attachment                               = 1
+                , .layout                                   = vk::ImageLayout::eDepthStencilAttachmentOptimal
+            };
+
+            vk::AttachmentReference     colorAttachmentResolveRef
+            {
+                  .attachment                               = 2
+                , .layout                                   = vk::ImageLayout::eColorAttachmentOptimal
+            };
+
+            // Subpass description
+            vk::SubpassDescription      subpass
+            {
+                  .pipelineBindPoint                        = vk::PipelineBindPoint::eGraphics
+                , .colorAttachmentCount                     = 1
+                , .pColorAttachments                        = &colorAttachmentRef
+                , .pResolveAttachments                      = &colorAttachmentResolveRef
+                , .pDepthStencilAttachment                  = &depthAttachmentRef
+            };
+
+            // Dependency to ensure proper image layout transitions
+            vk::SubpassDependency       dependency
+            {
+                  .srcSubpass                               = VK_SUBPASS_EXTERNAL
+                , .dstSubpass                               = 0
+                , .srcStageMask                             =   vk::PipelineStageFlagBits::eColorAttachmentOutput
+                                                              | vk::PipelineStageFlagBits::eEarlyFragmentTests
+                , .dstStageMask                             =   vk::PipelineStageFlagBits::eColorAttachmentOutput
+                                                              | vk::PipelineStageFlagBits::eEarlyFragmentTests
+                , .srcAccessMask                            =   vk::AccessFlagBits::eNone
+                , .dstAccessMask                            =   vk::AccessFlagBits::eColorAttachmentWrite
+                                                              | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+            };
+
+            // Create the render pass
+            std::array                  attachments         =
+            {
+                  colorAttachment
+                , depthAttachment
+                , colorAttachmentResolve
+            };
+
+            vk::RenderPassCreateInfo    renderPassInfo
+            {
+                  .attachmentCount                          = static_cast<uint32_t>(attachments.size())
+                , .pAttachments                             = attachments.data()
+                , .subpassCount                             = 1
+                , .pSubpasses                               = &subpass
+                , .dependencyCount                          = 1
+                , .pDependencies                            = &dependency
+            };
+
+            renderPass                                      = vk::raii::RenderPass(device, renderPassInfo);
+        }
         
 
 //******************************************************************************************
