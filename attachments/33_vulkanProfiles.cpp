@@ -967,16 +967,8 @@ class HelloTriangleApplication
 
         void createRenderPass()
         {
-            if (appInfo.dynamicRenderingSupported)
-            {
-                // No render pass needed with dynamic rendering
-                std::cout << "Using dynamic rendering, skipping render pass creation\n";
-                return;
-            }
-
-            std::cout << "Creating traditional render pass\n";
-
-            // Color attachment description
+		// This is only called if the Best Practices profile is not supported
+		// or if dynamic rendering is not available
             vk::AttachmentDescription   colorAttachment
             {
                   .format                                   = swapChainSurfaceFormat.format
@@ -1057,7 +1049,7 @@ class HelloTriangleApplication
             };
 
             // Create the render pass
-            std::array                  attachments         =
+            std::array<vk::AttachmentDescription, 3>        attachments =
             {
                   colorAttachment
                 , depthAttachment
@@ -1074,7 +1066,7 @@ class HelloTriangleApplication
                 , .pDependencies                            = &dependency
             };
 
-            renderPass                                      = vk::raii::RenderPass(device, renderPassInfo);
+            renderPass                                      = device.createRenderPass(renderPassInfo);
         }
         
 
