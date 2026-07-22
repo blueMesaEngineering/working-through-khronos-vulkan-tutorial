@@ -1083,25 +1083,27 @@ class HelloTriangleApplication
 
         void createDescriptorSetLayout()
         {
-            std::array   bindings                           =
+            vk::DescriptorSetLayoutBinding      uboLayoutBinding
             {
-                  vk::DescriptorSetLayoutBinding
-                    (
-                          0
-                        , vk::DescriptorType::eUniformBuffer
-                        , 1
-                        , vk::ShaderStageFlagBits::eVertex
-                        , nullptr
-                    )
-                , vk::DescriptorSetLayoutBinding
-                    (
-                          1
-                        , vk::DescriptorType::eCombinedImageSampler
-                        , 1
-                        , vk::ShaderStageFlagBits::eFragment
-                        , nullptr
-                    )
+                  .binding			                        = 0
+                , .descriptorType		                    = vk::DescriptorType::eUniformBuffer
+                , .descriptorCount		                    = 1
+                , .stageFlags			                    = vk::ShaderStageFlagBits::eVertex
+		    };
+		
+		    vk::DescriptorSetLayoutBinding	    samplerLayoutBinding
+		    {
+                  .binding			                        = 1
+                , .descriptorType		                    = vk::DescriptorType::eCombinedImageSampler
+                , .descriptorCount		                    = 1
+                , .stageFlags			                    = vk::ShaderStageFlagBits::eFragment
             };
+		    
+		    std::array<vk::DescriptorSetLayoutBinding, 2> bindings =
+		    {
+                  uboLayoutBinding
+                , samplerLayoutBinding
+		    };
 
             vk::DescriptorSetLayoutCreateInfo   layoutInfo
             {
@@ -1109,9 +1111,9 @@ class HelloTriangleApplication
                 , .pBindings                                = bindings.data()
             };
 
-            descriptorSetLayout                             = vk::raii::DescriptorSetLayout(  device
-                                                                                            , layoutInfo);
-        }
+            descriptorSetLayout                             = device.createDescriptorSetLayout(layoutInfo);
+        }        
+
         
 
 //******************************************************************************************
