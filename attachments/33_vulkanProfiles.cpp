@@ -1129,20 +1129,24 @@ class HelloTriangleApplication
 
         void createGraphicsPipeline()
         {
-            vk::raii::ShaderModule shaderModule = createShaderModule(readFile("shaders/slang.spv"));
+            auto                    vertShaderCode          = readFile("shaders/vert.spv");
+            auto                    fragShaderCode          = readFile("shaders/frag.spv");
 
+		    vk::raii::ShaderModule  vertShaderModule		= createShaderModule(vertShaderCode);
+		    vk::raii::ShaderModule  fragShaderModule		= createShaderModule(fragShaderCode);
+		
             vk::PipelineShaderStageCreateInfo               vertShaderStageInfo
             {
                   .stage                                    = vk::ShaderStageFlagBits::eVertex
-                , .module                                   = shaderModule
-                , .pName                                    = "vertMain"
+                , .module                                   = vertShaderModule
+                , .pName                                    = "main"
             };
 
             vk::PipelineShaderStageCreateInfo               fragShaderStageInfo
             {
                   .stage                                    = vk::ShaderStageFlagBits::eFragment
-                , .module                                   = shaderModule
-                , .pName                                    = "fragMain"
+                , .module                                   = *fragShaderModule
+                , .pName                                    = "main"
             };
 
             vk::PipelineShaderStageCreateInfo               shaderStages[] = 
@@ -1151,8 +1155,8 @@ class HelloTriangleApplication
                 , fragShaderStageInfo
             };
 
-            auto                                            bindingDescription      = Vertex::getBindingDescription();
-            auto                                            attributeDescriptions   = Vertex::getAttributeDescriptions();
+            auto                    bindingDescription      = Vertex::getBindingDescription();
+            auto                    attributeDescriptions   = Vertex::getAttributeDescriptions();
 
             vk::PipelineVertexInputStateCreateInfo          vertexInputInfo
             {
@@ -1165,7 +1169,7 @@ class HelloTriangleApplication
             vk::PipelineInputAssemblyStateCreateInfo        inputAssembly
             {
                   .topology                                 = vk::PrimitiveTopology::eTriangleList
-                , .primitiveRestartEnable                   = vk::False
+                , .primitiveRestartEnable                   = VK_FALSE
             };
 
             vk::PipelineViewportStateCreateInfo             viewportState
@@ -1176,33 +1180,34 @@ class HelloTriangleApplication
 
             vk::PipelineRasterizationStateCreateInfo        rasterizer
             {
-                  .depthClampEnable                         = vk::False
-                , .rasterizerDiscardEnable                  = vk::False
+                  .depthClampEnable                         = VK_FALSE
+                , .rasterizerDiscardEnable                  = VK_FALSE
                 , .polygonMode                              = vk::PolygonMode::eFill
                 , .cullMode                                 = vk::CullModeFlagBits::eBack
                 , .frontFace                                = vk::FrontFace::eCounterClockwise
-                , .depthBiasEnable                          = vk::False
+                , .depthBiasEnable                          = VK_FALSE
                 , .lineWidth                                = 1.0f
             };
 
             vk::PipelineMultisampleStateCreateInfo          multisampling
             {
                   .rasterizationSamples                     = msaaSamples
-                , .sampleShadingEnable                      = vk::False
+                , .sampleShadingEnable                      = VK_TRUE
+		        , .minSampleShading			                = 0.2f
             };
 
             vk::PipelineDepthStencilStateCreateInfo         depthStencil
             {
-                  .depthTestEnable                          = vk::True
-                , .depthWriteEnable                         = vk::True
+                  .depthTestEnable                          = VK_TRUE
+                , .depthWriteEnable                         = VK_TRUE
                 , .depthCompareOp                           = vk::CompareOp::eLess
-                , .depthBoundsTestEnable                    = vk::False
-                , .stencilTestEnable                        = vk::False
+                , .depthBoundsTestEnable                    = VK_FALSE
+                , .stencilTestEnable                        = VK_FALSE
             };
 
             vk::PipelineColorBlendAttachmentState           colorBlendAttachment
             {
-                  .blendEnable                              = vk::False
+                  .blendEnable                              = VK_FALSE
                 , .colorWriteMask                           =       vk::ColorComponentFlagBits::eR
                                                                 |   vk::ColorComponentFlagBits::eG
                                                                 |   vk::ColorComponentFlagBits::eB
@@ -1211,13 +1216,13 @@ class HelloTriangleApplication
 
             vk::PipelineColorBlendStateCreateInfo           colorBlending
             {
-                  .logicOpEnable                            = vk::False
+                  .logicOpEnable                            = VK_FALSE
                 , .logicOp                                  = vk::LogicOp::eCopy
                 , .attachmentCount                          = 1
                 , .pAttachments                             = &colorBlendAttachment
             };
 
-            std::vector                                     dynamicStates = 
+            std::vector<vk::DynamicState>     dynamicStates = 
             {
                   vk::DynamicState::eViewport
                 , vk::DynamicState::eScissor
@@ -1233,14 +1238,12 @@ class HelloTriangleApplication
             {
                   .setLayoutCount                           = 1
                 , .pSetLayouts                              = &*descriptorSetLayout
-                , .pushConstantRangeCount                   = 0
             };
 
-            pipelineLayout                                  = vk::raii::PipelineLayout(  device
-                                                                                   , pipelineLayoutInfo);
+            pipelineLayout                                  = device.createPipelineLayout(pipelineLayoutInfo);
 
-            vk::Format          depthFormat                 = findDepthFormat();
-
+            // Configure pipeline based on whether we're using the KHR roadmap 2022 profile
+            // With the KHR roadmap 2022 profile, we can use dynamic rendering
             vk::StructureChain<  vk::GraphicsPipelineCreateInfo
                                , vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain =
             {
@@ -1261,15 +1264,67 @@ class HelloTriangleApplication
                 {
                       .colorAttachmentCount                 = 1
                     , .pColorAttachmentFormats              = &swapChainSurfaceFormat.format
-                    , .depthAttachmentFormat                = depthFormat
+                    , .depthAttachmentFormat                = findDepthFormat()
                 }
             };
+	    
+	    if (appInfo.profileSupported)
+	    {
+		    std::cout << "Creating pipeline with dynamic rendering (KHR roadmap 2022 profile)" << std::endl;
+	    }
+	    else
+	    {
+            std::cout << "Creating pipeline with traditional render pass (fallback)" << std::endl;
+            pipelineCreateInfoChain.unlink<vk::PipelineRenderingCreateInfo>();
+            pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().renderPass = *renderPass;
+	    }
 
             graphicsPipeline = vk::raii::Pipeline(  device
                                                   , nullptr
                                                   , pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
         }
         
+
+//******************************************************************************************
+// 
+//  Name:           createFramebuffers
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createFramebuffers()
+        {
+            // This is only called if the Best Practices profile is not supported
+            // or if dynamic rendering is not available
+            swapChainFramebuffers.reserve(swapChainImageViews.size());
+            
+            for (size_t i = 0; i < swapChainImageViews.size(); i++)
+            {
+                std::array<vk::ImageView, 3> attachments = 
+                {
+                      *colorImageView
+                    , *depthImageView
+                    , *swapChainImageViews[i]
+                };
+                
+                vk::FramebufferCreateInfo framebufferInfo
+                {
+                      .renderPass		                    = *renderPass
+                    , .attachmentCount	                    = static_cast<uint32_t>(attachments.size())
+                    , .pAttachments		                    = attachments.data()
+                    , .width		                        = swapChainExtent.width
+                    , .height		                        = swapChainExtent.height
+                    , .layers		                        = 1
+                };
+                
+                swapChainFramebuffers.push_back(device.createFramebuffer(framebufferInfo));
+            }
+        }
+
 
 //******************************************************************************************
 // 
@@ -1381,14 +1436,13 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        vk::Format findSupportedFormat
-        (
+        vk::Format findSupportedFormat(
               const std::vector<vk::Format>  &candidates
             , vk::ImageTiling                tiling
             , vk::FormatFeatureFlags         features
-        ) const
+        )
         {
-            for (const auto format : candidates)
+            for (vk::Format format : candidates)
             {
                 vk::FormatProperties        props           = physicalDevice.getFormatProperties(format);
 
@@ -1419,7 +1473,7 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        [[nodiscard]] vk::Format findDepthFormat() const
+        vk::Format findDepthFormat()
         {
             return findSupportedFormat
             (
