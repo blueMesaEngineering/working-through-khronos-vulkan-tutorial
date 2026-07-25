@@ -1499,7 +1499,7 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        static bool hasStencilComponent(vk::Format format)
+        bool hasStencilComponent(vk::Format format)
         {
             return    format == vk::Format::eD32SfloatS8Uint 
                    || format == vk::Format::eD24UnormS8Uint;
@@ -1531,7 +1531,7 @@ class HelloTriangleApplication
 
             vk::DeviceSize              imageSize           = texWidth * texHeight * 4;
 
-            mipLevels                                       = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+            uint32_t                    mipLevels           = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
             if (!pixels)
             {
