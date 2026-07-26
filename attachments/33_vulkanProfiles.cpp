@@ -1538,8 +1538,8 @@ class HelloTriangleApplication
                 throw std::runtime_error("Failed to load texture image!");
             }
 
-            vk::raii::Buffer            stagingBuffer({});
-            vk::raii::DeviceMemory      stagingBufferMemory({});
+            vk::raii::Buffer            stagingBuffer       = nullptr;
+            vk::raii::DeviceMemory      stagingBufferMemory = nullptr;
 
             createBuffer(
                   imageSize
@@ -1556,7 +1556,7 @@ class HelloTriangleApplication
             memcpy(  
                   data
                 , pixels
-                , imageSize
+                , static_cast<size_t>(imageSize)
             );
 
             stagingBufferMemory.unmapMemory();
@@ -1579,21 +1579,22 @@ class HelloTriangleApplication
             );
 
             transitionImageLayout(  
-                  textureImage
+                  *textureImage
+		        , vk::Format::eR8G8B8A8Srgb
                 , vk::ImageLayout::eUndefined
                 , vk::ImageLayout::eTransferDstOptimal
                 , mipLevels
             );
 
             copyBufferToImage(  
-                  stagingBuffer
-                , textureImage
+                  *stagingBuffer
+                , *textureImage
                 , static_cast<uint32_t>(texWidth)
                 , static_cast<uint32_t>(texHeight)
             );
             
             generateMipmaps(
-                  textureImage
+                  *textureImage
                 , vk::Format::eR8G8B8A8Srgb
                 , texWidth
                 , texHeight
@@ -1614,14 +1615,13 @@ class HelloTriangleApplication
 //******************************************************************************************
 
         void generateMipmaps(
-              vk::raii::Image &image
+              vk::Image image
             , vk::Format imageFormat
             , int32_t texWidth
             , int32_t texHeight
             , uint32_t mipLevels
         )
         {
-            // Check if image format supports linear blit-ing
             vk::FormatProperties formatProperties           = physicalDevice.getFormatProperties(imageFormat);
 
             if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear))
@@ -1629,23 +1629,21 @@ class HelloTriangleApplication
                 throw std::runtime_error("Texture image format does not support linear blitting!");
             }
 
-            std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = beginSingleTimeCommands();
+            vk::raii::CommandBuffer commandBuffer = beginSingleTimeCommands();
 
             vk::ImageMemoryBarrier          barrier         =
             {
-                  .srcAccessMask                            = vk::AccessFlagBits::eTransferWrite
-                , .dstAccessMask                            = vk::AccessFlagBits::eTransferRead
-                , .oldLayout                                = vk::ImageLayout::eTransferDstOptimal
-                , .newLayout                                = vk::ImageLayout::eTransferSrcOptimal
-                , .srcQueueFamilyIndex                      = vk::QueueFamilyIgnored
-                , .dstQueueFamilyIndex                      = vk::QueueFamilyIgnored
+                  .srcQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
+                , .dstQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
                 , .image                                    = image
+		, .subresourceRange			    =
+		{
+			.aspectMask             = vk::ImageAspectFlagBits::eColor
+			, .levelCount             = 1
+			, .baseArrayLayer         = 0
+			, .layerCount             = 1
+		}
             };
-
-            barrier.subresourceRange.aspectMask             = vk::ImageAspectFlagBits::eColor;
-            barrier.subresourceRange.baseArrayLayer         = 0;
-            barrier.subresourceRange.layerCount             = 1;
-            barrier.subresourceRange.levelCount             = 1;
 
             int32_t                         mipWidth        = texWidth;
             int32_t                         mipHeight       = texHeight;
@@ -1658,68 +1656,69 @@ class HelloTriangleApplication
                 barrier.srcAccessMask                       = vk::AccessFlagBits::eTransferWrite;
                 barrier.dstAccessMask                       = vk::AccessFlagBits::eTransferRead;
 
-                commandBuffer->pipelineBarrier(
+                commandBuffer.pipelineBarrier(
                       vk::PipelineStageFlagBits::eTransfer
                     , vk::PipelineStageFlagBits::eTransfer
                     , {}
-                    , {}
-                    , {}
-                    , barrier
+                    , std::array<vk::MemoryBarrier, 0>{}
+                    , std::array<vk::BufferMemoryBarrier, 0>{}
+                    , std::array<vk::ImageMemoryBarrier, 1>{barrier}
                 );
-
-                vk::ArrayWrapper1D<vk::Offset3D, 2> offsets, dstOffsets;
-
-                offsets[0]                                  = vk::Offset3D(0, 0, 0);
-                offsets[1]                                  = vk::Offset3D(mipWidth, mipHeight, 1);
-                dstOffsets[0]                               = vk::Offset3D(0, 0, 0);
-                dstOffsets[1]                               = vk::Offset3D(  mipWidth > 1  ? mipWidth / 2  : 1
-                                                                           , mipHeight > 1 ? mipHeight / 2 : 1
-                                                                           , 1
-                                                                          );
 
                 vk::ImageBlit blit                          = 
                 {
-                      .srcSubresource                       = {}
-                    , .srcOffsets                           = offsets
-                    , .dstSubresource                       = {}
-                    , .dstOffsets                           = dstOffsets
+                      .srcSubresource                       = 
+                    {
+                          .aspectMask		                = vk::ImageAspectFlagBits::eColor
+                        , .mipLevel		                    = i - 1
+                        , .baseArrayLayer	                = 0
+                        , layerCount		                = 1
+                    }
+                            , .srcOffsets                   = std::array<vk::Offset3D, 2>
+                                {
+                                      vk::Offset3D{0, 0, 0}
+                                    , vk::Offset3D{mipWidth, mipHeight, 1}
+                                }
+                            , .dstSubresource               = 
+                                {
+                                      .aspectMask		    = vk::ImageAspectFlagBits::eColor
+                                    , .mipLevel		        = i
+                                    , .baseArrayLayer	    = 0
+                                    , .layerCount		    = 1
+                                }
+                            , .dstOffsets                   = std::array<vk::Offset3D, 2>
+                                {
+                                      vk::Offset3D{0, 0, 0}
+                                    , vk::Offset3D
+                                        {
+                                              mipWidth  > 1 ? mipWidth  / 2 : 1
+                                            , mipHeight > 1 ? mipHeight / 2 : 1
+                                            , 1
+                                        }
+                                }
                 };
-
-                blit.srcSubresource                         = vk::ImageSubresourceLayers(
-                                                                                           vk::ImageAspectFlagBits::eColor
-                                                                                         , i - 1
-                                                                                         , 0
-                                                                                         , 1
-                                                                                        );
-                
-                blit.dstSubresource                         = vk::ImageSubresourceLayers(
-                                                                                           vk::ImageAspectFlagBits::eColor
-                                                                                         , i
-                                                                                         , 0
-                                                                                         , 1
-                                                                                        );
-                
-                commandBuffer->blitImage(  
-                                           image
-                                         , vk::ImageLayout::eTransferSrcOptimal
-                                         , image
-                                         , vk::ImageLayout::eTransferDstOptimal
-                                         , {blit}
-                                         , vk::Filter::eLinear
-                                        );
+		
+                commandBuffer.blitImage(
+                      image
+                    , vk::ImageLayout::eTransferSrcOptimal
+                    , image
+                    , vk::ImageLayout::eTransferDstOptimal
+                    , std::array<vk::ImageBlit, 1>{blit}
+                    , vk::Filter::eLinear
+                );
 
                 barrier.oldLayout                           = vk::ImageLayout::eTransferSrcOptimal;
                 barrier.newLayout                           = vk::ImageLayout::eShaderReadOnlyOptimal;
                 barrier.srcAccessMask                       = vk::AccessFlagBits::eTransferRead;
                 barrier.dstAccessMask                       = vk::AccessFlagBits::eShaderRead;
 
-                commandBuffer->pipelineBarrier(
+                commandBuffer.pipelineBarrier(
                       vk::PipelineStageFlagBits::eTransfer
                     , vk::PipelineStageFlagBits::eFragmentShader
                     , {}
-                    , {}
-                    , {}
-                    , barrier
+                    , std::array<vk::MemoryBarrier, 0>{}
+                    , std::array<vk::BufferMemoryBarrier, 0>{}
+                    , std::array<vk::ImageMemoryBarrier, 1>{barrier}
                 );
 
                 if (mipWidth > 1)
@@ -1734,16 +1733,16 @@ class HelloTriangleApplication
             barrier.srcAccessMask                           = vk::AccessFlagBits::eTransferWrite;
             barrier.dstAccessMask                           = vk::AccessFlagBits::eShaderRead;
 
-            commandBuffer->pipelineBarrier(
-                    vk::PipelineStageFlagBits::eTransfer
+            commandBuffer.pipelineBarrier(
+                  vk::PipelineStageFlagBits::eTransfer
                 , vk::PipelineStageFlagBits::eFragmentShader
                 , {}
-                , {}
-                , {}
-                , barrier
+                , std::array<vk::MemoryBarrier, 0>{}
+                , std::array<<vk::BufferMemoryBarrier, 0>{}
+                , std::array<vk::ImageMemoryBarrier, 1>{barrier}
             );
 
-            endSingleTimeCommands(*commandBuffer);
+            endSingleTimeCommands(commandBuffer);
         }
         
 
