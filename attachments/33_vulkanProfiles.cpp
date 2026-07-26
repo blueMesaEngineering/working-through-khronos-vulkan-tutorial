@@ -1631,18 +1631,18 @@ class HelloTriangleApplication
 
             vk::raii::CommandBuffer commandBuffer = beginSingleTimeCommands();
 
-            vk::ImageMemoryBarrier          barrier         =
+            vk::ImageMemoryBarrier          barrier
             {
                   .srcQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
                 , .dstQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
                 , .image                                    = image
-		, .subresourceRange			    =
-		{
-			.aspectMask             = vk::ImageAspectFlagBits::eColor
-			, .levelCount             = 1
-			, .baseArrayLayer         = 0
-			, .layerCount             = 1
-		}
+		            , .subresourceRange			    =
+                        {
+                              .aspectMask                   = vk::ImageAspectFlagBits::eColor
+                            , .levelCount                   = 1
+                            , .baseArrayLayer               = 0
+                            , .layerCount                   = 1
+                        }
             };
 
             int32_t                         mipWidth        = texWidth;
@@ -1665,7 +1665,7 @@ class HelloTriangleApplication
                     , std::array<vk::ImageMemoryBarrier, 1>{barrier}
                 );
 
-                vk::ImageBlit blit                          = 
+                vk::ImageBlit blit
                 {
                       .srcSubresource                       = 
                     {
@@ -1738,7 +1738,7 @@ class HelloTriangleApplication
                 , vk::PipelineStageFlagBits::eFragmentShader
                 , {}
                 , std::array<vk::MemoryBarrier, 0>{}
-                , std::array<<vk::BufferMemoryBarrier, 0>{}
+                , std::array<vk::BufferMemoryBarrier, 0>{}
                 , std::array<vk::ImageMemoryBarrier, 1>{barrier}
             );
 
@@ -1796,6 +1796,43 @@ class HelloTriangleApplication
 
 //******************************************************************************************
 // 
+//  Name:           createImageView
+//  Arguments:      N/A
+//  Returns:        vk::raii::ImageView
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        vk::raii::ImageView createImageView(
+              vk::Image image
+            , vk::Format format
+            , vk::ImageAspectFlags aspectFlags
+            , uint32_t mipLevels
+        ) 
+        {
+            vk::ImageViewCreateInfo     viewInfo
+            {
+                  .image                                    = image
+                , .viewType                                 = vk::ImageViewType::e2D
+                , .format                                   = format
+                , .subresourceRange                         = 
+                {
+                      .aspectMask			                = aspectFlags
+                    , .baseMipLevel			                = 0
+                    , .levelCount			                = mipLevels
+                    , .baseArrayLayer			            = 0
+                    , .layerCount			                = 1
+                }
+            };
+
+            return device.createImageView(viewInfo);
+        }
+        
+
+//******************************************************************************************
+// 
 //  Name:           createTextureImageView
 //  Arguments:      N/A
 //  Returns:        void
@@ -1807,10 +1844,11 @@ class HelloTriangleApplication
 
         void createTextureImageView()
         {
-            textureImageView                                = createImageView(  textureImage
+            textureImageView                                = createImageView(  
+                                                                                *textureImage
                                                                               , vk::Format::eR8G8B8A8Srgb
                                                                               , vk::ImageAspectFlagBits::eColor
-                                                                              , mipLevels
+                                                                              , 1
                                                                              );
         }
         
@@ -1849,45 +1887,7 @@ class HelloTriangleApplication
                                                                                 , samplerInfo
                                                                                );
         }
-        
 
-//******************************************************************************************
-// 
-//  Name:           createImageView
-//  Arguments:      N/A
-//  Returns:        vk::raii::ImageView
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        [[nodiscard]] vk::raii::ImageView createImageView(
-              const vk::raii::Image &image
-            , vk::Format format
-            , vk::ImageAspectFlags aspectFlags
-            , uint32_t mipLevels
-        ) const
-        {
-            vk::ImageViewCreateInfo     viewInfo
-            {
-                  .image                                    = image
-                , .viewType                                 = vk::ImageViewType::e2D
-                , .format                                   = format
-                , .subresourceRange                         = 
-                {
-                      aspectFlags
-                    , 0
-                    , mipLevels
-                    , 0
-                    , 1
-                }
-            };
-
-            return vk::raii::ImageView(  device
-                                       , viewInfo);
-        }
-        
 
 //******************************************************************************************
 // 
