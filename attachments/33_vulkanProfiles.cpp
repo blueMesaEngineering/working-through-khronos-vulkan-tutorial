@@ -1881,11 +1881,13 @@ class HelloTriangleApplication
                 , .maxAnisotropy                            = properties.limits.maxSamplerAnisotropy
                 , .compareEnable                            = vk::False
                 , .compareOp                                = vk::CompareOp::eAlways
+                , .minLod                                   = 0.0f
+                , .maxLod                                   = 0.0f
+                , .borderColor                              = vk::BorderColor::eIntOpaqueBlack
+                , .unnormalizedCoordinates                  = VK_FALSE
             };
 
-            textureSampler                                  = vk::raii::Sampler(  device
-                                                                                , samplerInfo
-                                                                               );
+            textureSampler                                  = device.createSampler(samplerInfo);
         }
         
 
@@ -1903,42 +1905,43 @@ class HelloTriangleApplication
         void createVertexBuffer()
         {
             vk::DeviceSize          bufferSize              = sizeof(vertices[0]) * vertices.size();
-            vk::raii::Buffer        stagingBuffer({});
-            vk::raii::DeviceMemory  stagingBufferMemory({});
+            
+            vk::raii::Buffer        stagingBuffer           = nullptr;
+            vk::raii::DeviceMemory  stagingBufferMemory     = nullptr;
 
             createBuffer(
-                           bufferSize
-                         , vk::BufferUsageFlagBits::eTransferSrc
-                         , vk::MemoryPropertyFlagBits::eHostVisible
-                         | vk::MemoryPropertyFlagBits::eHostCoherent
-                         , stagingBuffer
-                         , stagingBufferMemory
-                        );
+                  bufferSize
+                , vk::BufferUsageFlagBits::eTransferSrc
+                , vk::MemoryPropertyFlagBits::eHostVisible
+                | vk::MemoryPropertyFlagBits::eHostCoherent
+                , stagingBuffer
+                , stagingBufferMemory
+            );
 
-            void *dataStaging                               = stagingBufferMemory.mapMemory(0, bufferSize);
+            void *data                                      = stagingBufferMemory.mapMemory(0, bufferSize);
 
             memcpy(
-                     dataStaging
-                   , vertices.data()
-                   , bufferSize
-                  );
+                  data
+                , vertices.data()
+                , (size_t) bufferSize
+            );
 
             stagingBufferMemory.unmapMemory();
 
             createBuffer(
-                           bufferSize
-                         , vk::BufferUsageFlagBits::eTransferDst
-                         | vk::BufferUsageFlagBits::eVertexBuffer 
-                         , vk::MemoryPropertyFlagBits::eDeviceLocal
-                         , vertexBuffer
-                         , vertexBufferMemory
-                        );
+                  bufferSize
+                , vk::BufferUsageFlagBits::eTransferDst
+                | vk::BufferUsageFlagBits::eVertexBuffer 
+                , vk::MemoryPropertyFlagBits::eDeviceLocal
+                , vertexBuffer
+                , vertexBufferMemory
+            );
 
             copyBuffer(
-                         stagingBuffer
-                       , vertexBuffer
-                       , bufferSize
-                      );
+                  *stagingBuffer
+                , *vertexBuffer
+                , bufferSize
+            );
         }
         
 
@@ -2009,15 +2012,18 @@ class HelloTriangleApplication
 
         void createUniformBuffers()
         {
-            uniformBuffers.clear();
-            uniformBuffersMemory.clear();
-            uniformBuffersMapped.clear();
+	    
+            vk::DeviceSize              bufferSize          = sizeof(UniformBufferObject);
 
+            // Reserve space but don't resize, as RAII objects can't be default-constructed
+            uniformBuffers.reserve(MAX_FRAMES_IN_FLIGHT);
+            uniformBuffersMemory.reserve(MAX_FRAMES_IN_FLIGHT);
+            uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+	    
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-                vk::DeviceSize          bufferSize          = sizeof(UniformBufferObject);
-                vk::raii::Buffer        buffer({});
-                vk::raii::DeviceMemory  bufferMem({});
+                vk::raii::Buffer        buffer              = nullptr;
+                vk::raii::DeviceMemory  bufferMemory        = nullptr;
 
                 createBuffer(
                       bufferSize
@@ -2025,14 +2031,14 @@ class HelloTriangleApplication
                     , vk::MemoryPropertyFlagBits::eHostVisible
                     | vk::MemoryPropertyFlagBits::eHostCoherent
                     , buffer
-                    , bufferMem
+                    , bufferMemory
                 );
 
-                uniformBuffers.emplace_back(std::move(buffer));
+                uniformBuffers.push_back(std::move(buffer));
 
-                uniformBuffersMemory.emplace_back(std::move(bufferMem));
+                uniformBuffersMemory.push_back(std::move(bufferMemory));
 
-                uniformBuffersMapped.emplace_back(uniformBuffersMemory[i].mapMemory(0, bufferSize));
+                uniformBuffersMapped[i] 		            = uniformBuffersMemory[i].mapMemory(0, bufferSize);
             }
         }
 
