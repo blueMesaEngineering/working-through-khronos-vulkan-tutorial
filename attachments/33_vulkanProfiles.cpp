@@ -1887,6 +1887,306 @@ class HelloTriangleApplication
                                                                                 , samplerInfo
                                                                                );
         }
+        
+
+//******************************************************************************************
+// 
+//  Name:           createVertexBuffer
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createVertexBuffer()
+        {
+            vk::DeviceSize          bufferSize              = sizeof(vertices[0]) * vertices.size();
+            vk::raii::Buffer        stagingBuffer({});
+            vk::raii::DeviceMemory  stagingBufferMemory({});
+
+            createBuffer(
+                           bufferSize
+                         , vk::BufferUsageFlagBits::eTransferSrc
+                         , vk::MemoryPropertyFlagBits::eHostVisible
+                         | vk::MemoryPropertyFlagBits::eHostCoherent
+                         , stagingBuffer
+                         , stagingBufferMemory
+                        );
+
+            void *dataStaging                               = stagingBufferMemory.mapMemory(0, bufferSize);
+
+            memcpy(
+                     dataStaging
+                   , vertices.data()
+                   , bufferSize
+                  );
+
+            stagingBufferMemory.unmapMemory();
+
+            createBuffer(
+                           bufferSize
+                         , vk::BufferUsageFlagBits::eTransferDst
+                         | vk::BufferUsageFlagBits::eVertexBuffer 
+                         , vk::MemoryPropertyFlagBits::eDeviceLocal
+                         , vertexBuffer
+                         , vertexBufferMemory
+                        );
+
+            copyBuffer(
+                         stagingBuffer
+                       , vertexBuffer
+                       , bufferSize
+                      );
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           createIndexBuffer
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createIndexBuffer()
+        {
+            vk::DeviceSize          bufferSize              = sizeof(indices[0]) * indices.size();
+
+            vk::raii::Buffer        stagingBuffer           = nullptr;
+            vk::raii::DeviceMemory  stagingBufferMemory     = nullptr;
+
+            createBuffer(
+                  bufferSize
+                , vk::BufferUsageFlagBits::eTransferSrc
+                , vk::MemoryPropertyFlagBits::eHostVisible
+                | vk::MemoryPropertyFlagBits::eHostCoherent
+                , stagingBuffer
+                , stagingBufferMemory
+            );
+
+            void                *data                       = stagingBufferMemory.mapMemory(0, bufferSize);
+
+            memcpy(
+                  data
+                , indices.data()
+                , (size_t) bufferSize
+            );
+
+            stagingBufferMemory.unmapMemory();
+
+            createBuffer(  
+                  bufferSize
+                , vk::BufferUsageFlagBits::eTransferDst
+                | vk::BufferUsageFlagBits::eIndexBuffer
+                , vk::MemoryPropertyFlagBits::eDeviceLocal
+                , indexBuffer
+                , indexBufferMemory
+            );
+
+            copyBuffer(
+                  *stagingBuffer
+                , *indexBuffer
+                , bufferSize
+            );
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           createUniformBuffers
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createUniformBuffers()
+        {
+            uniformBuffers.clear();
+            uniformBuffersMemory.clear();
+            uniformBuffersMapped.clear();
+
+            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+                vk::DeviceSize          bufferSize          = sizeof(UniformBufferObject);
+                vk::raii::Buffer        buffer({});
+                vk::raii::DeviceMemory  bufferMem({});
+
+                createBuffer(
+                      bufferSize
+                    , vk::BufferUsageFlagBits::eUniformBuffer
+                    , vk::MemoryPropertyFlagBits::eHostVisible
+                    | vk::MemoryPropertyFlagBits::eHostCoherent
+                    , buffer
+                    , bufferMem
+                );
+
+                uniformBuffers.emplace_back(std::move(buffer));
+
+                uniformBuffersMemory.emplace_back(std::move(bufferMem));
+
+                uniformBuffersMapped.emplace_back(uniformBuffersMemory[i].mapMemory(0, bufferSize));
+            }
+        }
+
+
+//******************************************************************************************
+// 
+//  Name:           createDscriptorPool
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createDescriptorPool()
+        {
+            std::array poolSize
+            {
+                vk::DescriptorPoolSize(
+                                        vk::DescriptorType::eUniformBuffer
+                                      , MAX_FRAMES_IN_FLIGHT
+                )
+                , vk::DescriptorPoolSize(
+                                        vk::DescriptorType::eCombinedImageSampler
+                                      , MAX_FRAMES_IN_FLIGHT
+                )
+            };
+
+            vk::DescriptorPoolCreateInfo    poolInfo
+            {
+                  .flags                                    = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
+                , .maxSets                                  = MAX_FRAMES_IN_FLIGHT
+                , .poolSizeCount                            = static_cast<uint32_t>(poolSize.size())
+                , .pPoolSizes                               = poolSize.data()
+            };
+
+            descriptorPool                                  = vk::raii::DescriptorPool(device, poolInfo);
+        }
+
+
+//******************************************************************************************
+// 
+//  Name:           createDescriptorSets
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createDescriptorSets()
+        {
+            std::vector<vk::DescriptorSetLayout>    layouts(  MAX_FRAMES_IN_FLIGHT
+                                                            , descriptorSetLayout);
+            vk::DescriptorSetAllocateInfo           allocInfo
+            {
+                  .descriptorPool                           = descriptorPool
+                , .descriptorSetCount                       = static_cast<uint32_t>(layouts.size())
+                , .pSetLayouts                              = layouts.data()
+            };
+
+            descriptorSets.clear();
+
+            descriptorSets                                  = device.allocateDescriptorSets(allocInfo);
+
+            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+                vk::DescriptorBufferInfo            bufferInfo
+                {
+                      .buffer                               = uniformBuffers[i]
+                    , .offset                               = 0
+                    , .range                                = sizeof(UniformBufferObject)
+                };
+
+                vk::DescriptorImageInfo             imageInfo
+                {
+                      .sampler                              = textureSampler
+                    , .imageView                            = textureImageView
+                    , .imageLayout                          = vk::ImageLayout::eShaderReadOnlyOptimal
+                };
+
+                std::array                          descriptorWrites
+                {
+                    vk::WriteDescriptorSet
+                    {
+                          .dstSet                               = descriptorSets[i]
+                        , .dstBinding                           = 0
+                        , .dstArrayElement                      = 0
+                        , .descriptorCount                      = 1
+                        , .descriptorType                       = vk::DescriptorType::eUniformBuffer
+                        , .pBufferInfo                          = &bufferInfo
+                    }
+                    , vk::WriteDescriptorSet 
+                    {
+                          .dstSet                               = descriptorSets[i]
+                        , .dstBinding                           = 1
+                        , .dstArrayElement                      = 0
+                        , .descriptorCount                      = 1
+                        , .descriptorType                       = vk::DescriptorType::eCombinedImageSampler
+                        , .pImageInfo                           = &imageInfo
+                    }
+                };
+
+                device.updateDescriptorSets(  descriptorWrites
+                                            , {});
+            }
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           createBuffer
+//  Arguments:      N/A
+//  Returns:        
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createBuffer(  
+              vk::DeviceSize            size
+            , vk::BufferUsageFlags      usage
+            , vk::MemoryPropertyFlags   properties
+            , vk::raii::Buffer          &buffer
+            , vk::raii::DeviceMemory    &bufferMemory
+        )
+        {
+            vk::BufferCreateInfo bufferInfo
+            {
+                  .size                                     = size
+                , .usage                                    = usage
+                , .sharingMode                              = vk::SharingMode::eExclusive
+            };
+
+            buffer                                          = vk::raii::Buffer(device, bufferInfo);
+
+            vk::MemoryRequirements  memRequirements         = buffer.getMemoryRequirements();
+
+            vk::MemoryAllocateInfo  allocInfo
+            {
+                  .allocationSize                           = memRequirements.size
+                , .memoryTypeIndex                          = findMemoryType(
+                                                                               memRequirements.memoryTypeBits
+                                                                             , properties
+                                                                            )
+            };
+
+            bufferMemory            = vk::raii::DeviceMemory(device, allocInfo);
+            
+            buffer.bindMemory(bufferMemory, 0);
+        }
 
 
 //******************************************************************************************
@@ -2130,303 +2430,6 @@ class HelloTriangleApplication
                     indices.push_back(uniqueVertices[vertex]);
                 }
             }
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createVertexBuffer
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createVertexBuffer()
-        {
-            vk::DeviceSize          bufferSize              = sizeof(vertices[0]) * vertices.size();
-            vk::raii::Buffer        stagingBuffer({});
-            vk::raii::DeviceMemory  stagingBufferMemory({});
-
-            createBuffer(
-                           bufferSize
-                         , vk::BufferUsageFlagBits::eTransferSrc
-                         , vk::MemoryPropertyFlagBits::eHostVisible
-                         | vk::MemoryPropertyFlagBits::eHostCoherent
-                         , stagingBuffer
-                         , stagingBufferMemory
-                        );
-
-            void *dataStaging                               = stagingBufferMemory.mapMemory(0, bufferSize);
-
-            memcpy(
-                     dataStaging
-                   , vertices.data()
-                   , bufferSize
-                  );
-
-            stagingBufferMemory.unmapMemory();
-
-            createBuffer(
-                           bufferSize
-                         , vk::BufferUsageFlagBits::eTransferDst
-                         | vk::BufferUsageFlagBits::eVertexBuffer 
-                         , vk::MemoryPropertyFlagBits::eDeviceLocal
-                         , vertexBuffer
-                         , vertexBufferMemory
-                        );
-
-            copyBuffer(
-                         stagingBuffer
-                       , vertexBuffer
-                       , bufferSize
-                      );
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createIndexBuffer
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createIndexBuffer()
-        {
-            vk::DeviceSize          bufferSize              = sizeof(indices[0]) * indices.size();
-
-            vk::raii::Buffer        stagingBuffer({});
-            vk::raii::DeviceMemory  stagingBufferMemory({});
-
-            createBuffer(
-                  bufferSize
-                , vk::BufferUsageFlagBits::eTransferSrc
-                , vk::MemoryPropertyFlagBits::eHostVisible
-                | vk::MemoryPropertyFlagBits::eHostCoherent
-                , stagingBuffer
-                , stagingBufferMemory
-            );
-
-            void                *data                       = stagingBufferMemory.mapMemory(  0
-                                                                                            , bufferSize);
-
-            memcpy(  data
-                   , indices.data()
-                   , bufferSize);
-
-            stagingBufferMemory.unmapMemory();
-
-            createBuffer(  
-                  bufferSize
-                , vk::BufferUsageFlagBits::eTransferDst
-                | vk::BufferUsageFlagBits::eIndexBuffer
-                , vk::MemoryPropertyFlagBits::eDeviceLocal
-                , indexBuffer
-                , indexBufferMemory
-            );
-
-            copyBuffer(  stagingBuffer
-                       , indexBuffer
-                       , bufferSize);
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createUniformBuffers
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createUniformBuffers()
-        {
-            uniformBuffers.clear();
-            uniformBuffersMemory.clear();
-            uniformBuffersMapped.clear();
-
-            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                vk::DeviceSize          bufferSize          = sizeof(UniformBufferObject);
-                vk::raii::Buffer        buffer({});
-                vk::raii::DeviceMemory  bufferMem({});
-
-                createBuffer(
-                      bufferSize
-                    , vk::BufferUsageFlagBits::eUniformBuffer
-                    , vk::MemoryPropertyFlagBits::eHostVisible
-                    | vk::MemoryPropertyFlagBits::eHostCoherent
-                    , buffer
-                    , bufferMem
-                );
-
-                uniformBuffers.emplace_back(std::move(buffer));
-
-                uniformBuffersMemory.emplace_back(std::move(bufferMem));
-
-                uniformBuffersMapped.emplace_back(uniformBuffersMemory[i].mapMemory(0, bufferSize));
-            }
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           createDscriptorPool
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createDescriptorPool()
-        {
-            std::array poolSize
-            {
-                vk::DescriptorPoolSize(
-                                        vk::DescriptorType::eUniformBuffer
-                                      , MAX_FRAMES_IN_FLIGHT
-                )
-                , vk::DescriptorPoolSize(
-                                        vk::DescriptorType::eCombinedImageSampler
-                                      , MAX_FRAMES_IN_FLIGHT
-                )
-            };
-
-            vk::DescriptorPoolCreateInfo    poolInfo
-            {
-                  .flags                                    = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
-                , .maxSets                                  = MAX_FRAMES_IN_FLIGHT
-                , .poolSizeCount                            = static_cast<uint32_t>(poolSize.size())
-                , .pPoolSizes                               = poolSize.data()
-            };
-
-            descriptorPool                                  = vk::raii::DescriptorPool(device, poolInfo);
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           createDescriptorSets
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createDescriptorSets()
-        {
-            std::vector<vk::DescriptorSetLayout>    layouts(  MAX_FRAMES_IN_FLIGHT
-                                                            , descriptorSetLayout);
-            vk::DescriptorSetAllocateInfo           allocInfo
-            {
-                  .descriptorPool                           = descriptorPool
-                , .descriptorSetCount                       = static_cast<uint32_t>(layouts.size())
-                , .pSetLayouts                              = layouts.data()
-            };
-
-            descriptorSets.clear();
-
-            descriptorSets                                  = device.allocateDescriptorSets(allocInfo);
-
-            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                vk::DescriptorBufferInfo            bufferInfo
-                {
-                      .buffer                               = uniformBuffers[i]
-                    , .offset                               = 0
-                    , .range                                = sizeof(UniformBufferObject)
-                };
-
-                vk::DescriptorImageInfo             imageInfo
-                {
-                      .sampler                              = textureSampler
-                    , .imageView                            = textureImageView
-                    , .imageLayout                          = vk::ImageLayout::eShaderReadOnlyOptimal
-                };
-
-                std::array                          descriptorWrites
-                {
-                    vk::WriteDescriptorSet
-                    {
-                          .dstSet                               = descriptorSets[i]
-                        , .dstBinding                           = 0
-                        , .dstArrayElement                      = 0
-                        , .descriptorCount                      = 1
-                        , .descriptorType                       = vk::DescriptorType::eUniformBuffer
-                        , .pBufferInfo                          = &bufferInfo
-                    }
-                    , vk::WriteDescriptorSet 
-                    {
-                          .dstSet                               = descriptorSets[i]
-                        , .dstBinding                           = 1
-                        , .dstArrayElement                      = 0
-                        , .descriptorCount                      = 1
-                        , .descriptorType                       = vk::DescriptorType::eCombinedImageSampler
-                        , .pImageInfo                           = &imageInfo
-                    }
-                };
-
-                device.updateDescriptorSets(  descriptorWrites
-                                            , {});
-            }
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createBuffer
-//  Arguments:      N/A
-//  Returns:        
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createBuffer(  
-              vk::DeviceSize            size
-            , vk::BufferUsageFlags      usage
-            , vk::MemoryPropertyFlags   properties
-            , vk::raii::Buffer          &buffer
-            , vk::raii::DeviceMemory    &bufferMemory
-        )
-        {
-            vk::BufferCreateInfo bufferInfo
-            {
-                  .size                                     = size
-                , .usage                                    = usage
-                , .sharingMode                              = vk::SharingMode::eExclusive
-            };
-
-            buffer                                          = vk::raii::Buffer(device, bufferInfo);
-
-            vk::MemoryRequirements  memRequirements         = buffer.getMemoryRequirements();
-
-            vk::MemoryAllocateInfo  allocInfo
-            {
-                  .allocationSize                           = memRequirements.size
-                , .memoryTypeIndex                          = findMemoryType(
-                                                                               memRequirements.memoryTypeBits
-                                                                             , properties
-                                                                            )
-            };
-
-            bufferMemory            = vk::raii::DeviceMemory(device, allocInfo);
-            
-            buffer.bindMemory(bufferMemory, 0);
         }
 
 
