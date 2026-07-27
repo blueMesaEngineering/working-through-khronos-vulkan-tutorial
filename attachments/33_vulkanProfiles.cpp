@@ -2090,15 +2090,13 @@ class HelloTriangleApplication
         void createDescriptorSets()
         {
             std::vector<vk::DescriptorSetLayout>    layouts(  MAX_FRAMES_IN_FLIGHT
-                                                            , descriptorSetLayout);
+                                                            , *descriptorSetLayout);
             vk::DescriptorSetAllocateInfo           allocInfo
             {
-                  .descriptorPool                           = descriptorPool
-                , .descriptorSetCount                       = static_cast<uint32_t>(layouts.size())
+                  .descriptorPool                           = *descriptorPool
+                , .descriptorSetCount                       = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
                 , .pSetLayouts                              = layouts.data()
             };
-
-            descriptorSets.clear();
 
             descriptorSets                                  = device.allocateDescriptorSets(allocInfo);
 
@@ -2106,44 +2104,39 @@ class HelloTriangleApplication
             {
                 vk::DescriptorBufferInfo            bufferInfo
                 {
-                      .buffer                               = uniformBuffers[i]
+                      .buffer                               = *uniformBuffers[i]
                     , .offset                               = 0
                     , .range                                = sizeof(UniformBufferObject)
                 };
 
                 vk::DescriptorImageInfo             imageInfo
                 {
-                      .sampler                              = textureSampler
-                    , .imageView                            = textureImageView
+                      .sampler                              = *textureSampler
+                    , .imageView                            = *textureImageView
                     , .imageLayout                          = vk::ImageLayout::eShaderReadOnlyOptimal
                 };
 
-                std::array                          descriptorWrites
-                {
-                    vk::WriteDescriptorSet
-                    {
-                          .dstSet                               = descriptorSets[i]
-                        , .dstBinding                           = 0
-                        , .dstArrayElement                      = 0
-                        , .descriptorCount                      = 1
-                        , .descriptorType                       = vk::DescriptorType::eUniformBuffer
-                        , .pBufferInfo                          = &bufferInfo
-                    }
-                    , vk::WriteDescriptorSet 
-                    {
-                          .dstSet                               = descriptorSets[i]
-                        , .dstBinding                           = 1
-                        , .dstArrayElement                      = 0
-                        , .descriptorCount                      = 1
-                        , .descriptorType                       = vk::DescriptorType::eCombinedImageSampler
-                        , .pImageInfo                           = &imageInfo
-                    }
-                };
+                std::array<vk::WriteDescriptorSet, 2> descriptorWrites{};
+		
+                descriptorWrites[0].dstSet                  = *descriptorSets[i];
+                descriptorWrites[0].dstBinding              = 0;
+                descriptorWrites[0].dstArrayElement         = 0;
+                descriptorWrites[0].descriptorType          = vk::DescriptorType::eUniformBuffer;
+                descriptorWrites[0].descriptorCount         = 1;
+                descriptorWrites[0].pBufferInfo             = &bufferInfo;
+
+                descriptorWrites[1].dstSet                  = *descriptorSets[i];
+                descriptorWrites[1].dstBinding              = 1;
+                descriptorWrites[1].dstArrayElement         = 0;
+                descriptorWrites[1].descriptorType          = vk::DescriptorType::eCombinedImageSampler;
+                descriptorWrites[1].descriptorCount         = 1;
+                descriptorWrites[1].pImageInfo              = &imageInfo;
 
                 device.updateDescriptorSets(  descriptorWrites
-                                            , {});
+                                            , nullptr);
             }
         }
+
         
 
 //******************************************************************************************
