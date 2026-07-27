@@ -2056,28 +2056,24 @@ class HelloTriangleApplication
 
         void createDescriptorPool()
         {
-            std::array poolSize
-            {
-                vk::DescriptorPoolSize(
-                                        vk::DescriptorType::eUniformBuffer
-                                      , MAX_FRAMES_IN_FLIGHT
-                )
-                , vk::DescriptorPoolSize(
-                                        vk::DescriptorType::eCombinedImageSampler
-                                      , MAX_FRAMES_IN_FLIGHT
-                )
-            };
+            std::array <vk::DescriptorPoolSize, 2> poolSizes{};
+	    
+            poolSizes[0].type				                = vk::DescriptorType::eUniformBuffer;
+            poolSizes[0].descriptorCount		            = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+            poolSizes[1].type				                = vk::DescriptorType::eCombinedImageSampler;
+            poolSizes[1].descriptorCount		            = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
             vk::DescriptorPoolCreateInfo    poolInfo
             {
                   .flags                                    = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
-                , .maxSets                                  = MAX_FRAMES_IN_FLIGHT
-                , .poolSizeCount                            = static_cast<uint32_t>(poolSize.size())
-                , .pPoolSizes                               = poolSize.data()
+                , .maxSets                                  = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
+                , .poolSizeCount                            = static_cast<uint32_t>(poolSizes.size())
+                , .pPoolSizes                               = poolSizes.data()
             };
 
-            descriptorPool                                  = vk::raii::DescriptorPool(device, poolInfo);
+            descriptorPool                                  = device.createDescriptorPool(poolInfo);
         }
+
 
 
 //******************************************************************************************
