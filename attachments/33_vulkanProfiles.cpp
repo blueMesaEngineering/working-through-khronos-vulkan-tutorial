@@ -2888,25 +2888,27 @@ class HelloTriangleApplication
 
         void createSyncObjects()
         {
-            assert(   presentCompleteSemaphores.empty() 
-                   && renderFinishedSemaphores.empty()
-                   && inFlightFences.empty());
+            imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+            renderFinishedSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+            inFlightFences.reserve(MAX_FRAMES_IN_FLIGHT);
+            presentCompleteSemaphore.reserve(swapChainImages.size());
+            
+            vk::SemaphoreCreateInfo		    semaphoreInfo{};
+            vk::FenceCreateInfo		        fenceInfo
+                                            {
+                                                .flags		= vk::FenceCreateFlagBits::eSignaled
+                                            };
+		
+            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+		        imageAvailableSemaphores.push_back(device.createSemaphore(semaphoreInfo));
+                renderFinishedSemaphores.push_back(device.createSemaphore(semaphoreInfo));
+                inFlightFences.push_back(device.createFence(fenceInfo));
+            }
 
             for (size_t i = 0; i < swapChainImages.size(); i++)
             {
-                renderFinishedSemaphores.emplace_back(  device
-                                                      , vk::SemaphoreCreateInfo());
-            }
-
-            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                presentCompleteSemaphores.emplace_back(  device
-                                                       , vk::SemaphoreCreateInfo());
-                inFlightFences.emplace_back(  device
-                                            , vk::FenceCreateInfo
-                                            {  
-                                                .flags = vk::FenceCreateFlagBits::eSignaled
-                                            });
+                presentCompleteSemaphore.push_back(device.createSemaphore(semaphoreInfo));
             }
         }
 
@@ -2922,34 +2924,43 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        void updateUniformBuffer(uint32_t currentImage) const
+        void updateUniformBuffer(uint32_t currentImage)
         {
             static auto             startTime               = std::chrono::high_resolution_clock::now();
 
             auto                    currentTime             = std::chrono::high_resolution_clock::now();
-            float                   time                    = std::chrono::duration<float>(currentTime - startTime).count();
+            float                   time                    = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
             UniformBufferObject     ubo{};
 
-            ubo.model                                       = rotate(  glm::mat4(1.0f)
-                                                                     , time * glm::radians(90.0f)
-                                                                     , glm::vec3(0.0f, 0.0f, 1.0f));
+            ubo.model                                       = glm::rotate(
+                                                                          glm::mat4(1.0f)
+                                                                        , time * glm::radians(90.0f)
+                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
+                                                                        );
             
-            ubo.view                                        = lookAt(  glm::vec3(2.0f, 2.0f, 2.0f)
-                                                                     , glm::vec3(0.0f, 0.0f, 0.0f)
-                                                                     , glm::vec3(0.0f, 0.0f, 1.0f));
+            ubo.view                                        = glm::lookAt(
+                                                                          glm::vec3(2.0f, 2.0f, 2.0f)
+                                                                        , glm::vec3(0.0f, 0.0f, 0.0f)
+                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
+                                                                        );
 
-            ubo.proj                                        = glm::perspective(  glm::radians(45.0f)
-                                                                               , static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height)
-                                                                               , 0.1f
-                                                                               , 10.0f);
+            ubo.proj                                        = glm::perspective(
+                                                                          glm::radians(45.0f)
+                                                                        , static_cast<float>(swapChainExtent.width) / (float) swapChainExtent.height
+                                                                        , 0.1f
+                                                                        , 10.0f
+                                                                        );
 
             ubo.proj[1][1] *= -1;
 
-            memcpy(  uniformBuffersMapped[currentImage]
+            memcpy(
+                      uniformBuffersMapped[currentImage]
                    , &ubo
-                   , sizeof(ubo));
+                   , sizeof(ubo)
+                );
         }
+
 
 
 //******************************************************************************************
