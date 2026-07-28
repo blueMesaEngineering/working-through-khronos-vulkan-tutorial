@@ -2976,23 +2976,28 @@ class HelloTriangleApplication
 
         void drawFrame()
         {
-            // Note: inFlightFences, presentCompleteSemaphores, and commandBuffers are indexed by frameIndex,
-            //       while renderFinishedSemaphores is index by imageIndex
-            auto fenceResult                                =  device.waitForFences(  *inFlightFences[frameIndex]
-                                                                                    , vk::True
-                                                                                    , UINT64_MAX);
+            vk::Result fenceResult                          =  device.waitForFences(
+                                                                                  {*inFlightFences[frameIndex]}
+                                                                                , VK_TRUE
+                                                                                , UINT64_MAX
+                                                                                );
+
             if (fenceResult != vk::Result::eSuccess)
             {
                 throw std::runtime_error("Failed to wait for fence!");
             }
-            
-            auto [  result
-                , imageIndex] = swapChain.acquireNextImage(  UINT64_MAX
-                    , *presentCompleteSemaphores[frameIndex]
-                    , nullptr);
+
+            auto [
+                  result
+                , imageIndex
+                ]           = swapChain.acquireNextImage(
+			                                          UINT64_MAX
+                                                    , *imageAvailableSemaphores[frameIndex]
+                                                    , nullptr
+                                                    );
 
             // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
-            // here and does not need to be caugfht by and exception.
+            // here and does not need to be caught by an exception.
 
             if (result == vk::Result::eErrorOutOfDateKHR)
             {
@@ -3001,13 +3006,13 @@ class HelloTriangleApplication
             }
 
             // On other success codes than eSuccess and eSuboptimalKHR we just throw an exception.
-            // On any error code, aquireNextImage already threw and exception.
+            // On any error code, aquireNextImage already threw an exception.
 
             if (   result != vk::Result::eSuccess 
                 && result != vk::Result::eSuboptimalKHR)
             {
-                assert(  result == vk::Result::eTimeout 
-                      || result == vk::Result::eNotReady);
+                assert(   result == vk::Result::eTimeout 
+                       || result == vk::Result::eNotReady);
                 throw std::runtime_error("Failed to acquire swap chain image!");
             }
 
@@ -3032,8 +3037,10 @@ class HelloTriangleApplication
                 , .pSignalSemaphores                        = &*renderFinishedSemaphores[imageIndex]
             };
 
-            queue.submit(  submitInfo
-                         , *inFlightFences[frameIndex]);
+            queue.submit(
+                  submitInfo
+                , *inFlightFences[frameIndex]
+            );
 
             const vk::PresentInfoKHR    presentInfoKHR
             {
@@ -3044,7 +3051,7 @@ class HelloTriangleApplication
                 , .pImageIndices                            = &imageIndex
             };
 
-            result = queue.presentKHR(presentInfoKHR);
+            result                                          = queue.presentKHR(presentInfoKHR);
 
             // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
             // here and does not need to be caught by an exception.
@@ -3053,7 +3060,7 @@ class HelloTriangleApplication
                 || (result == vk::Result::eErrorOutOfDateKHR) 
                 || framebufferResized)
             {
-                framebufferResized = false;
+                framebufferResized                          = false;
                 recreateSwapChain();
             }
             else
@@ -3062,8 +3069,9 @@ class HelloTriangleApplication
                 assert(result == vk::Result::eSuccess);
             }
 
-            frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+            frameIndex                                      = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
         }
+
 
 
 //******************************************************************************************
@@ -3081,8 +3089,8 @@ class HelloTriangleApplication
     {
         vk::ShaderModuleCreateInfo createInfo
         {
-              .codeSize     = code.size()
-            , .pCode        = reinterpret_cast<const uint32_t *>(code.data())
+              .codeSize                                     = code.size()
+            , .pCode                                        = reinterpret_cast<const uint32_t *>(code.data())
         };
 
         vk::raii::ShaderModule shaderModule
