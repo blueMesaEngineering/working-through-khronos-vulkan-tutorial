@@ -1796,6 +1796,36 @@ class HelloTriangleApplication
 
 //******************************************************************************************
 // 
+//  Name:           findMemoryType
+//  Arguments:      N/A
+//  Returns:        uint32_t
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        uint32_t findMemoryType(
+              uint32_t typeFilter
+            , vk::MemoryPropertyFlags properties
+        )
+        {
+            vk::PhysicalDeviceMemoryProperties              memProperties = physicalDevice.getMemoryProperties();
+
+            for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+            {
+                if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                {
+                    return i;
+                }
+            }
+
+            throw std::runtime_error("Failed to find suitable memory type!");
+        }
+        
+
+//******************************************************************************************
+// 
 //  Name:           createImageView
 //  Arguments:      N/A
 //  Returns:        vk::raii::ImageView
@@ -2295,11 +2325,11 @@ class HelloTriangleApplication
                   .imageType                                = vk::ImageType::e2D
                 , .format                                   = format
                 , .extent                                   = 
-			{ 
-				  .width	                                = width
-				, .height	                                = height
-				, .depth	                                = 1 
-			}
+                { 
+                      .width	                            = width
+                    , .height	                            = height
+                    , .depth	                            = 1 
+                }
                 , .mipLevels                                = mipLevels
                 , .arrayLayers                              = 1
                 , .samples                                  = numSamples
@@ -2339,28 +2369,44 @@ class HelloTriangleApplication
 //******************************************************************************************
 
         void transitionImageLayout(
-              const vk::raii::Image         &image
-            , const vk::ImageLayout         oldLayout
-            , const vk::ImageLayout         newLayout
+              vk::Image         image
+	    , vk::Format	format
+            , vk::ImageLayout               oldLayout
+            , vk::ImageLayout               newLayout
             , uint32_t                      mipLevels
         )
         {
-            const auto                      commandBuffer   = beginSingleTimeCommands();
+            vk::raii::CommandBuffer         commandBuffer   = beginSingleTimeCommands();
 
             vk::ImageMemoryBarrier          barrier         
             {
                   .oldLayout                                = oldLayout
                 , .newLayout                                = newLayout
+                , .srcQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
+                , .dstQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
                 , .image                                    = image
                 , .subresourceRange                         = 
                 {
-                      vk::ImageAspectFlagBits::eColor
-                    , 0
-                    , mipLevels
-                    , 0
-                    , 1
+                    , .baseMipLevel		= 0
+                    , .levelCount		= mipLevels
+                    , .baseArrayLayer		= 0
+                    , .layerCount		= 1
                 }
             };
+	    
+            if (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
+            {
+                barrier.subresourceRange.aspectMask		    = vk::ImageAspectFlagBits::eDepth;
+            
+                if (hasStencilComponent(format))
+                {
+                    barrier.subresourceRange.aspectMask     |= vk::ImageAspectFlagBits::eStencil;
+                }
+            }
+            else
+            {
+                barrier.subresourceRange.aspectMask		    = vk::ImageAspectFlagBits::eColor;
+            }
 
             vk::PipelineStageFlags sourceStage;
             vk::PipelineStageFlags destinationStage;
@@ -2368,7 +2414,7 @@ class HelloTriangleApplication
             if (   oldLayout == vk::ImageLayout::eUndefined 
                 && newLayout == vk::ImageLayout::eTransferDstOptimal)
             {
-                barrier.srcAccessMask                       = {};
+                barrier.srcAccessMask                       = vk::AccessFlagBits::eNone;
                 barrier.dstAccessMask                       = vk::AccessFlagBits::eTransferWrite;
 
                 sourceStage                                 = vk::PipelineStageFlagBits::eTopOfPipe;
@@ -2383,20 +2429,91 @@ class HelloTriangleApplication
                 sourceStage                                 = vk::PipelineStageFlagBits::eTransfer;
                 destinationStage                            = vk::PipelineStageFlagBits::eFragmentShader;
             }
+            else if (   oldLayout == vk::ImageLayout::eUndefined
+                     && newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
+            {
+                barrier.srcAccessMask			            = vk::AccessFlagBits::eNone;
+                barrier.dstAccessMask			            = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                
+                sourceStage				                    = vk::PipelineStageFlagBits::eTopOfPipe;
+                destinationStage			                = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+            }
             else
             {
                 throw std::invalid_argument("Unsupported layout transition!");
             }
 
-            commandBuffer->pipelineBarrier(  sourceStage
-                                           , destinationStage
-                                           , {}
-                                           , {}
-                                           , nullptr
-                                           , barrier
-                                          );
+            commandBuffer.pipelineBarrier(
+                  sourceStage
+                , destinationStage
+                , {}
+                , std::array<vk::MemoryBarrier, 0>{}
+                , std::array<vk::BufferMemoryBarrier, 0>{}
+                , std::array<vk::ImageMemoryBarrier, 1>{barrier}
+            );
 
-            endSingleTimeCommands(*commandBuffer);
+            endSingleTimeCommands(commandBuffer);
+        }
+
+
+//******************************************************************************************
+// 
+//  Name:           beginSingleTimeCommands
+//  Arguments:      N/A
+//  Returns:        std::unique_ptr<vk::raii::CommandBuffer>
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        vk::raii::CommandBuffer beginSingleTimeCommands()
+        {
+            vk::CommandBufferAllocateInfo   allocInfo
+            {
+                  .commandPool                              = *commandPool
+                , .level                                    = vk::CommandBufferLevel::ePrimary
+                , .commandBufferCount                       = 1
+            };
+
+            vk::raii::CommandBuffer        commandBuffer 	= std::move(device.allocateCommandBuffers(allocInfo).front());
+	    
+            vk::CommandBufferBeginInfo      beginInfo
+            {
+                  .flags                                    = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+            };
+
+            commandBuffer.begin(beginInfo);
+
+            return commandBuffer;
+        }
+
+
+
+//******************************************************************************************
+// 
+//  Name:           endSingleTimeCommands
+//  Arguments:      vk::raii::CommandBuffer &&commandBuffer
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void endSingleTimeCommands(vk::raii::CommandBuffer &commandBuffer)
+        {
+            commandBuffer.end();
+
+            vk::SubmitInfo                  submitInfo
+            {
+                  .commandBufferCount                       = 1
+                , .pCommandBuffers                          = &*commandBuffer
+            };
+
+            queue.submit(submitInfo, nullptr);
+
+            queue.waitIdle();
         }
         
 
@@ -2418,7 +2535,7 @@ class HelloTriangleApplication
             std::vector<tinyobj::material_t>    materials;
             std::string                         warn, err;
 
-            if (!LoadObj(
+            if (!tinyobj::LoadObj(
                            &attrib
                          , &shapes
                          , &materials
@@ -2454,112 +2571,15 @@ class HelloTriangleApplication
 
                     vertex.color = { 1.0f, 1.0f, 1.0f};
 
-                    if (!uniqueVertices.contains(vertex))
+                    if (!uniqueVertices.conut(vertex) == 0)
                     {
-                        uniqueVertices[vertex]              = (static_cast<uint32_t>(vertices.size()));
+                        uniqueVertices[vertex]              = static_cast<uint32_t>(vertices.size());
                         vertices.push_back(vertex);
                     }
 
                     indices.push_back(uniqueVertices[vertex]);
                 }
             }
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           beginSingleTimeCommands
-//  Arguments:      N/A
-//  Returns:        std::unique_ptr<vk::raii::CommandBuffer>
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        std::unique_ptr<vk::raii::CommandBuffer> beginSingleTimeCommands()
-        {
-            vk::CommandBufferAllocateInfo   allocInfo
-            {
-                  .commandPool                              = commandPool
-                , .level                                    = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount                       = 1
-            };
-
-            std::unique_ptr<vk::raii::CommandBuffer>        commandBuffer 
-                                                            = std::make_unique<vk::raii::CommandBuffer>(
-                                                              std::move(
-                                                                        vk::raii::CommandBuffers(  
-                                                                              device
-                                                                            , allocInfo).front()
-                                                                        )
-                                                              );
-            vk::CommandBufferBeginInfo      beginInfo
-            {
-                  .flags                                    = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-            };
-
-            commandBuffer->begin(beginInfo);
-
-            return commandBuffer;
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           endSingleTimeCommands
-//  Arguments:      vk::raii::CommandBuffer &&commandBuffer
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void endSingleTimeCommands(const vk::raii::CommandBuffer &commandBuffer) const
-        {
-            commandBuffer.end();
-
-            vk::SubmitInfo                  submitInfo
-            {
-                  .commandBufferCount                       = 1
-                , .pCommandBuffers                          = &*commandBuffer
-            };
-
-            queue.submit(  submitInfo
-                         , nullptr);
-
-            queue.waitIdle();
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           findMemoryType
-//  Arguments:      N/A
-//  Returns:        uint32_t
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        uint32_t findMemoryType(
-              uint32_t typeFilter
-            , vk::MemoryPropertyFlags properties
-        )
-        {
-            vk::PhysicalDeviceMemoryProperties              memProperties = physicalDevice.getMemoryProperties();
-
-            for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-            {
-                if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-                {
-                    return i;
-                }
-            }
-
-            throw std::runtime_error("Failed to find suitable memory type!");
         }
         
 
@@ -2576,16 +2596,18 @@ class HelloTriangleApplication
 
         void createCommandBuffers()
         {
-            commandBuffers.clear();
+            commandBuffers.reserve(MAX_FRAMES_IN_FLIGHT);
+	    
             vk::CommandBufferAllocateInfo allocInfo
             {
-                  .commandPool                              = commandPool
+                  .commandPool                              = *commandPool
                 , .level                                    = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount                       = MAX_FRAMES_IN_FLIGHT
+                , .commandBufferCount                       = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
             };
-            commandBuffers                                  = vk::raii::CommandBuffers(  device
-                                                                                       , allocInfo);
+	    
+            commandBuffers                                  = device.allocateCommandBuffers(allocInfo);
         }
+
         
 
 //******************************************************************************************
@@ -2604,19 +2626,10 @@ class HelloTriangleApplication
             auto &commandBuffer                             = commandBuffers[frameIndex];
             commandBuffer.begin({});
 
-            // Before stargin rendering, transition the swapchain image to vk::ImageLayout::eColorAttachmentOptimal
-            transition_image_layout(
-                  swapChainImages[imageIndex]
-                , vk::ImageLayout::eUndefined
-                , vk::ImageLayout::eColorAttachmentOptimal
-                , {}                                                    // scrAccessMask (No need to wait for previous operations)
-                , vk::AccessFlagBits2::eColorAttachmentWrite            // dstAccessMask
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // srcStage
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // dstStage
-                , vk::ImageAspectFlagBits::eColor
-            );
-
-            // Transition the multisampled color image to COLOR_ATTACHMENT_OPTIMAL
+            // Transition the attachments to the correct layouts for dynamic rendering
+	    
+            // Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
+	        // 1) Multisampled color attachment image -> ColorAttachmentOptimal
             transition_image_layout(
                   *colorImage
                 , vk::ImageLayout::eUndefined
@@ -2628,7 +2641,7 @@ class HelloTriangleApplication
                 , vk::ImageAspectFlagBits::eColor
             );
 
-            // Transition depth image to DEPTH_ATTACHMENT_OPTIMAL
+            // 2) Depth attachment image -> DepthStencilAttachmentOptimal
             transition_image_layout(
                   *depthImage
                 , vk::ImageLayout::eUndefined
@@ -2640,103 +2653,172 @@ class HelloTriangleApplication
                 , vk::ImageAspectFlagBits::eDepth
             );
 
-            vk::ClearValue                  clearColor      = vk::ClearColorValue(  0.0f
-                                                                                  , 0.0f
-                                                                                  , 0.0f
-                                                                                  , 1.0f);
-
-            vk::ClearValue                  clearDepth      = vk::ClearDepthStencilValue(  1.0f
-                                                                                         , 0);
-
-            // Color attachment (multisampled) with resolve attachment
-            vk::RenderingAttachmentInfo     colorAttachment =
-            {
-                  .imageView                                = colorImageView
-                , .imageLayout                              = vk::ImageLayout::eColorAttachmentOptimal
-                , .resolveMode                              = vk::ResolveModeFlagBits::eAverage
-                , .resolveImageView                         = swapChainImageViews[imageIndex]
-                , .resolveImageLayout                       = vk::ImageLayout::eColorAttachmentOptimal
-                , .loadOp                                   = vk::AttachmentLoadOp::eClear
-                , .storeOp                                  = vk::AttachmentStoreOp::eStore
-                , .clearValue                               = clearColor
-            };
-
-            // Depth attachment
-            vk::RenderingAttachmentInfo     depthAttachment =
-            {
-                  .imageView                                = depthImageView
-                , .imageLayout                              = vk::ImageLayout::eDepthAttachmentOptimal
-                , .loadOp                                   = vk::AttachmentLoadOp::eClear
-                , .storeOp                                  = vk::AttachmentStoreOp::eDontCare
-                , .clearValue                               = clearDepth
-            };
-
-            vk::RenderingInfo               renderingInfo   = 
-            {
-                  .renderArea                               = 
-                  {
-                      .offset                               = {0, 0}
-                    , .extent                               = swapChainExtent
-                  }
-                , .layerCount                               = 1
-                , .colorAttachmentCount                     = 1
-                , .pColorAttachments                        = &colorAttachment
-                , .pDepthAttachment                         = &depthAttachment
-            };
-
-            commandBuffer.beginRendering(renderingInfo);
-
-            commandBuffer.bindPipeline(  vk::PipelineBindPoint::eGraphics
-                                       , *graphicsPipeline);
-
-            commandBuffer.setViewport(  0
-                                      , vk::Viewport(  0.0f
-                                                     , 0.0f
-                                                     , static_cast<float>(swapChainExtent.width)
-                                                     , static_cast<float>(swapChainExtent.height)
-                                                     , 0.0f
-                                                     , 1.0f)
-                                     );
-
-            commandBuffer.setScissor(  0
-                                     , vk::Rect2D(vk::Offset2D(0, 0)
-                                     , swapChainExtent));
-
-            commandBuffer.bindVertexBuffers(  0
-                                            , *vertexBuffer
-                                            , {0});
-
-            commandBuffer.bindIndexBuffer(  *indexBuffer
-                                          , 0
-                                          , vk::IndexType::eUint32);
-
-            commandBuffer.bindDescriptorSets(  vk::PipelineBindPoint::eGraphics
-                                             , pipelineLayout
-                                             , 0
-                                             , *descriptorSets[frameIndex]
-                                             , nullptr);
-
-            commandBuffer.drawIndexed(  indices.size()
-                                      , 1
-                                      , 0
-                                      , 0
-                                      , 0);
-            
-            commandBuffer.endRendering();
-
-            // After rendering, transition the swapchain image to PRESENT_SRC
+            // 3) Resolve (swapchain) image -> ColorAttachmentOptimal
             transition_image_layout(
                   swapChainImages[imageIndex]
+                , vk::ImageLayout::eUndefined
                 , vk::ImageLayout::eColorAttachmentOptimal
-                , vk::ImageLayout::ePresentSrcKHR
-                , vk::AccessFlagBits2::eColorAttachmentWrite            // srcAccessMask
-                , {}                                                    // dstAccessMask
+                , {}                                                    // srcAccessMask (No need to wait for previous operations)
+                , vk::AccessFlagBits2::eColorAttachmentWrite            // dstAccessMask
                 , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // srcStage
-                , vk::PipelineStageFlagBits2::eBottomOfPipe             // dstStage
+                , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // dstStage
                 , vk::ImageAspectFlagBits::eColor
             );
+
+            // Clear values for color and depth
+            vk::ClearValue clearColor{};
+            clearColor.color      			                = vk::ClearColorValue(  
+                                                                                  0.0f
+                                                                                , 0.0f
+                                                                                , 0.0f
+                                                                                , 1.0f
+                                                                                );
+
+            vk::ClearValue clearDepth{};
+            clearDepth.depthStencil      		            = vk::ClearDepthStencilValue{1.0f, 0};
+
+            std::array<vk::ClearValue, 2> clearValues		= {clearColor, clearDepth};
+
+            // Use different rendering approach based on profile support
+            if (appInfo.profileSupported)
+            {
+                // Use dynamic rendering with the KHR roadmap 2022 profile
+                vk::RenderingAttachmentInfo     colorAttachment
+                {
+                      .imageView                            = *colorImageView
+                    , .imageLayout                          = vk::ImageLayout::eColorAttachmentOptimal
+                    , .resolveMode                          = vk::ResolveModeFlagBits::eAverage
+                    , .resolveImageView                     = *swapChainImageViews[imageIndex]
+                    , .resolveImageLayout                   = vk::ImageLayout::eColorAttachmentOptimal
+                    , .loadOp                               = vk::AttachmentLoadOp::eClear
+                    , .storeOp                              = vk::AttachmentStoreOp::eStore
+                    , .clearValue                           = clearColor
+                };
+
+                vk::RenderingAttachmentInfo     depthAttachment
+                {
+                      .imageView                            = *depthImageView
+                    , .imageLayout                          = vk::ImageLayout::eDepthStencilAttachmentOptimal
+                    , .loadOp                               = vk::AttachmentLoadOp::eClear
+                    , .storeOp                              = vk::AttachmentStoreOp::eDontCare
+                    , .clearValue                           = clearDepth
+                };
+
+                vk::RenderingInfo               renderingInfo
+                {
+                    .renderArea                             = 
+                        {
+                              {0, 0}
+                            , swapChainExtent
+                        }
+                    , .layerCount                           = 1
+                    , .colorAttachmentCount                 = 1
+                    , .pColorAttachments                    = &colorAttachment
+                    , .pDepthAttachment                     = &depthAttachment
+                };
+
+                commandBuffer.beginRendering(renderingInfo);
+            }
+            else
+            {
+                // Use traditional render pass if not using the KHR roadmap 2022 profile
+                vk::RenderPassBeginInfo		renderPassInfo
+                {
+                      .renderPass			                = *renderPass
+                    , .framebuffer			                = *swapChainFramebuffers[imageIndex]
+                    , .renderArea			                = 
+                        {
+                              {0,0}
+                            , swapChainExtent
+                        }
+                    , .clearValueCount		                = static_cast<uint32_t>(clearValues.size())
+                    , .pClearValues			                = clearValues.data()
+                };
+                
+                commandBuffer.beginRenderPass(
+                      renderPassInfo
+                    , vk::SubpassContents::eInline
+                );
+            }
+
+            commandBuffer.bindPipeline(  
+                  vk::PipelineBindPoint::eGraphics
+                , *graphicsPipeline
+            );
+
+            vk::Viewport 		viewport
+            {
+                  .x			                            = 0.0f
+                , .y			                            = 0.0f
+                , .width		                            = static_cast<float>(swapChainExtent.width)
+                , .height		                            = static_cast<float>(swapChainExtent.height)
+                , .minDepth		                            = 0.0f
+                , .maxDepth		                            = 1.0f
+            };
+            
+            commandBuffer.setViewport(0, viewport);
+            
+            vk::Rect2D scissor
+            {
+                  .offset		                            = {0, 0}
+                , .extent	                                = swapChainExtent
+            }
+
+            commandBuffer.setScissor(0, scissor);
+
+            commandBuffer.bindVertexBuffers(  
+                  0
+                , *vertexBuffer
+                , {0}
+            );
+
+            commandBuffer.bindIndexBuffer(  
+                  *indexBuffer
+                , 0
+                , vk::IndexType::eUint32
+            );
+
+            commandBuffer.bindDescriptorSets(
+                  vk::PipelineBindPoint::eGraphics
+                , *pipelineLayout
+                , 0
+                , *descriptorSets[frameIndex]
+                , nullptr
+            );
+
+            commandBuffer.drawIndexed(
+                  static_cast<uint32_t>(indices.size())
+                , 1
+                , 0
+                , 0
+                , 0
+            );
+                
+            if (appInfo.profileSupported)
+            {
+                commandBuffer.endRendering();
+                
+                // Transition the swapchain image to the correct layout for presentation
+                transition_image_layout(
+                    swapChainImages[imageIndex]
+                    , vk::ImageLayout::eColorAttachmentOptimal
+                    , vk::ImageLayout::ePresentSrcKHR
+                    , vk::AccessFlagBits2::eColorAttachmentWrite            // srcAccessMask
+                    , {}                                                    // dstAccessMask
+                    , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // srcStage
+                    , vk::PipelineStageFlagBits2::eBottomOfPipe             // dstStage
+                    , vk::ImageAspectFlagBits::eColor
+                );
+            }
+            else
+            {
+                commandBuffer.endRenderPass();
+                // Traditional render pass already transitions the image to the correct layout
+            }
+	    
             commandBuffer.end();
         }
+
 
 
 //******************************************************************************************
