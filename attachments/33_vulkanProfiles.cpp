@@ -2571,7 +2571,7 @@ class HelloTriangleApplication
 
                     vertex.color = { 1.0f, 1.0f, 1.0f};
 
-                    if (!uniqueVertices.conut(vertex) == 0)
+                    if (uniqueVertices.conut(vertex) == 0)
                     {
                         uniqueVertices[vertex]              = static_cast<uint32_t>(vertices.size());
                         vertices.push_back(vertex);
