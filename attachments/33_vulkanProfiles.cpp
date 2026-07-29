@@ -3137,14 +3137,16 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(std::vector<vk::SurfaceFormatKHR> const &availableFormats)
+        static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats)
         {
             assert(!availableFormats.empty());
-            const auto formatIt = std::ranges::find_if(  availableFormats
+            const auto formatIt = std::ranges::find_if(  
+							availableFormats
                                                        , [](const auto &format) 
                                                        {
                                                             return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
-                                                       });
+                                                       }
+						       );
             return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
         }
 
@@ -3163,6 +3165,7 @@ class HelloTriangleApplication
                                     vk::PresentModeKHR::eMailbox :
                                     vk::PresentModeKHR::eFifo;
         }
+        
         
 
 //******************************************************************************************
