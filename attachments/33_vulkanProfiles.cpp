@@ -1672,7 +1672,7 @@ class HelloTriangleApplication
                           .aspectMask		                = vk::ImageAspectFlagBits::eColor
                         , .mipLevel		                    = i - 1
                         , .baseArrayLayer	                = 0
-                        , layerCount		                = 1
+                        , .layerCount		                = 1
                     }
                             , .srcOffsets                   = std::array<vk::Offset3D, 2>
                                 {
@@ -3212,20 +3212,38 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
         
-        [[nodiscard]] std::vector<const char *> getRequiredInstanceExtensions()
+        std::vector<const char *> getRequiredInstanceExtensions()
         {
-            uint32_t    glfwExtensionCount = 0;
-            auto        glfwExtensions     = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+		    // Get the required extensions from GLFW
+            uint32_t            glfwExtensionCount          = 0;
+            auto                glfwExtensions              = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
             std::vector extensions(  glfwExtensions
                                    , glfwExtensions + glfwExtensionCount);
-            if (enableValidationLayers)
+				   
+            // Check if the debug utils extension is available
+            std::vector<vk::ExtensionProperties> props		= context.enumerateInstanceExtensionProperties();
+            bool				debugUtilsAvailable 	    = std::ranges::any_of(props
+												, [](vk::ExtensionProperties const &ep) 
+												{
+													return strcmp(ep.extensionName
+															, vk::EXTDebugUtilsExtensionName) == 0;
+												});
+	    
+            // Always include the debug utils extension if available
+            // This allows validation layers to be enabled via vulkanconfig
+            if (debugUtilsAvailable)
             {
                 extensions.push_back(vk::EXTDebugUtilsExtensionName);
+            }
+            else
+            {
+                std::cout << "VK_EXT_debug_utils extension not available.  Validation layers may not work." << std::endl;
             }
 
             return extensions;
         }
+
         
 
 //******************************************************************************************
