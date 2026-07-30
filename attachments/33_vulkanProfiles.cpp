@@ -3071,36 +3071,6 @@ class HelloTriangleApplication
 
             frameIndex                                      = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
         }
-
-
-
-//******************************************************************************************
-// 
-//  Name:           createShaderModule
-//  Arguments:      N/A
-//  Returns:        [[nodiscard]] vk::raii::ShaderModule
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-    [[nodiscard]] vk::raii::ShaderModule createShaderModule(const std::vector<char> &code) const
-    {
-        vk::ShaderModuleCreateInfo createInfo
-        {
-              .codeSize                                     = code.size()
-            , .pCode                                        = reinterpret_cast<const uint32_t *>(code.data())
-        };
-
-        vk::raii::ShaderModule shaderModule
-        {
-              device
-            , createInfo
-        };
-        
-        return shaderModule;
-    }
         
 
 //******************************************************************************************
@@ -3248,7 +3218,7 @@ class HelloTriangleApplication
 
 //******************************************************************************************
 // 
-//  Name:           getRequiredInstanceExtensions
+//  Name:           debugCallback
 //  Arguments:      N/A
 //  Returns:        static VKAPI_ATTR vk::Bool32 VKAPI_CALL
 //  Calls:          
@@ -3264,14 +3234,43 @@ class HelloTriangleApplication
             , void *
         )
         {
-            if (severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError ||
-                severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning)
+            if (   severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError 
+                || severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning)
             {
                 std::cerr << "Validation layer: type " << to_string(type) << " msg: " << pCallbackData->pMessage << std::endl;
             }
 
             return vk::False;
         }
+
+
+//******************************************************************************************
+// 
+//  Name:           createShaderModule
+//  Arguments:      N/A
+//  Returns:        vk::raii::ShaderModule
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+    vk::raii::ShaderModule createShaderModule(const std::vector<char> &code)
+    {
+        vk::ShaderModuleCreateInfo createInfo
+        {
+              .codeSize                                     = code.size()
+            , .pCode                                        = reinterpret_cast<const uint32_t *>(code.data())
+        };
+
+        vk::raii::ShaderModule shaderModule
+        {
+              device
+            , createInfo
+        };
+        
+        return shaderModule;
+    }
         
 
 //******************************************************************************************
@@ -3303,6 +3302,28 @@ class HelloTriangleApplication
             file.close();
             return buffer;
 
+        }
+        	        
+
+//******************************************************************************************
+// 
+//  Name:           querySwapChainSupport
+//  Arguments:      filename
+//  Returns:        SwapChainSupportDetails
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        SwapChainSupportDetails querySwapChainSupport(vk::raii::PhysicalDevice device)
+        {
+            SwapChainSupportDetails		    details
+            details.capabilities				            = device.getSurfaceCapabilitiesKHR(*surface);
+            details.formats					                = device.getSurfaceFormatsKHR(*surface);
+            details.presentModes				            = device.getSurfacePresentModesKHR(*surface);
+            
+            return details;
         }
 };
         
