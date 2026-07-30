@@ -18,7 +18,7 @@
 import vulkan_hpp;
 #endif
 //#include <vulkan/vulkan_profiles.hpp>
-#include "/home/nik/Vulkan/install-version-1.4.350.0/1.4.350.0/x86_64/include/vulkan/vulkan_profiles.hpp"
+#include "/home/nik/vulkanSDK/1.4.350.1/x86_64/include/vulkan/vulkan_profiles.hpp"
 
 #define GLFW_INCLUDE_VULKAN        // REQUIRED only for GLFW CreateWindowSurface.
 #include <GLFW/glfw3.h>
@@ -759,12 +759,12 @@ class HelloTriangleApplication
 			if (result == VK_SUCCESS && supported == VK_TRUE)
 			{
 				appInfo.profileSupported	                = true;
-				std::cout << "Using KHR roadmap 2022 profile" << std::end;
+				std::cout << "Using KHR roadmap 2022 profile" << std::endl;
 			}
 			else
 			{
 				appInfo.profileSupported 	                = false;
-				std::cout << "Falling back to traditional rendering (profile not supported)" << std::end;
+				std::cout << "Falling back to traditional rendering (profile not supported)" << std::endl;
 				
 				// If we wanted to implement fallback, we would call detectFeatureSupport() here
 				// But for this example, we'll just use traditional rendering if the profile isn't supported
@@ -2387,10 +2387,10 @@ class HelloTriangleApplication
                 , .image                                    = image
                 , .subresourceRange                         = 
                 {
-                    , .baseMipLevel		= 0
-                    , .levelCount		= mipLevels
-                    , .baseArrayLayer		= 0
-                    , .layerCount		= 1
+                      .baseMipLevel		                    = 0
+                    , .levelCount		                    = mipLevels
+                    , .baseArrayLayer		                = 0
+                    , .layerCount		                    = 1
                 }
             };
 	    
@@ -2571,7 +2571,7 @@ class HelloTriangleApplication
 
                     vertex.color = { 1.0f, 1.0f, 1.0f};
 
-                    if (uniqueVertices.conut(vertex) == 0)
+                    if (uniqueVertices.count(vertex) == 0)
                     {
                         uniqueVertices[vertex]              = static_cast<uint32_t>(vertices.size());
                         vertices.push_back(vertex);
@@ -2762,7 +2762,7 @@ class HelloTriangleApplication
             {
                   .offset		                            = {0, 0}
                 , .extent	                                = swapChainExtent
-            }
+            };
 
             commandBuffer.setScissor(0, scissor);
 
@@ -3029,7 +3029,7 @@ class HelloTriangleApplication
             const vk::SubmitInfo        submitInfo
             {
                   .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*presentCompleteSemaphores[frameIndex]
+                , .pWaitSemaphores                          = &*presentCompleteSemaphore[frameIndex]
                 , .pWaitDstStageMask                        = &waitDestinationStageMask
                 , .commandBufferCount                       = 1
                 , .pCommandBuffers                          = &*commandBuffers[frameIndex]
@@ -3318,7 +3318,7 @@ class HelloTriangleApplication
 
         SwapChainSupportDetails querySwapChainSupport(vk::raii::PhysicalDevice device)
         {
-            SwapChainSupportDetails		    details
+            SwapChainSupportDetails		    details;
             details.capabilities				            = device.getSurfaceCapabilitiesKHR(*surface);
             details.formats					                = device.getSurfaceFormatsKHR(*surface);
             details.presentModes				            = device.getSurfacePresentModesKHR(*surface);

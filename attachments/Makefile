@@ -1118,6 +1118,45 @@ depend:
 .PHONY : 32_ecosystemUtilities_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 33_vulkanProfiles
+
+# Build rule for target.
+33_vulkanProfiles: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 33_vulkanProfiles
+.PHONY : 33_vulkanProfiles
+
+# fast build rule for target.
+33_vulkanProfiles/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/33_vulkanProfiles.dir/build.make CMakeFiles/33_vulkanProfiles.dir/build
+.PHONY : 33_vulkanProfiles/fast
+
+#=============================================================================
+# Target rules for targets named 33_vulkanProfiles_shader
+
+# Build rule for target.
+33_vulkanProfiles_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 33_vulkanProfiles_shader
+.PHONY : 33_vulkanProfiles_shader
+
+# fast build rule for target.
+33_vulkanProfiles_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/33_vulkanProfiles_shader.dir/build.make CMakeFiles/33_vulkanProfiles_shader.dir/build
+.PHONY : 33_vulkanProfiles_shader/fast
+
+#=============================================================================
+# Target rules for targets named 33_vulkanProfiles_slang_shader
+
+# Build rule for target.
+33_vulkanProfiles_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 33_vulkanProfiles_slang_shader
+.PHONY : 33_vulkanProfiles_slang_shader
+
+# fast build rule for target.
+33_vulkanProfiles_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/33_vulkanProfiles_slang_shader.dir/build.make CMakeFiles/33_vulkanProfiles_slang_shader.dir/build
+.PHONY : 33_vulkanProfiles_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -2318,6 +2357,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/32_ecosystemUtilities.dir/build.make CMakeFiles/32_ecosystemUtilities.dir/32_ecosystemUtilities.cpp.s
 .PHONY : 32_ecosystemUtilities.cpp.s
 
+33_vulkanProfiles.o: 33_vulkanProfiles.cpp.o
+.PHONY : 33_vulkanProfiles.o
+
+# target to build an object file
+33_vulkanProfiles.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/33_vulkanProfiles.dir/build.make CMakeFiles/33_vulkanProfiles.dir/33_vulkanProfiles.cpp.o
+.PHONY : 33_vulkanProfiles.cpp.o
+
+33_vulkanProfiles.i: 33_vulkanProfiles.cpp.i
+.PHONY : 33_vulkanProfiles.i
+
+# target to preprocess a source file
+33_vulkanProfiles.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/33_vulkanProfiles.dir/build.make CMakeFiles/33_vulkanProfiles.dir/33_vulkanProfiles.cpp.i
+.PHONY : 33_vulkanProfiles.cpp.i
+
+33_vulkanProfiles.s: 33_vulkanProfiles.cpp.s
+.PHONY : 33_vulkanProfiles.s
+
+# target to generate assembly for a file
+33_vulkanProfiles.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/33_vulkanProfiles.dir/build.make CMakeFiles/33_vulkanProfiles.dir/33_vulkanProfiles.cpp.s
+.PHONY : 33_vulkanProfiles.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -2374,6 +2437,8 @@ help:
 	@echo "... 31_computeShader_slang_shader"
 	@echo "... 32_ecosystemUtilities_shader"
 	@echo "... 32_ecosystemUtilities_slang_shader"
+	@echo "... 33_vulkanProfiles_shader"
+	@echo "... 33_vulkanProfiles_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -2434,6 +2499,7 @@ help:
 	@echo "... 30_multisampling"
 	@echo "... 31_computeShader"
 	@echo "... 32_ecosystemUtilities"
+	@echo "... 33_vulkanProfiles"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -2531,6 +2597,9 @@ help:
 	@echo "... 32_ecosystemUtilities.o"
 	@echo "... 32_ecosystemUtilities.i"
 	@echo "... 32_ecosystemUtilities.s"
+	@echo "... 33_vulkanProfiles.o"
+	@echo "... 33_vulkanProfiles.i"
+	@echo "... 33_vulkanProfiles.s"
 .PHONY : help
 
 
