@@ -275,7 +275,7 @@ class HelloTriangleApplication
 
             window = glfwCreateWindow(  WIDTH
                                       , HEIGHT
-                                      , "Vulkan"
+                                      , "Vulkan Profiles Demo"
                                       , nullptr
                                       , nullptr);
 
@@ -716,7 +716,7 @@ class HelloTriangleApplication
             physicalDevice                                          = *devIter;
 	        msaaSamples			                                    = getMaxUsableSampleCount();
 	    
-            // Printe device information
+            // Print device information
             vk::PhysicalDeviceProperties 	deviceProperties	    = physicalDevice.getProperties();
 
             std::cout << "Selected GPU: " << deviceProperties.deviceName                    << std::endl;
@@ -1114,7 +1114,6 @@ class HelloTriangleApplication
             descriptorSetLayout                             = device.createDescriptorSetLayout(layoutInfo);
         }        
 
-        
 
 //******************************************************************************************
 // 
@@ -1138,7 +1137,7 @@ class HelloTriangleApplication
             vk::PipelineShaderStageCreateInfo               vertShaderStageInfo
             {
                   .stage                                    = vk::ShaderStageFlagBits::eVertex
-                , .module                                   = vertShaderModule
+                , .module                                   = *vertShaderModule
                 , .pName                                    = "main"
             };
 
@@ -1344,9 +1343,8 @@ class HelloTriangleApplication
                   .flags                                    = vk::CommandPoolCreateFlagBits::eResetCommandBuffer
                 , .queueFamilyIndex                         = queueIndex
             };
-            commandPool = vk::raii::CommandPool(  device
-                                                , poolInfo
-                                               );
+
+            commandPool = device.createCommandPool(poolInfo);
         }
         
 
@@ -1380,7 +1378,7 @@ class HelloTriangleApplication
             );
 
             colorImageView                                  = createImageView(
-                                                                                  colorImage
+                                                                                  *colorImage
                                                                                 , colorFormat
                                                                                 , vk::ImageAspectFlagBits::eColor
                                                                                 , 1
@@ -1417,7 +1415,7 @@ class HelloTriangleApplication
             );
 
             depthImageView                                  = createImageView( 
-                                                                                depthImage
+                                                                                *depthImage
                                                                               , depthFormat
                                                                               , vk::ImageAspectFlagBits::eDepth
                                                                               , 1
@@ -1451,7 +1449,7 @@ class HelloTriangleApplication
                 {
                     return format;
                 }
-                if (   tiling == vk::ImageTiling::eOptimal
+                else if (   tiling == vk::ImageTiling::eOptimal
                     && (props.optimalTilingFeatures & features) == features)
                 {
                     return format;
@@ -1748,84 +1746,6 @@ class HelloTriangleApplication
 
 //******************************************************************************************
 // 
-//  Name:           getMaxUsableSampleCount
-//  Arguments:      N/A
-//  Returns:        vk::SampleCountFlagBits
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        vk::SampleCountFlagBits getMaxUsableSampleCount()
-        {
-            vk::PhysicalDeviceProperties                    physicalDeviceProperties
-                                                            = physicalDevice.getProperties();
-
-            vk::SampleCountFlags            counts          =   physicalDeviceProperties.limits.framebufferColorSampleCounts
-                                                              & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
-
-            if (counts & vk::SampleCountFlagBits::e64)
-            {
-                return vk::SampleCountFlagBits::e64;
-            }
-            if (counts & vk::SampleCountFlagBits::e32)
-            {
-                return vk::SampleCountFlagBits::e32;
-            }
-            if (counts & vk::SampleCountFlagBits::e16)
-            {
-                return vk::SampleCountFlagBits::e16;
-            }
-            if (counts & vk::SampleCountFlagBits::e8)
-            {
-                return vk::SampleCountFlagBits::e8;
-            }
-            if (counts & vk::SampleCountFlagBits::e4)
-            {
-                return vk::SampleCountFlagBits::e4;
-            }
-            if (counts & vk::SampleCountFlagBits::e2)
-            {
-                return vk::SampleCountFlagBits::e2;
-            }
-
-            return vk::SampleCountFlagBits::e1;
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           findMemoryType
-//  Arguments:      N/A
-//  Returns:        uint32_t
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        uint32_t findMemoryType(
-              uint32_t typeFilter
-            , vk::MemoryPropertyFlags properties
-        )
-        {
-            vk::PhysicalDeviceMemoryProperties              memProperties = physicalDevice.getMemoryProperties();
-
-            for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-            {
-                if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-                {
-                    return i;
-                }
-            }
-
-            throw std::runtime_error("Failed to find suitable memory type!");
-        }
-        
-
-//******************************************************************************************
-// 
 //  Name:           createImageView
 //  Arguments:      N/A
 //  Returns:        vk::raii::ImageView
@@ -1907,9 +1827,9 @@ class HelloTriangleApplication
                 , .addressModeV                             = vk::SamplerAddressMode::eRepeat
                 , .addressModeW                             = vk::SamplerAddressMode::eRepeat
                 , .mipLodBias                               = 0.0f
-                , .anisotropyEnable                         = vk::True
+                , .anisotropyEnable                         = VK_TRUE
                 , .maxAnisotropy                            = properties.limits.maxSamplerAnisotropy
-                , .compareEnable                            = vk::False
+                , .compareEnable                            = VK_FALSE
                 , .compareOp                                = vk::CompareOp::eAlways
                 , .minLod                                   = 0.0f
                 , .maxLod                                   = 0.0f
@@ -2002,7 +1922,8 @@ class HelloTriangleApplication
                 , stagingBufferMemory
             );
 
-            void                *data                       = stagingBufferMemory.mapMemory(0, bufferSize);
+            void                *data                       = stagingBufferMemory.mapMemory(0
+											, bufferSize);
 
             memcpy(
                   data
@@ -2042,7 +1963,6 @@ class HelloTriangleApplication
 
         void createUniformBuffers()
         {
-	    
             vk::DeviceSize              bufferSize          = sizeof(UniformBufferObject);
 
             // Reserve space but don't resize, as RAII objects can't be default-constructed
@@ -2103,7 +2023,6 @@ class HelloTriangleApplication
 
             descriptorPool                                  = device.createDescriptorPool(poolInfo);
         }
-
 
 
 //******************************************************************************************
@@ -2353,7 +2272,9 @@ class HelloTriangleApplication
             };
 	    
             imageMemory                                     = device.allocateMemory(allocInfo);
-            image.bindMemory(*imageMemory, 0);
+            image.bindMemory(*imageMemory
+				, 0
+				);
         }
         
 
@@ -3029,12 +2950,12 @@ class HelloTriangleApplication
             const vk::SubmitInfo        submitInfo
             {
                   .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*presentCompleteSemaphore[frameIndex]
+                , .pWaitSemaphores                          = &*imageAvailableSemaphores[frameIndex]
                 , .pWaitDstStageMask                        = &waitDestinationStageMask
                 , .commandBufferCount                       = 1
                 , .pCommandBuffers                          = &*commandBuffers[frameIndex]
                 , .signalSemaphoreCount                     = 1
-                , .pSignalSemaphores                        = &*renderFinishedSemaphores[imageIndex]
+                , .pSignalSemaphores                        = &*presentCompleteSemaphore[imageIndex]
             };
 
             queue.submit(
@@ -3045,7 +2966,7 @@ class HelloTriangleApplication
             const vk::PresentInfoKHR    presentInfoKHR
             {
                   .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*renderFinishedSemaphores[imageIndex]
+                , .pWaitSemaphores                          = &*presentCompleteSemaphore[imageIndex]
                 , .swapchainCount                           = 1
                 , .pSwapchains                              = &*swapChain
                 , .pImageIndices                            = &imageIndex
@@ -3072,7 +2993,84 @@ class HelloTriangleApplication
             frameIndex                                      = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
         }
         
+        
 
+//******************************************************************************************
+// 
+//  Name:           getMaxUsableSampleCount
+//  Arguments:      N/A
+//  Returns:        vk::SampleCountFlagBits
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        vk::SampleCountFlagBits getMaxUsableSampleCount()
+        {
+            vk::PhysicalDeviceProperties                    physicalDeviceProperties
+                                                            = physicalDevice.getProperties();
+
+            vk::SampleCountFlags            counts          =   physicalDeviceProperties.limits.framebufferColorSampleCounts
+                                                              & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+
+            if (counts & vk::SampleCountFlagBits::e64)
+            {
+                return vk::SampleCountFlagBits::e64;
+            }
+            if (counts & vk::SampleCountFlagBits::e32)
+            {
+                return vk::SampleCountFlagBits::e32;
+            }
+            if (counts & vk::SampleCountFlagBits::e16)
+            {
+                return vk::SampleCountFlagBits::e16;
+            }
+            if (counts & vk::SampleCountFlagBits::e8)
+            {
+                return vk::SampleCountFlagBits::e8;
+            }
+            if (counts & vk::SampleCountFlagBits::e4)
+            {
+                return vk::SampleCountFlagBits::e4;
+            }
+            if (counts & vk::SampleCountFlagBits::e2)
+            {
+                return vk::SampleCountFlagBits::e2;
+            }
+
+            return vk::SampleCountFlagBits::e1;
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           findMemoryType
+//  Arguments:      N/A
+//  Returns:        uint32_t
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        uint32_t findMemoryType(
+              uint32_t typeFilter
+            , vk::MemoryPropertyFlags properties
+        )
+        {
+            vk::PhysicalDeviceMemoryProperties              memProperties = physicalDevice.getMemoryProperties();
+
+            for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+            {
+                if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                {
+                    return i;
+                }
+            }
+
+            throw std::runtime_error("Failed to find suitable memory type!");
+        }
 //******************************************************************************************
 // 
 //  Name:           chooseSwapMinImageCount
