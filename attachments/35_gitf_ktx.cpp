@@ -17,37 +17,9 @@
 #else
 import vulkan_hpp;
 #endif
-//clang-format off
-#if defined(__ANDROID__)
-#	include <vulkan/vulkan_core.h>
-#	include <vulkan/vulkan_android.h>
-#endif
-//clang-format on
 //#include <vulkan/vulkan_profiles.hpp>
 #include "/home/nik/vulkanSDK/1.4.350.1/x86_64/include/vulkan/vulkan_profiles.hpp"
 
-// Platform detection
-#if defined(__ANDROID__)
-#	define PLATFORM_ANDROID 1
-#else
-#	define PLATFORM_DESKTOP 1
-#endif
-
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
-
-// Platform-specific includes
-#if PLATFORM_ANDROID
-// Android-specific includes
-#	include <android/log.h>
-#	include <game-activity/native_app_glue/android_native_app_glue.h>
-#	include <android/asset_manager.h>
-#	include <android/asset_manager_jni.h>
-
-// Desktop specific includes
 #define GLFW_INCLUDE_VULKAN        // REQUIRED only for GLFW CreateWindowSurface.
 #include <GLFW/glfw3.h>
 
@@ -160,75 +132,6 @@ struct UniformBufferObject
     alignas(16) glm::mat4 proj;
 };
 
-// Cross-platform file reading function
-        
-
-//******************************************************************************************
-// 
-//  Name:           readFile
-//  Arguments:      filename
-//  Returns:        static std::vector<char>
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-std::vector<char> readFile(const std::string &filename, std::optional<AssetManagerType *> assetManager = std::nullopt)
-{
-#if PLATFORM_ANDROID
-	// On Android, use asset manager if provided
-	if (assetManager.has_value() && *assetManager != nullptr)
-	{
-		// Open the asset
-		AAsset *asset 			= AAssetManager_open(*assetManager
-									, filename.c_str()
-									, AASSET_MODE_BUFFER
-									);
-		if (!asset)
-		{
-			LOGE("Failed to open asset: %s", filename.c_str());
-			throw std::runtime_error("Failed to open file: " + filename);
-		}
-
-		// Get the file size
-		off_t			fileSize		= AAsset_getLength(asset);
-		std::vector<char>	buffer(fileSize);
-		
-		// Read the file data
-		AAsset_read(  asset
-				, buffer.data()
-				, fileSize);
-				
-		// Close the asset
-		AAsset_close(asset);
-		
-		return buffer;
-	}
-#endif
-
-	    // Desktop version or Android fallback to filesystem
-            std::ifstream file(  filename
-                               , std::ios::ate | std::ios::binary);
-
-            if (!file.is_open())
-            {
-                throw std::runtime_error("Failed to open file:" + filename);
-            }
-	    
-	    size_t	fileSize		= static_cast<size_t>(file.tellg());
-            std::vector<char> buffer(fileSize);
-	    
-            file.seekg(  0);
-            file.read(  buffer.data()
-                      , fileSize
-                    );
-            file.close();
-	    
-            return buffer;
-        }
-	
-// Cross-platform application class
 class HelloTriangleApplication
 {
     public:
@@ -3366,6 +3269,38 @@ class HelloTriangleApplication
         
         return shaderModule;
     }
+        
+
+//******************************************************************************************
+// 
+//  Name:           readFile
+//  Arguments:      filename
+//  Returns:        static std::vector<char>
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        static std::vector<char> readFile(const std::string &filename)
+        {
+            std::ifstream file(  filename
+                               , std::ios::ate | std::ios::binary);
+            if (!file.is_open())
+            {
+                throw std::runtime_error("Failed to open file!");
+            }
+            std::vector<char> buffer(file.tellg());
+            file.seekg(  0
+                       , std::ios::beg
+                    );
+            file.read(  buffer.data()
+                      , static_cast<std::streamsize>(buffer.size())
+                    );
+            file.close();
+            return buffer;
+
+        }
         	        
 
 //******************************************************************************************
