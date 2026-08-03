@@ -1238,32 +1238,53 @@ class HelloTriangleApplication
 
         void createGraphicsPipeline()
         {
-            auto                    vertShaderCode          = readFile("shaders/vert.spv");
-            auto                    fragShaderCode          = readFile("shaders/frag.spv");
-
-		    vk::raii::ShaderModule  vertShaderModule		= createShaderModule(vertShaderCode);
-		    vk::raii::ShaderModule  fragShaderModule		= createShaderModule(fragShaderCode);
+		// Load shader code from asset files
+		LOGI("Loading shaders from assets");
 		
-            vk::PipelineShaderStageCreateInfo               vertShaderStageInfo
-            {
-                  .stage                                    = vk::ShaderStageFlagBits::eVertex
-                , .module                                   = *vertShaderModule
-                , .pName                                    = "main"
-            };
+		// Load shader files using cross-platform function
+#if PLATFORM_ANDROID
+		std::optional<AssetManagerType *> 	optionalAssetManager	= assetManager;
+#else
+		std::optional<void *>			optionalAssetManager	= std::nullopt;
+#endif
+		std::vector<char>   			vertShaderCode          = readFile("shaders/vert.spv", optionalAssetManager);
+		std::vector<char>                    	fragShaderCode          = readFile("shaders/frag.spv", optionalAssetManager);
 
-            vk::PipelineShaderStageCreateInfo               fragShaderStageInfo
-            {
-                  .stage                                    = vk::ShaderStageFlagBits::eFragment
-                , .module                                   = *fragShaderModule
-                , .pName                                    = "main"
-            };
+		LOGI("Shaders loaded successfully");
+		
+		// Create shader modules
+		vk::ShaderModuleCreateInfo		vertShaderModuleInfo
+		{
+			.codeSize						= vertShaderCode.size()
+			, .pCode						= reinterpret_cast<const uint32_t *>(vertShaderCode.data())
+		}
+		
+		vk::raii::ShaderModule			vertShaderModule	= device.createShaderModule(vertShaderModuleInfo);
+		
+		vk::ShaderModuleCreateInfo		fragShaderModuleInfo
+		{
+			.codeSize						= fragShaderCode.size()
+			, .pCode						= reinterpret_cast<const uint32_t *>(fragShaderCode.data())
+		};
 
+		vk::raii::ShaderModule			fragShaderModule	= device.createShaderModule(fragShaderModuleInfo);
+
+		// Create shader stages
             vk::PipelineShaderStageCreateInfo               shaderStages[] = 
             {
-                  vertShaderStageInfo
-                , fragShaderStageInfo
+		{
+			.stage                                    = vk::ShaderStageFlagBits::eVertex
+			, .module                                   = *vertShaderModule
+			, .pName                                    = "main"
+		}
+		, {
+			.stage                                    = vk::ShaderStageFlagBits::eFragment
+			, .module                                   = *fragShaderModule
+			, .pName                                    = "main"
+		}
             };
 
+		// Vertex input
             auto                    bindingDescription      = Vertex::getBindingDescription();
             auto                    attributeDescriptions   = Vertex::getAttributeDescriptions();
 
@@ -1275,18 +1296,21 @@ class HelloTriangleApplication
                 , .pVertexAttributeDescriptions             = attributeDescriptions.data()
             };
 
+		// Input assembly
             vk::PipelineInputAssemblyStateCreateInfo        inputAssembly
             {
                   .topology                                 = vk::PrimitiveTopology::eTriangleList
                 , .primitiveRestartEnable                   = VK_FALSE
             };
 
+		// Viewport and scissor
             vk::PipelineViewportStateCreateInfo             viewportState
             {
                   .viewportCount                            = 1
                 , .scissorCount                             = 1
             };
 
+		// Rasterization
             vk::PipelineRasterizationStateCreateInfo        rasterizer
             {
                   .depthClampEnable                         = VK_FALSE
@@ -1298,22 +1322,22 @@ class HelloTriangleApplication
                 , .lineWidth                                = 1.0f
             };
 
-            vk::PipelineMultisampleStateCreateInfo          multisampling
-            {
-                  .rasterizationSamples                     = msaaSamples
-                , .sampleShadingEnable                      = VK_TRUE
-		        , .minSampleShading			                = 0.2f
-            };
-
+		// Depth/Stencil
             vk::PipelineDepthStencilStateCreateInfo         depthStencil
             {
-                  .depthTestEnable                          = VK_TRUE
-                , .depthWriteEnable                         = VK_TRUE
-                , .depthCompareOp                           = vk::CompareOp::eLess
-                , .depthBoundsTestEnable                    = VK_FALSE
-                , .stencilTestEnable                        = VK_FALSE
+                  .depthTestEnable                          = vk::True
+                , .depthWriteEnable                         = vk::True
+                , .depthCompareOp                           = vk::CompareOp::eLessOrEqual
             };
 
+		// Multisampling
+            vk::PipelineMultisampleStateCreateInfo          multisampling
+            {
+                  .rasterizationSamples                     = vk::SampleCountFlagBits::e1
+                , .sampleShadingEnable                      = VK_FALSE
+            };
+
+		// Color blending
             vk::PipelineColorBlendAttachmentState           colorBlendAttachment
             {
                   .blendEnable                              = VK_FALSE
@@ -1331,6 +1355,7 @@ class HelloTriangleApplication
                 , .pAttachments                             = &colorBlendAttachment
             };
 
+		// Dynamic states
             std::vector<vk::DynamicState>     dynamicStates = 
             {
                   vk::DynamicState::eViewport
@@ -1343,6 +1368,7 @@ class HelloTriangleApplication
                 , .pDynamicStates                           = dynamicStates.data()
             };
 
+		// Pipeline layout
             vk::PipelineLayoutCreateInfo                    pipelineLayoutInfo
             {
                   .setLayoutCount                           = 1
@@ -1351,11 +1377,8 @@ class HelloTriangleApplication
 
             pipelineLayout                                  = device.createPipelineLayout(pipelineLayoutInfo);
 
-            // Configure pipeline based on whether we're using the KHR roadmap 2022 profile
-            // With the KHR roadmap 2022 profile, we can use dynamic rendering
-            vk::StructureChain<  vk::GraphicsPipelineCreateInfo
-                               , vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain =
-            {
+		// Create the graphics pipeline
+		vk::GraphicsPipelineCreateInfo		pipelineInfo            
                 {
                       .stageCount                           = 2
                     , .pStages                              = shaderStages
@@ -1367,30 +1390,13 @@ class HelloTriangleApplication
                     , .pDepthStencilState                   = &depthStencil
                     , .pColorBlendState                     = &colorBlending
                     , .pDynamicState                        = &dynamicState
-                    , .layout                               = pipelineLayout
-                    , .renderPass                           = nullptr  
-                },
-                {
-                      .colorAttachmentCount                 = 1
-                    , .pColorAttachmentFormats              = &swapChainSurfaceFormat.format
-                    , .depthAttachmentFormat                = findDepthFormat()
-                }
-            };
-	    
-	    if (appInfo.profileSupported)
-	    {
-		    std::cout << "Creating pipeline with dynamic rendering (KHR roadmap 2022 profile)" << std::endl;
-	    }
-	    else
-	    {
-            std::cout << "Creating pipeline with traditional render pass (fallback)" << std::endl;
-            pipelineCreateInfoChain.unlink<vk::PipelineRenderingCreateInfo>();
-            pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>().renderPass = *renderPass;
-	    }
-
-            graphicsPipeline = vk::raii::Pipeline(  device
-                                                  , nullptr
-                                                  , pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
+                    , .layout                               = *pipelineLayout
+                    , .renderPass                           = *renderPass
+		    , .subpass				    = 0
+                };
+            
+	    // Create the pipeline
+            graphicsPipeline = device.createGraphicsPipeline(nullptr, pipelineInfo);
         }
         
 
@@ -1407,24 +1413,21 @@ class HelloTriangleApplication
 
         void createFramebuffers()
         {
-            // This is only called if the Best Practices profile is not supported
-            // or if dynamic rendering is not available
             swapChainFramebuffers.reserve(swapChainImageViews.size());
             
             for (size_t i = 0; i < swapChainImageViews.size(); i++)
             {
-                std::array<vk::ImageView, 3> attachments = 
+                vk::ImageView attachments[] = 
                 {
-                      *colorImageView
-                    , *depthImageView
                     , *swapChainImageViews[i]
+                    , *depthImageView
                 };
                 
                 vk::FramebufferCreateInfo framebufferInfo
                 {
-                      .renderPass		                    = *renderPass
-                    , .attachmentCount	                    = static_cast<uint32_t>(attachments.size())
-                    , .pAttachments		                    = attachments.data()
+                      .renderPass		                = *renderPass
+                    , .attachmentCount	                    	= 2
+                    , .pAttachments		                = attachments
                     , .width		                        = swapChainExtent.width
                     , .height		                        = swapChainExtent.height
                     , .layers		                        = 1
@@ -1460,7 +1463,7 @@ class HelloTriangleApplication
 
 //******************************************************************************************
 // 
-//  Name:           createColorResources
+//  Name:           findSupportedformat
 //  Arguments:      N/A
 //  Returns:        
 //  Calls:          
@@ -1469,30 +1472,29 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-        void createColorResources()
+        vk::Format findSupportedFormat(
+              const std::vector<vk::Format>  &candidates
+            , vk::ImageTiling                tiling
+            , vk::FormatFeatureFlags         features
+        ) const
         {
-            vk::Format colorFormat                          = swapChainSurfaceFormat.format;
+            for (const auto format : candidates)
+            {
+                vk::FormatProperties        props           = physicalDevice.getFormatProperties(format);
 
-            createImage(
-                  swapChainExtent.width
-                , swapChainExtent.height
-                , 1
-                , msaaSamples
-                , colorFormat
-                , vk::ImageTiling::eOptimal
-                , vk::ImageUsageFlagBits::eTransientAttachment
-                | vk::ImageUsageFlagBits::eColorAttachment
-                , vk::MemoryPropertyFlagBits::eDeviceLocal
-                , colorImage
-                , colorImageMemory
-            );
+                if (   tiling == vk::ImageTiling::eLinear
+                    && (props.linearTilingFeatures & features) == features)
+                {
+                    return format;
+                }
+                if (   tiling == vk::ImageTiling::eOptimal
+                    && (props.optimalTilingFeatures & features) == features)
+                {
+                    return format;
+                }
+            }
 
-            colorImageView                                  = createImageView(
-                                                                                  *colorImage
-                                                                                , colorFormat
-                                                                                , vk::ImageAspectFlagBits::eColor
-                                                                                , 1
-                                                                            );
+            throw std::runtime_error("Failed to find supported format!");
         }
         
 
@@ -1509,13 +1511,20 @@ class HelloTriangleApplication
 
         void createDepthResources()
         {
-            vk::Format                  depthFormat         = findDepthFormat();
+                              depthFormat         = findSupportedFormat(
+									{
+										vk::Format::eD32Sfloat
+										, vk::Format::eD32SfloatS8Uint
+										, vk::Format::eD24UnormS8Uint
+									}
+									, vk::ImageTiling::eOptimal
+									, vk::FormatFeatureFlagBits::eDepthStencilAttachment
+								);
 
             createImage(
                   swapChainExtent.width
                 , swapChainExtent.height
                 , 1
-                , msaaSamples
                 , depthFormat
                 , vk::ImageTiling::eOptimal
                 , vk::ImageUsageFlagBits::eDepthStencilAttachment
@@ -1525,92 +1534,11 @@ class HelloTriangleApplication
             );
 
             depthImageView                                  = createImageView( 
-                                                                                *depthImage
+                                                                                depthImage
                                                                               , depthFormat
                                                                               , vk::ImageAspectFlagBits::eDepth
                                                                               , 1
                                                                             );
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           findSupportedformat
-//  Arguments:      N/A
-//  Returns:        
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        vk::Format findSupportedFormat(
-              const std::vector<vk::Format>  &candidates
-            , vk::ImageTiling                tiling
-            , vk::FormatFeatureFlags         features
-        )
-        {
-            for (vk::Format format : candidates)
-            {
-                vk::FormatProperties        props           = physicalDevice.getFormatProperties(format);
-
-                if (   tiling == vk::ImageTiling::eLinear
-                    && (props.linearTilingFeatures & features) == features)
-                {
-                    return format;
-                }
-                else if (   tiling == vk::ImageTiling::eOptimal
-                    && (props.optimalTilingFeatures & features) == features)
-                {
-                    return format;
-                }
-            }
-
-            throw std::runtime_error("Failed to find supported format!");
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           findDepthFormat
-//  Arguments:      N/A
-//  Returns:        vk::Format
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        vk::Format findDepthFormat()
-        {
-            return findSupportedFormat
-            (
-                {
-                      vk::Format::eD32Sfloat
-                    , vk::Format::eD32SfloatS8Uint
-                    , vk::Format::eD24UnormS8Uint
-                }
-                , vk::ImageTiling::eOptimal
-                , vk::FormatFeatureFlagBits::eDepthStencilAttachment
-            );
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           hasStencilComponent
-//  Arguments:      N/A
-//  Returns:        bool
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        bool hasStencilComponent(vk::Format format)
-        {
-            return    format == vk::Format::eD32SfloatS8Uint 
-                   || format == vk::Format::eD24UnormS8Uint;
         }
         
 
@@ -1627,25 +1555,47 @@ class HelloTriangleApplication
 
         void createTextureImage()
         {
+		// Load texture image
             int                         texWidth
                                       , texHeight
                                       , texChannels;
 
-            stbi_uc                     *pixels             = stbi_load(  TEXTURE_PATH.c_str()
+            stbi_uc                     *pixels             = nullptr;
+
+if PLATFORM_ANDROID
+		// Load image from Android assets
+		std::optional<AssetManagerType *>	optionalAssetManager	= assetManager;
+		std::vector<char>			imageData		= readFile(TEXTURE_PATH, optionalAssetManager);
+		pixels								= stbi_load_from_memory(
+												reinterpret_cast<const stbi_uc *>(imageData.data())
+												, static_cast<int>(imageData.size())
+												, &texWidth
+												, &texHeight
+												, &texChannels
+												, STBI_rgb_alpha
+											);
+#else
+		// Load image from filesystem
+		pixels						= stbi_load(  
+									TEXTURE_PATH.c_str()
                                                                         , &texWidth
                                                                         , &texHeight
                                                                         , &texChannels
-                                                                        , STBI_rgb_alpha);
+                                                                        , STBI_rgb_alpha
+									);
+#endif
 
-            vk::DeviceSize              imageSize           = texWidth * texHeight * 4;
-
-            uint32_t                    mipLevels           = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
             if (!pixels)
             {
-                throw std::runtime_error("Failed to load texture image!");
+                throw std::runtime_error("Failed to load texture image: " + TEXTURE_PATH);
             }
+	    
+	    LOG_INFO("Texture loaded successfully");
 
+            vk::DeviceSize              imageSize           = texWidth * texHeight * 4;
+
+		// Create staging buffer
             vk::raii::Buffer            stagingBuffer       = nullptr;
             vk::raii::DeviceMemory      stagingBufferMemory = nullptr;
 
@@ -1658,8 +1608,9 @@ class HelloTriangleApplication
                 , stagingBufferMemory
             );
 
-            void                        *data               = stagingBufferMemory.mapMemory(  0
-                                                                                            , imageSize);
+		// Copy pixel data to staging buffer
+            void                        *data;
+	    data				               = stagingBufferMemory.mapMemory(0, imageSize);
 
             memcpy(  
                   data
@@ -1669,13 +1620,16 @@ class HelloTriangleApplication
 
             stagingBufferMemory.unmapMemory();
 
-            stbi_image_free(pixels);
-
+		// Free the pixel data
+		if (pixels != nullptr)
+		{
+			stbi_image_free(pixels);
+		}
+		// Create image
             createImage(  
                   texWidth
                 , texHeight
-                , mipLevels
-                , vk::SampleCountFlagBits::e1
+                , 1
                 , vk::Format::eR8G8B8A8Srgb
                 , vk::ImageTiling::eOptimal
                 , vk::ImageUsageFlagBits::eTransferSrc
@@ -1686,208 +1640,27 @@ class HelloTriangleApplication
                 , textureImageMemory
             );
 
+		// Transition image layout and copy buffer to image
             transitionImageLayout(  
-                  *textureImage
-		        , vk::Format::eR8G8B8A8Srgb
+                  textureImage
+		, vk::Format::eR8G8B8A8Srgb
                 , vk::ImageLayout::eUndefined
                 , vk::ImageLayout::eTransferDstOptimal
-                , mipLevels
             );
 
             copyBufferToImage(  
-                  *stagingBuffer
-                , *textureImage
+                  stagingBuffer
+                , textureImage
                 , static_cast<uint32_t>(texWidth)
                 , static_cast<uint32_t>(texHeight)
             );
             
-            generateMipmaps(
-                  *textureImage
+            transitionImageLayout(
+                  textureImage
                 , vk::Format::eR8G8B8A8Srgb
-                , texWidth
-                , texHeight
-                , mipLevels
+                , vk::ImageLayout::eTransferDstOptimal
+                , vk::ImageLayout::eShaderReadOnlyOptimal
             );
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           generateMipmaps
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void generateMipmaps(
-              vk::Image image
-            , vk::Format imageFormat
-            , int32_t texWidth
-            , int32_t texHeight
-            , uint32_t mipLevels
-        )
-        {
-            vk::FormatProperties formatProperties           = physicalDevice.getFormatProperties(imageFormat);
-
-            if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear))
-            {
-                throw std::runtime_error("Texture image format does not support linear blitting!");
-            }
-
-            vk::raii::CommandBuffer commandBuffer = beginSingleTimeCommands();
-
-            vk::ImageMemoryBarrier          barrier
-            {
-                  .srcQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
-                , .dstQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
-                , .image                                    = image
-		            , .subresourceRange			    =
-                        {
-                              .aspectMask                   = vk::ImageAspectFlagBits::eColor
-                            , .levelCount                   = 1
-                            , .baseArrayLayer               = 0
-                            , .layerCount                   = 1
-                        }
-            };
-
-            int32_t                         mipWidth        = texWidth;
-            int32_t                         mipHeight       = texHeight;
-
-            for (uint32_t i = 1; i < mipLevels; i++)
-            {
-                barrier.subresourceRange.baseMipLevel       = i - 1;
-                barrier.oldLayout                           = vk::ImageLayout::eTransferDstOptimal;
-                barrier.newLayout                           = vk::ImageLayout::eTransferSrcOptimal;
-                barrier.srcAccessMask                       = vk::AccessFlagBits::eTransferWrite;
-                barrier.dstAccessMask                       = vk::AccessFlagBits::eTransferRead;
-
-                commandBuffer.pipelineBarrier(
-                      vk::PipelineStageFlagBits::eTransfer
-                    , vk::PipelineStageFlagBits::eTransfer
-                    , {}
-                    , std::array<vk::MemoryBarrier, 0>{}
-                    , std::array<vk::BufferMemoryBarrier, 0>{}
-                    , std::array<vk::ImageMemoryBarrier, 1>{barrier}
-                );
-
-                vk::ImageBlit blit
-                {
-                      .srcSubresource                       = 
-                    {
-                          .aspectMask		                = vk::ImageAspectFlagBits::eColor
-                        , .mipLevel		                    = i - 1
-                        , .baseArrayLayer	                = 0
-                        , .layerCount		                = 1
-                    }
-                            , .srcOffsets                   = std::array<vk::Offset3D, 2>
-                                {
-                                      vk::Offset3D{0, 0, 0}
-                                    , vk::Offset3D{mipWidth, mipHeight, 1}
-                                }
-                            , .dstSubresource               = 
-                                {
-                                      .aspectMask		    = vk::ImageAspectFlagBits::eColor
-                                    , .mipLevel		        = i
-                                    , .baseArrayLayer	    = 0
-                                    , .layerCount		    = 1
-                                }
-                            , .dstOffsets                   = std::array<vk::Offset3D, 2>
-                                {
-                                      vk::Offset3D{0, 0, 0}
-                                    , vk::Offset3D
-                                        {
-                                              mipWidth  > 1 ? mipWidth  / 2 : 1
-                                            , mipHeight > 1 ? mipHeight / 2 : 1
-                                            , 1
-                                        }
-                                }
-                };
-		
-                commandBuffer.blitImage(
-                      image
-                    , vk::ImageLayout::eTransferSrcOptimal
-                    , image
-                    , vk::ImageLayout::eTransferDstOptimal
-                    , std::array<vk::ImageBlit, 1>{blit}
-                    , vk::Filter::eLinear
-                );
-
-                barrier.oldLayout                           = vk::ImageLayout::eTransferSrcOptimal;
-                barrier.newLayout                           = vk::ImageLayout::eShaderReadOnlyOptimal;
-                barrier.srcAccessMask                       = vk::AccessFlagBits::eTransferRead;
-                barrier.dstAccessMask                       = vk::AccessFlagBits::eShaderRead;
-
-                commandBuffer.pipelineBarrier(
-                      vk::PipelineStageFlagBits::eTransfer
-                    , vk::PipelineStageFlagBits::eFragmentShader
-                    , {}
-                    , std::array<vk::MemoryBarrier, 0>{}
-                    , std::array<vk::BufferMemoryBarrier, 0>{}
-                    , std::array<vk::ImageMemoryBarrier, 1>{barrier}
-                );
-
-                if (mipWidth > 1)
-                    mipWidth /= 2;
-                if (mipHeight > 1)
-                    mipHeight /= 2;
-            }
-
-            barrier.subresourceRange.baseMipLevel           = mipLevels - 1;
-            barrier.oldLayout                               = vk::ImageLayout::eTransferDstOptimal;
-            barrier.newLayout                               = vk::ImageLayout::eShaderReadOnlyOptimal;
-            barrier.srcAccessMask                           = vk::AccessFlagBits::eTransferWrite;
-            barrier.dstAccessMask                           = vk::AccessFlagBits::eShaderRead;
-
-            commandBuffer.pipelineBarrier(
-                  vk::PipelineStageFlagBits::eTransfer
-                , vk::PipelineStageFlagBits::eFragmentShader
-                , {}
-                , std::array<vk::MemoryBarrier, 0>{}
-                , std::array<vk::BufferMemoryBarrier, 0>{}
-                , std::array<vk::ImageMemoryBarrier, 1>{barrier}
-            );
-
-            endSingleTimeCommands(commandBuffer);
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createImageView
-//  Arguments:      N/A
-//  Returns:        vk::raii::ImageView
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        vk::raii::ImageView createImageView(
-              vk::Image image
-            , vk::Format format
-            , vk::ImageAspectFlags aspectFlags
-            , uint32_t mipLevels
-        ) 
-        {
-            vk::ImageViewCreateInfo     viewInfo
-            {
-                  .image                                    = image
-                , .viewType                                 = vk::ImageViewType::e2D
-                , .format                                   = format
-                , .subresourceRange                         = 
-                {
-                      .aspectMask			                = aspectFlags
-                    , .baseMipLevel			                = 0
-                    , .levelCount			                = mipLevels
-                    , .baseArrayLayer			            = 0
-                    , .layerCount			                = 1
-                }
-            };
-
-            return device.createImageView(viewInfo);
         }
         
 
@@ -1905,7 +1678,7 @@ class HelloTriangleApplication
         void createTextureImageView()
         {
             textureImageView                                = createImageView(  
-                                                                                *textureImage
+                                                                                textureImage
                                                                               , vk::Format::eR8G8B8A8Srgb
                                                                               , vk::ImageAspectFlagBits::eColor
                                                                               , 1
@@ -1926,8 +1699,6 @@ class HelloTriangleApplication
 
         void createTextureSampler()
         {
-            vk::PhysicalDeviceProperties        properties  = physicalDevice.getProperties();
-
             vk::SamplerCreateInfo               samplerInfo
             {
                   .magFilter                                = vk::Filter::eLinear
@@ -1936,18 +1707,81 @@ class HelloTriangleApplication
                 , .addressModeU                             = vk::SamplerAddressMode::eRepeat
                 , .addressModeV                             = vk::SamplerAddressMode::eRepeat
                 , .addressModeW                             = vk::SamplerAddressMode::eRepeat
-                , .mipLodBias                               = 0.0f
                 , .anisotropyEnable                         = VK_TRUE
-                , .maxAnisotropy                            = properties.limits.maxSamplerAnisotropy
+                , .maxAnisotropy                            = 16.0f
                 , .compareEnable                            = VK_FALSE
                 , .compareOp                                = vk::CompareOp::eAlways
-                , .minLod                                   = 0.0f
-                , .maxLod                                   = 0.0f
                 , .borderColor                              = vk::BorderColor::eIntOpaqueBlack
                 , .unnormalizedCoordinates                  = VK_FALSE
             };
 
             textureSampler                                  = device.createSampler(samplerInfo);
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           loadModel
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void loadModel()
+        {
+            tinyobj::attrib_t                   attrib;
+            std::vector<tinyobj::shape_t>       shapes;
+            std::vector<tinyobj::material_t>    materials;
+            std::string                         warn, err;
+
+            if (!tinyobj::LoadObj(
+                           &attrib
+                         , &shapes
+                         , &materials
+                         , &warn
+                         , &err
+                         , MODEL_PATH.c_str()
+                        )
+                )
+            {
+                throw std::runtime_error(warn + err);
+            }
+
+            std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+            for (const auto &shape : shapes)
+            {
+                for (const auto &index : shape.mesh.indices)
+                {
+                    Vertex vertex{};
+
+                    vertex.pos = 
+                    {
+                          attrib.vertices[3 * index.vertex_index + 0]
+                        , attrib.vertices[3 * index.vertex_index + 1]
+                        , attrib.vertices[3 * index.vertex_index + 2]
+                    };
+
+                    vertex.texCoord =
+                    {
+                          attrib.texcoords[2 * index.texcoord_index + 0]
+                        , 1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                    };
+
+                    vertex.color = { 1.0f, 1.0f, 1.0f};
+
+                    if (uniqueVertices.count(vertex) == 0)
+                    {
+                        uniqueVertices[vertex]              = static_cast<uint32_t>(vertices.size());
+                        vertices.push_back(vertex);
+                    }
+
+                    indices.push_back(uniqueVertices[vertex]);
+                }
+            }
         }
         
 
@@ -2545,72 +2379,6 @@ class HelloTriangleApplication
             queue.submit(submitInfo, nullptr);
 
             queue.waitIdle();
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           loadModel
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void loadModel()
-        {
-            tinyobj::attrib_t                   attrib;
-            std::vector<tinyobj::shape_t>       shapes;
-            std::vector<tinyobj::material_t>    materials;
-            std::string                         warn, err;
-
-            if (!tinyobj::LoadObj(
-                           &attrib
-                         , &shapes
-                         , &materials
-                         , &warn
-                         , &err
-                         , MODEL_PATH.c_str()
-                        )
-                )
-            {
-                throw std::runtime_error(warn + err);
-            }
-
-            std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-            for (const auto &shape : shapes)
-            {
-                for (const auto &index : shape.mesh.indices)
-                {
-                    Vertex vertex{};
-
-                    vertex.pos = 
-                    {
-                          attrib.vertices[3 * index.vertex_index + 0]
-                        , attrib.vertices[3 * index.vertex_index + 1]
-                        , attrib.vertices[3 * index.vertex_index + 2]
-                    };
-
-                    vertex.texCoord =
-                    {
-                          attrib.texcoords[2 * index.texcoord_index + 0]
-                        , 1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-                    };
-
-                    vertex.color = { 1.0f, 1.0f, 1.0f};
-
-                    if (uniqueVertices.count(vertex) == 0)
-                    {
-                        uniqueVertices[vertex]              = static_cast<uint32_t>(vertices.size());
-                        vertices.push_back(vertex);
-                    }
-
-                    indices.push_back(uniqueVertices[vertex]);
-                }
-            }
         }
         
 
@@ -3487,6 +3255,43 @@ class HelloTriangleApplication
             details.presentModes				            = device.getSurfacePresentModesKHR(*surface);
             
             return details;
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           createImageView
+//  Arguments:      N/A
+//  Returns:        vk::raii::ImageView
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        [[nodiscard]] vk::raii::ImageView createImageView(
+              const vk::raii::Image &image
+            , vk::Format format
+            , vk::ImageAspectFlags aspectFlags
+            , uint32_t mipLevels
+        ) 
+        {
+            vk::ImageViewCreateInfo     viewInfo
+            {
+                  .image                                    = *image
+                , .viewType                                 = vk::ImageViewType::e2D
+                , .format                                   = format
+                , .subresourceRange                         = 
+                {
+                      aspectFlags
+                    , 0
+                    , mipLevels
+                    , 0
+                    , 1
+                }
+            };
+
+            return vk::raii::ImageView(device, viewInfo);
         }
 };
         
