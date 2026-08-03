@@ -281,6 +281,27 @@ std::vector<char> readFile(const std::string &filename, std::optional<AssetManag
 class HelloTriangleApplication
 {
     public:
+#if PLATFORM_DESKTOP
+	// Desktop constructor
+	HelloTriangleApplication()
+	{
+		// No Android-specific initialization needed
+	}
+#else
+	// Android constructor
+	HelloTriangleApplication(android_app *app) :
+		androidApp(app)
+	{
+		androidApp->userData	= this;
+		androidApp->onAppCmd	= handleAppCommand;
+		// Note: onInputEvent is no longer a member of android_app in the current NDK version
+		// Input events are now handled differently
+		
+		// Get the asset manager
+		assetManager		= androidApp->activity->assetManager;
+	}
+#endif
+
 
 //******************************************************************************************
 // 
@@ -298,101 +319,37 @@ class HelloTriangleApplication
     
         void run()
         {
+#if PLATFORM_DESKTOP
+		// Desktop main loop
             initWindow();
             initVulkan();
             mainLoop();
             cleanup();
+#else
+		// Android main loop is handled by Android
+		while (!initialized)
+		{
+			// Wait for app to initialize
+			int 			events;
+			android_poll_source	*source;
+			if (ALooper_pollOnce(
+					0
+					, nullptr
+					, &events
+					, (void **) &source
+					) >= 0)
+			{
+				if (source != nullptr)
+				{
+					source->process(androidApp, source);
+				}
+			}
+		}
+#endif
         }
 
-    private:
-
-        // Initial set up and swapchain
-        GLFWwindow                              *window                     = nullptr;
-        vk::raii::Context                       context;
-        vk::raii::Instance                      instance                    = nullptr;
-        vk::raii::DebugUtilsMessengerEXT        debugMessenger              = nullptr;
-        vk::raii::SurfaceKHR                    surface                     = nullptr;
-        vk::raii::PhysicalDevice                physicalDevice              = nullptr;
-        vk::raii::Device                        device                      = nullptr;
-        uint32_t                                queueIndex                  = ~0;
-        vk::raii::Queue                         queue                       = nullptr;
-        vk::raii::SwapchainKHR                  swapChain                   = nullptr;
-        std::vector<vk::Image>                  swapChainImages;
-        vk::SurfaceFormatKHR                    swapChainSurfaceFormat;
-        vk::Extent2D                            swapChainExtent;
-        std::vector<vk::raii::ImageView>        swapChainImageViews;
-
-        // Traditional render pass (fallback for non-dynamic rendering)
-        vk::raii::RenderPass                    renderPass                  = nullptr;
-
-        // Descriptor sets and pipeline
-        vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
-        vk::raii::PipelineLayout                pipelineLayout              = nullptr;
-        vk::raii::Pipeline                      graphicsPipeline            = nullptr;
-        std::vector<vk::raii::Framebuffer>      swapChainFramebuffers;
-
-        // Command pool
-        vk::raii::CommandPool                   commandPool                 = nullptr;
-        std::vector<vk::raii::CommandBuffer>    commandBuffers;
-
-        // Synchronization objects - Semaphores and fences
-	    std::vector<vk::raii::Semaphore>	    imageAvailableSemaphores;
-        std::vector<vk::raii::Semaphore>        renderFinishedSemaphores;
-        std::vector<vk::raii::Fence>            inFlightFences;
-        std::vector<vk::raii::Semaphore>        presentCompleteSemaphore;
-        uint32_t                                frameIndex                  = 0;
-
-        bool framebufferResized                                             = false;
-
-        vk::raii::Buffer                        vertexBuffer                = nullptr;
-        vk::raii::DeviceMemory                  vertexBufferMemory          = nullptr;
-        vk::raii::Buffer                        indexBuffer                 = nullptr;
-        vk::raii::DeviceMemory                  indexBufferMemory           = nullptr;
-
-        // Uniform buffers
-        std::vector<vk::raii::Buffer>           uniformBuffers;
-        std::vector<vk::raii::DeviceMemory>     uniformBuffersMemory;
-        std::vector<void *>                     uniformBuffersMapped;
-
-        // Descriptor pool
-        vk::raii::DescriptorPool                descriptorPool              = nullptr;
-        std::vector<vk::raii::DescriptorSet>    descriptorSets;
-
-        // Mipmapping
-        vk::raii::Image                         textureImage                = nullptr;
-        vk::raii::DeviceMemory                  textureImageMemory          = nullptr;
-        vk::raii::ImageView                     textureImageView            = nullptr;
-        vk::raii::Sampler                       textureSampler              = nullptr;
-	
-        // Depth management
-        vk::raii::Image                         depthImage                  = nullptr;
-        vk::raii::DeviceMemory                  depthImageMemory            = nullptr;
-        vk::raii::ImageView                     depthImageView              = nullptr;
-	
-        // Vertices
-        std::vector<Vertex>                     vertices;
-        std::vector<uint32_t>                   indices;
-        vk::SampleCountFlagBits                 msaaSamples                 = vk::SampleCountFlagBits::e1;
-	
-        // Color management
-        vk::raii::Image                         colorImage                  = nullptr;
-        vk::raii::DeviceMemory                  colorImageMemory            = nullptr;
-        vk::raii::ImageView                     colorImageView              = nullptr;
-
-        // Application info to store profile support
-        AppInfo appInfo                                                     = {};
-
-        struct SwapChainSupportDetails
-        {
-            vk::SurfaceCapabilitiesKHR          capabilities;
-            std::vector<vk::SurfaceFormatKHR>   formats;
-            std::vector<vk::PresentModeKHR>     presentModes;
-        };
-
-        const std::vector<const char *>         requiredDeviceExtension     =
-        {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
-        };
+#if PLATFORM_DESKTOP
+	// Initialize window (Desktop only)
 
 
 //******************************************************************************************
@@ -421,7 +378,7 @@ class HelloTriangleApplication
 
             window = glfwCreateWindow(  WIDTH
                                       , HEIGHT
-                                      , "Vulkan Profiles Demo"
+                                      , "Vulkan Cross-Platform"
                                       , nullptr
                                       , nullptr);
 
@@ -429,104 +386,8 @@ class HelloTriangleApplication
                                      , this);
             glfwSetFramebufferSizeCallback(  window
                                            , framebufferResizeCallback);
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           framebufferResizeCallback
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        static void framebufferResizeCallback(
-              GLFWwindow *window
-            , int
-            , int
-        )
-        {
-            auto app                                        = reinterpret_cast<HelloTriangleApplication *>(glfwGetWindowUserPointer(window));
-            app->framebufferResized                         = true;
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           initVulkan
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          createInstance
-//                  setupDebugMessenger
-//                  createSurface
-//                  pickPhysicalDevice
-//                  getMaxUsableSampleCount
-//                  createLogicalDevice
-//                  createSwapChain
-//                  createImageViews
-//                  createDescriptorSetLayout
-//                  createGraphicsPipeline
-//                  createCommandPool
-//                  createDepthResources
-//                  createTextureImage
-//                  createTextureImageView
-//                  createTextureSampler
-//                  loadModel
-//                  createVertexBuffer
-//                  createIndexBuffer
-//                  createUniformBuffers
-//                  createDescriptorPool
-//                  createDescriptorSets
-//                  createCommandBuffers
-//                  createSyncObjects
-//  Called by:      initVulkan
-//  Description:    Control structure for initializing the Vulkan framework.
-// 
-//******************************************************************************************
-
-        void initVulkan()
-        {
-            createInstance();
-            setupDebugMessenger();
-            createSurface();
-            pickPhysicalDevice();
-	        checkFeatureSupport();
-            createLogicalDevice();
-            createSwapChain();
-            createImageViews();
-	    
-            // Create render pass only if not using dynamic rendering
-            if (!appInfo.profileSupported)
-            {
-                createRenderPass();
-            }
-	    
-            createDescriptorSetLayout();
-            createGraphicsPipeline();
-	    
-            // Create framebuffers only if not using dynamic rendering
-            if (!appInfo.profileSupported)
-            {
-                createFramebuffers();
-            }
-	    
-            createCommandPool();
-            createColorResources();
-            createDepthResources();
-            createTextureImage();
-            createTextureImageView();
-            createTextureSampler();
-            loadModel();
-            createVertexBuffer();
-            createIndexBuffer();
-            createUniformBuffers();
-            createDescriptorPool();
-            createDescriptorSets();
-            createCommandBuffers();
-            createSyncObjects();
+					   
+	    LOG_INFO("Desktop window created");
         }
         
 
@@ -543,6 +404,7 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
+	// Desktop main loop
         void mainLoop()
         {
             while (!glfwWindowShouldClose(window))
@@ -557,7 +419,7 @@ class HelloTriangleApplication
 
 //******************************************************************************************
 // 
-//  Name:           cleanupSwapChain
+//  Name:           framebufferResizeCallback
 //  Arguments:      N/A
 //  Returns:        void
 //  Calls:          
@@ -565,24 +427,18 @@ class HelloTriangleApplication
 //  Description:    
 // 
 //******************************************************************************************
-        
-        void cleanupSwapChain()
-        {
-            swapChainFramebuffers.clear();
-            swapChainImageViews.clear();
-            
-            // Semaphores tied to swapchain image indices need to be rebuilt on resize
-            presentCompleteSemaphore.clear();
-            
-            for (auto &imageView : swapChainImageViews)
-            {
-                imageView			                        = nullptr;
-            }
-            
-            swapChainImageViews.clear();
-            swapChain = nullptr;
-        }
 
+	// Desktop framebuffer resize callback
+        static void framebufferResizeCallback(
+              GLFWwindow *window
+            , int
+            , int
+        )
+        {
+            auto app                                        = reinterpret_cast<HelloTriangleApplication *>(glfwGetWindowUserPointer(window));
+            app->framebufferResized                         = true;
+        }
+#endif
 
 
 //******************************************************************************************
@@ -599,65 +455,182 @@ class HelloTriangleApplication
 
         void cleanup()
         {
-            glfwDestroyWindow(window);
-
-            glfwTerminate();
+		if (initialized)
+		{
+			// Wait for device to finish operations
+			if (*device)
+			{
+				device.waitIdle();
+			}
+			
+			// Cleanup resources
+			cleanupSwapChain();
+			
+			initialized		= false;
+		}
         }
-        
+	
+    private:
+
+#if PLATFORM_ANDROID
+	// Android-specific members
+	android_app		*androidApp		= nullptr;
+	AssetManagerType	*assetManager		= nullptr;
+#else
+	// Desktop-specific members
+
+        // Initial set up and swapchain
+        GLFWwindow                              *window                     = nullptr;
+
+#endif
+	bool 					initialized			= false;
+        bool 					framebufferResized              = false;
+	
+	// Vulkan objects
+        vk::raii::Context                       context;
+        vk::raii::Instance                      instance                    = nullptr;
+        vk::raii::DebugUtilsMessengerEXT        debugMessenger              = nullptr;
+        vk::raii::SurfaceKHR                    surface                     = nullptr;
+        vk::raii::PhysicalDevice                physicalDevice              = nullptr;
+        vk::raii::Device                        device                      = nullptr;
+        uint32_t                                queueIndex                  = ~0;
+        vk::raii::Queue                         queue                       = nullptr;
+        vk::raii::SwapchainKHR                  swapChain                   = nullptr;
+        std::vector<vk::Image>                  swapChainImages;
+        vk::SurfaceFormatKHR                    swapChainSurfaceFormat;
+        vk::Extent2D                            swapChainExtent;
+        std::vector<vk::raii::ImageView>        swapChainImageViews;
+
+        // Traditional render pass (fallback for non-dynamic rendering)
+        vk::raii::RenderPass                    renderPass                  = nullptr;
+
+        // Descriptor sets and pipeline
+        vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
+        vk::raii::PipelineLayout                pipelineLayout              = nullptr;
+        vk::raii::Pipeline                      graphicsPipeline            = nullptr;
+	
+        // Depth management
+	vk::Format				depthFormat;
+        vk::raii::Image                         depthImage                  = nullptr;
+        vk::raii::DeviceMemory                  depthImageMemory            = nullptr;
+        vk::raii::ImageView                     depthImageView              = nullptr;
+        std::vector<vk::raii::Framebuffer>      swapChainFramebuffers;
+
+        // Command pool
+        vk::raii::CommandPool                   commandPool                 = nullptr;
+        std::vector<vk::raii::CommandBuffer>    commandBuffers;
+        vk::raii::Buffer                        vertexBuffer                = nullptr;
+        vk::raii::DeviceMemory                  vertexBufferMemory          = nullptr;
+        vk::raii::Buffer                        indexBuffer                 = nullptr;
+        vk::raii::DeviceMemory                  indexBufferMemory           = nullptr;
+
+        // Mipmapping
+        vk::raii::Image                         textureImage                = nullptr;
+        vk::raii::DeviceMemory                  textureImageMemory          = nullptr;
+        vk::raii::ImageView                     textureImageView            = nullptr;
+        vk::raii::Sampler                       textureSampler              = nullptr;
+	
+        // Uniform buffers
+        std::vector<vk::raii::Buffer>           uniformBuffers;
+        std::vector<vk::raii::DeviceMemory>     uniformBuffersMemory;
+
+        // Descriptor pool
+        vk::raii::DescriptorPool                descriptorPool              = nullptr;
+        std::vector<vk::raii::DescriptorSet>    descriptorSets;
+
+        // Synchronization objects - Semaphores and fences
+	    std::vector<vk::raii::Semaphore>	    imageAvailableSemaphores;
+        std::vector<vk::raii::Semaphore>        renderFinishedSemaphores;
+        std::vector<vk::raii::Fence>            inFlightFences;
+        uint32_t                                frameIndex                  = 0;
+	
+        // Application info
+        AppInfo 				appInfo;
+	
+	// Model data
+        std::vector<Vertex>                     vertices;
+        std::vector<uint32_t>                   indices;
+
+	// Swap chain support details
+        struct SwapChainSupportDetails
+        {
+            vk::SurfaceCapabilitiesKHR          capabilities;
+            std::vector<vk::SurfaceFormatKHR>   formats;
+            std::vector<vk::PresentModeKHR>     presentModes;
+        };
+
+	// Required device extensions
+        const std::vector<const char *>         requiredDeviceExtensions    =
+        {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        };
+
+	// Initialize Vulkan
+
 
 //******************************************************************************************
 // 
-//  Name:           recreateSwapChain
+//  Name:           initVulkan
 //  Arguments:      N/A
 //  Returns:        void
 //  Calls:          
-//  Called by:      
-//  Description:    
+//            createInstance();
+//            createSurface();
+//            pickPhysicalDevice();
+//            checkFeatureSupport();
+//            createLogicalDevice();
+//            createSwapChain();
+//            createImageViews();
+//            createDepthResources();
+//            createRenderPass();
+//            createDescriptorSetLayout();
+//            createGraphicsPipeline();
+//            createFramebuffers();
+//            createCommandPool();
+//            createTextureImage();
+//            createTextureImageView();
+//            createTextureSampler();
+//            loadModel();
+//            createVertexBuffer();
+//            createIndexBuffer();
+//            createUniformBuffers();
+//            createDescriptorPool();
+//            createDescriptorSets();
+//            createCommandBuffers();
+//            createSyncObjects();
+//  Called by:      initVulkan
+//  Description:    Control structure for initializing the Vulkan framework.
 // 
 //******************************************************************************************
 
-        void recreateSwapChain()
+        void initVulkan()
         {
-            int   width         = 0
-                , height        = 0;
-            
-            glfwGetFramebufferSize(  window
-                                   , &width
-                                   , &height);
-
-            while (width == 0 || height == 0)
-            {
-                glfwGetFramebufferSize(  window
-                                       , &width
-                                       , &height);
-                glfwWaitEvents();
-            }
-
-            device.waitIdle();
-
-            cleanupSwapChain();
-	    
+            createInstance();
+            createSurface();
+            pickPhysicalDevice();
+	    checkFeatureSupport();
+            createLogicalDevice();
             createSwapChain();
             createImageViews();
+	    createDepthResources();
+	    createRenderPass();
+            createDescriptorSetLayout();
+            createGraphicsPipeline();
+	    createFramebuffers();
+            createCommandPool();
+            createTextureImage();
+            createTextureImageView();
+            createTextureSampler();
+            loadModel();
+            createVertexBuffer();
+            createIndexBuffer();
+            createUniformBuffers();
+            createDescriptorPool();
+            createDescriptorSets();
+            createCommandBuffers();
+            createSyncObjects();
 	    
-            // Recreate traditional render pass and framebuffers if not using profiles
-            if (!appInfo.profileSupported)
-            {
-                createRenderPass();
-                createFramebuffers();
-            }
-            
-            createColorResources();
-            createDepthResources();
-            
-            // Recreate per-swapchain-image present semaphores after resize
-            presentCompleteSemaphore.reserve(swapChainImages.size());
-            vk::SemaphoreCreateInfo semaphoreInfo{};
-
-            for (size_t i = 0; i < swapChainImages.size(); ++i)
-            {
-                presentCompleteSemaphore.push_back(device.createSemaphore(semaphoreInfo));
-            }
+	    initialized		= true;
         }
         
 
@@ -674,20 +647,23 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
+	// Create Vulkan instance
         void createInstance()
         {
-            constexpr vk::ApplicationInfo appInfo
+	    // Application info
+            vk::ApplicationInfo appInfo
             {
-                  .pApplicationName     = "Vulkan Profiles Demo"
+                  .pApplicationName     = "Vulkan Android"
                 , .applicationVersion   = VK_MAKE_VERSION(1, 0, 0)
                 , .pEngineName          = "No Engine"
                 , .engineVersion        = VK_MAKE_VERSION(1, 0, 0)
-                , .apiVersion           = vk::ApiVersion14
+                , .apiVersion           = VK_API_VERSION_1_3
             };
 	    
-            // Get the required extensions.
-            auto extensions = getRequiredInstanceExtensions();
+            // Get required extensions.
+            std::vector<const char *> extensions = getRequiredInstanceExtensions();
             
+	    // Create Instance
             vk::InstanceCreateInfo createInfo
             {
                   .pApplicationInfo         = &appInfo
@@ -697,58 +673,8 @@ class HelloTriangleApplication
             
             instance = vk::raii::Instance(  context
                                           , createInfo);
+	    LOGI("Vulkan instance created");
         }
-        
-
-//******************************************************************************************
-// 
-//  Name:           setupDebugMessenger
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          instance.createDebugUtilsMessengerEXT
-//  Called by:      initVulkan
-//  Description:    If validation layers are enabled, declares createInfo so that the
-//                  debug messenger can be initialized for debugging.
-// 
-//******************************************************************************************
-                    
-        void setupDebugMessenger()
-        {
-            // Always set up the debug messenger
-            // It will only be used if validation layers are enabled via vulkanconfig
-
-            vk::DebugUtilsMessageSeverityFlagsEXT   severityFlags(
-                  vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
-                | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning 
-                | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
-            );
-
-            vk::DebugUtilsMessageTypeFlagsEXT       messageTypeFlags(  
-		          vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral 
-                | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance 
-                | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
-	       );
-
-            vk::DebugUtilsMessengerCreateInfoEXT    debugUtilsMessengerCreateInfoEXT
-            {
-                  .messageSeverity                          = severityFlags
-                , .messageType                              = messageTypeFlags
-                , .pfnUserCallback                          = &debugCallback
-            };
-	    
-            try
-            {
-                debugMessenger = instance.createDebugUtilsMessengerEXT(debugUtilsMessengerCreateInfoEXT);
-            }
-            catch (vk::SystemError &err)
-            {
-                // If the debug utils extension is not available, this will fail
-                // That's Ok, it just means validation layers aren't enabled
-
-                std::cout << "Debug messenger not available. Validation layers may not be enabled." << std::endl;
-            }
-        }
-
         
 
 //******************************************************************************************
@@ -767,15 +693,46 @@ class HelloTriangleApplication
         void createSurface()
         {
             VkSurfaceKHR _surface;
+
+#if PLATFORM_ANDROID
+		// Create Android surface
+		VkAndroidSurfaceCreateInfoKHR 		createInfo	=
+		{
+			.sType						= VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR
+			, .pNext					= nullptr
+			, .flags					= 0
+			, .window					= androidApp->window
+		};
+		
+		VkResult				result		= vkCreateAndroidSurfaceKHR(
+											*instace
+											, &createInfo
+											, nullptr
+											, &_surface
+											);
+		
+		if (result != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create Android surface");
+		}
+		
+		LOG_INFO("Android surface created");
+#else
+		// Create desktop surface using GLFW
             if (glfwCreateWindowSurface(  
                   *instance
                 , window
                 , nullptr
-                , &_surface) != 0
-               )
+                , &_surface
+		) != 0
+	    )
             {
                 throw std::runtime_error("Failed to create window surface!");
             }
+	    
+	    LOG_INFO("Desktop surface created.");
+#endif
+
             surface = vk::raii::SurfaceKHR(  instance
                                            , _surface);
         }
@@ -860,17 +817,12 @@ class HelloTriangleApplication
                 throw std::runtime_error("Failed to find a suitable GPU!");
             }
             physicalDevice                                          = *devIter;
-	        msaaSamples			                                    = getMaxUsableSampleCount();
 	    
             // Print device information
             vk::PhysicalDeviceProperties 	deviceProperties	    = physicalDevice.getProperties();
 
-            std::cout << "Selected GPU: " << deviceProperties.deviceName                    << std::endl;
-            std::cout << "API Version: "  << VK_VERSION_MAJOR(deviceProperties.apiVersion)  << "."
-                      << VK_VERSION_MINOR(deviceProperties.apiVersion)                      << "."
-                      << VK_VERSION_PATCH(deviceProperties.apiVersion)                      << std::endl;
+	LOGI("Selected GPU: %s", deviceProperties.deviceName.data());
         }
-
         
 
 //******************************************************************************************
@@ -2978,6 +2930,36 @@ class HelloTriangleApplication
                 presentCompleteSemaphore.push_back(device.createSemaphore(semaphoreInfo));
             }
         }
+        
+
+//******************************************************************************************
+// 
+//  Name:           cleanupSwapChain
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+        
+	// Clean up swap chain
+        void cleanupSwapChain()
+        {
+            swapChainFramebuffers.clear();
+            swapChainImageViews.clear();
+            
+            // Semaphores tied to swapchain image indices need to be rebuilt on resize
+            renderFinishedSemaphores.clear();
+            
+            for (auto &imageView : swapChainImageViews)
+            {
+                imageView			                        = nullptr;
+            }
+            
+            swapChainImageViews.clear();
+            swapChain = nullptr;
+        }
 
 
 //******************************************************************************************
@@ -3137,6 +3119,63 @@ class HelloTriangleApplication
             }
 
             frameIndex                                      = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           recreateSwapChain
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	// Recreate swap chain
+        void recreateSwapChain()
+        {
+            int   width         = 0
+                , height        = 0;
+            
+            glfwGetFramebufferSize(  window
+                                   , &width
+                                   , &height);
+
+            while (width == 0 || height == 0)
+            {
+                glfwGetFramebufferSize(  window
+                                       , &width
+                                       , &height);
+                glfwWaitEvents();
+            }
+
+            device.waitIdle();
+
+            cleanupSwapChain();
+	    
+            createSwapChain();
+            createImageViews();
+	    
+            // Recreate traditional render pass and framebuffers if not using profiles
+            if (!appInfo.profileSupported)
+            {
+                createRenderPass();
+                createFramebuffers();
+            }
+            
+            createColorResources();
+            createDepthResources();
+            
+            // Recreate per-swapchain-image present semaphores after resize
+            presentCompleteSemaphore.reserve(swapChainImages.size());
+            vk::SemaphoreCreateInfo semaphoreInfo{};
+
+            for (size_t i = 0; i < swapChainImages.size(); ++i)
+            {
+                presentCompleteSemaphore.push_back(device.createSemaphore(semaphoreInfo));
+            }
         }
         
         
