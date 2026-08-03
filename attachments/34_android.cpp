@@ -847,25 +847,41 @@ class HelloTriangleApplication
 			
 			// Check if the profile is supported
 			VkBool32	            supported	            = VK_FALSE;
-			VkResult	            result		            = vpGetPhysicalDeviceProfileSupport(
+			
+#ifdef PLATFORM_ANDROID
+			// Create a vp::ProfileDesc from our VpProfileProperties
+			vp::ProfileDesc			profileDesc		= 
+			{
+				appInfo.profile.name
+				, appInfo.profile.specVersion
+			};
+			
+			// Use vp::GetProfileSupport instead of vpGetPhysicalDeviceProfileSupport
+			bool 				result			= vp::GetProfileSupport(
+				*physicalDevice			// Pass the physical device directly
+				, &profileDesc			// Pass the profile description
+				, &supported			// Output parameter for support status
+			);
+#else
+			VkResult	            	vk_result		  	= vpGetPhysicalDeviceProfileSupport(
                                                                                               *instance
                                                                                             , *physicalDevice
                                                                                             , &appInfo.profile
                                                                                             , &supported
                                                                                             );
+											    
+			bool 				result				= vk_result == VK_SUCCESS;
+#endif
 			
-			if (result == VK_SUCCESS && supported == VK_TRUE)
+			if (result && supported == VK_TRUE)
 			{
 				appInfo.profileSupported	                = true;
-				std::cout << "Using KHR roadmap 2022 profile" << std::endl;
+				LOGI("Using KHR roadmap 2022 profile");
 			}
 			else
 			{
 				appInfo.profileSupported 	                = false;
-				std::cout << "Falling back to traditional rendering (profile not supported)" << std::endl;
-				
-				// If we wanted to implement fallback, we would call detectFeatureSupport() here
-				// But for this example, we'll just use traditional rendering if the profile isn't supported
+				LOGI("Falling back to traditional rendering (profile not supported)");
 			}
 		}
 
@@ -942,15 +958,13 @@ class HelloTriangleApplication
                       .pNext                                = &features2
                     , .queueCreateInfoCount                 = 1
                     , .pQueueCreateInfos                    = &deviceQueueCreateInfo
-                    , .enabledExtensionCount                = static_cast<uint32_t>(requiredDeviceExtension.size())
-                    , .ppEnabledExtensionNames              = requiredDeviceExtension.data()
+                    , .enabledExtensionCount                = static_cast<uint32_t>(requiredDeviceExtensions.size())
+                    , .ppEnabledExtensionNames              = requiredDeviceExtensions.data()
                 };
                 
                 // Create the device with the vk::DeviceCreateInfo
                 device 			                            = vk::raii::Device(  physicalDevice
                                                                                , vkDeviceCreateInfo);
-                                        
-                std::cout << "Created logical device using KHR roadmap 2022 profile" << std::endl;
             }
             else
             {
@@ -964,14 +978,12 @@ class HelloTriangleApplication
                       .queueCreateInfoCount		            = 1
                     , .pQueueCreateInfos		            = &deviceQueueCreateInfo
                     , .enabledExtensionCount	            = static_cast<uint32_t>(requiredDeviceExtension.size())
-                    , .ppEnabledExtensionNames	            = requiredDeviceExtension.data()
+                    , .ppEnabledExtensionNames	            = requiredDeviceExtensions.data()
                     , .pEnabledFeatures		                = &deviceFeatures
                 };
 
                 device                                      = vk::raii::Device(  physicalDevice
                                                                                , createInfo);
-                                
-                std::cout << "Created logical device using manual feature selection" << std::endl;
             }
 	    
             queue                                           = device.getQueue(  queueIndex
@@ -1016,7 +1028,6 @@ class HelloTriangleApplication
                 , .compositeAlpha                                   = vk::CompositeAlphaFlagBitsKHR::eOpaque
                 , .presentMode                                      = presentMode
                 , .clipped                                          = true
-
             };
 
             swapChain                                               = device.createSwapchainKHR(swapChainCreateInfo);
@@ -1043,11 +1054,29 @@ class HelloTriangleApplication
 	    
 	    for (const auto &image : swapChainImages)
             {
-                swapChainImageViews.push_back(createImageView(  image
-                                                              , swapChainSurfaceFormat.format
-                                                              , vk::ImageAspectFlagBits::eColor
-                                                              , 1)
-                                                            );
+		vk::ImageViewCreateInfo		createInfo
+		{
+			.image					= image
+			, .viewType				= vk::ImageViewType::e2D
+			, .format				= swapChainSurfaceFormat.format
+			, .components				= 
+			{
+				.r			 	= vk::ComponentSwizzle::eIdentity
+				, .g				= vk::ComponentSwizzle::eIdentity
+				, .b				= vk::ComponentSwizzle::eIdentity
+				, .a				= vk::ComponentSwizzle::eIdentity
+			}
+			, .subresourceRange			= 
+			{
+				.aspectMask			= vk::ImageAspectFlagBits::eColor
+				, .baseMipLevel			= 0
+				, .levelCount			= 1
+				, .baseArrayLayer		= 0
+				, .layerCount			= 1
+			}
+		};
+		
+		swapChainImageViews.push_back(device.createImageView(createInfo));
             }
         }
         
@@ -1070,32 +1099,8 @@ class HelloTriangleApplication
             vk::AttachmentDescription   colorAttachment
             {
                   .format                                   = swapChainSurfaceFormat.format
-                , .samples                                  = msaaSamples
-                , .loadOp                                   = vk::AttachmentLoadOp::eClear
-                , .storeOp                                  = vk::AttachmentStoreOp::eStore
-                , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
-                , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
-                , .initialLayout                            = vk::ImageLayout::eUndefined
-                , .finalLayout                              = vk::ImageLayout::eColorAttachmentOptimal
-            };
-
-            vk::AttachmentDescription   depthAttachment
-            {
-                  .format                                   = findDepthFormat()
-                , .samples                                  = msaaSamples
-                , .loadOp                                   = vk::AttachmentLoadOp::eClear
-                , .storeOp                                  = vk::AttachmentStoreOp::eDontCare
-                , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
-                , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
-                , .initialLayout                            = vk::ImageLayout::eUndefined
-                , .finalLayout                              = vk::ImageLayout::eDepthStencilAttachmentOptimal
-            };
-
-            vk::AttachmentDescription   colorAttachmentResolve
-            {
-                  .format                                   = swapChainSurfaceFormat.format
                 , .samples                                  = vk::SampleCountFlagBits::e1
-                , .loadOp                                   = vk::AttachmentLoadOp::eDontCare
+                , .loadOp                                   = vk::AttachmentLoadOp::eClear
                 , .storeOp                                  = vk::AttachmentStoreOp::eStore
                 , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
                 , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
@@ -1109,17 +1114,23 @@ class HelloTriangleApplication
                   .attachment                               = 0
                 , .layout                                   = vk::ImageLayout::eColorAttachmentOptimal
             };
+	    
+            vk::AttachmentDescription   depthAttachment
+            {
+                  .format                                   = depthFormat
+                , .samples                                  = vk::SampleCountFlagBits::e1
+                , .loadOp                                   = vk::AttachmentLoadOp::eClear
+                , .storeOp                                  = vk::AttachmentStoreOp::eStore
+                , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
+                , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
+                , .initialLayout                            = vk::ImageLayout::eUndefined
+                , .finalLayout                              = vk::ImageLayout::eDepthStencilAttachmentOptimal
+            };
 
             vk::AttachmentReference     depthAttachmentRef
             {
                   .attachment                               = 1
                 , .layout                                   = vk::ImageLayout::eDepthStencilAttachmentOptimal
-            };
-
-            vk::AttachmentReference     colorAttachmentResolveRef
-            {
-                  .attachment                               = 2
-                , .layout                                   = vk::ImageLayout::eColorAttachmentOptimal
             };
 
             // Subpass description
@@ -1128,10 +1139,10 @@ class HelloTriangleApplication
                   .pipelineBindPoint                        = vk::PipelineBindPoint::eGraphics
                 , .colorAttachmentCount                     = 1
                 , .pColorAttachments                        = &colorAttachmentRef
-                , .pResolveAttachments                      = &colorAttachmentResolveRef
                 , .pDepthStencilAttachment                  = &depthAttachmentRef
             };
 
+	// @todo: barrier for deoth
             // Dependency to ensure proper image layout transitions
             vk::SubpassDependency       dependency
             {
@@ -1139,25 +1150,26 @@ class HelloTriangleApplication
                 , .dstSubpass                               = 0
                 , .srcStageMask                             =   vk::PipelineStageFlagBits::eColorAttachmentOutput
                                                               | vk::PipelineStageFlagBits::eEarlyFragmentTests
+							      | vk::PipelineStageFlagBits::eLateFragmentTests
                 , .dstStageMask                             =   vk::PipelineStageFlagBits::eColorAttachmentOutput
                                                               | vk::PipelineStageFlagBits::eEarlyFragmentTests
-                , .srcAccessMask                            =   vk::AccessFlagBits::eNone
+							      | vk::PipelineStageFlagBits::eLateFragmentTests
+                , .srcAccessMask                            =   vk::AccessFlagBits::eDepthStencilAttachmentWrite
                 , .dstAccessMask                            =   vk::AccessFlagBits::eColorAttachmentWrite
                                                               | vk::AccessFlagBits::eDepthStencilAttachmentWrite
             };
 
             // Create the render pass
-            std::array<vk::AttachmentDescription, 3>        attachments =
+            vk::AttachmentDescription        attachments[] =
             {
                   colorAttachment
                 , depthAttachment
-                , colorAttachmentResolve
             };
 
             vk::RenderPassCreateInfo    renderPassInfo
             {
-                  .attachmentCount                          = static_cast<uint32_t>(attachments.size())
-                , .pAttachments                             = attachments.data()
+                  .attachmentCount                          = 2
+                , .pAttachments                             = attachments
                 , .subpassCount                             = 1
                 , .pSubpasses                               = &subpass
                 , .dependencyCount                          = 1
