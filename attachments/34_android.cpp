@@ -47,28 +47,78 @@ import vulkan_hpp;
 #	include <android/asset_manager.h>
 #	include <android/asset_manager_jni.h>
 
-// Desktop specific includes
-#define GLFW_INCLUDE_VULKAN        // REQUIRED only for GLFW CreateWindowSurface.
+// Declare and implement app_dummy function from native_app_glue
+extern "C" void app_dummy()
+{
+	// This is a dummy function that does nothing
+	// It's used to prevent the linker from stripping out the native_app_glue code
+}
+
+// Define AAssetManager type for Android
+typedef AAssetManager AssetManagerType;
+
+// Define logging macros for Android
+#	define LOGI(...) ((void) __android_log_print(ANDROID_LOG_INFO, "VulkanTutorial", __VA_ARGS__))
+#	define LOGW(...) ((void) __android_log_print(ANDROID_LOG_WARN, "VulkanTutorial", __VA_ARGS__))
+#	define LOGE(...) ((void) __android_log_print(ANDROID_LOG_ERROR, "VulkanTutorial", __VA_ARGS__))
+#	define LOG_INFO(msg) LOGI("%s", msg)
+#	define LOG_ERROR(msg) LOGE("%s", msg)
+#else
+// Define AAssetManager type for non-Android platforms
+typedef void AssetManagerType;
+
+// Desktop-specific includes
+#	define GLFW_INCLUDE_VULKAN        // REQUIRED only for GLFW CreateWindowSurface.
 #include <GLFW/glfw3.h>
+
+// Define logging macros for Desktop
+#	define LOGI(...)	\
+		printf(__VA_ARGS__); \
+		printf("\n")
+#	define LOGW(...)	\
+		printf(__VA_ARGS__); \
+		printf("\n")
+#	define LOGE(...)		\
+		fprintf(stderr, __VA_ARGS__); \
+		fprintf(stderr, "\n")
+#	define LOG_INFO(msg)  std::cout << msg << std::endl
+#	define LOG_ERROR(msg) std::cerr << msg << std::endl
+#endif
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
+#define GLM_FORCE_CXX11
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
 
 constexpr uint32_t                  WIDTH                   = 800;
 constexpr uint32_t                  HEIGHT                  = 600;
 const std::string                   MODEL_PATH              = "models/viking_room.obj";
 const std::string                   TEXTURE_PATH            = "textures/viking_room.png";
 constexpr int                       MAX_FRAMES_IN_FLIGHT    = 2;
+
+#if PLATFORM_ANDROID
+// Define VpProfileProperties structure if not already defined
+#	ifndef VP_PROFILE_PROPERTIES_DEFINED
+#		define VP_PROFILE_PROPERTIES_DEFINED
+struct VpProfileProperties
+{
+	char		name[256];
+	uint32_t	specVersion;
+};
+#	endif
+
+// Define Vulkan Profile constants
+#	ifndef VP_KHR_ROADMAP_2022_NAME
+#		define VP_KHR_ROADMAP_2022_NAME "VP_KHR_roadmap_2022"
+#	endif
+
+#	ifndef VP_KHR_ROADMAP_2022_SPEC_VERSION
+#		define VP_KHR_ROADMAP_2022_SPEC_VERSION 1
+#	endif
+#endif
 
 // Application info structure to store profile support flags
 
@@ -78,7 +128,6 @@ struct AppInfo
 	VpProfileProperties	profile;
 };
 
-// Moved struct definitions inside the class
 struct Vertex
 {
     glm::vec3 pos;
