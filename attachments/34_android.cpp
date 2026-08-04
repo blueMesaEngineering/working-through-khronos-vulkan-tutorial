@@ -2065,356 +2065,6 @@ if PLATFORM_ANDROID
 
 //******************************************************************************************
 // 
-//  Name:           createBuffer
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createBuffer(  
-              vk::DeviceSize            size
-            , vk::BufferUsageFlags      usage
-            , vk::MemoryPropertyFlags   properties
-            , vk::raii::Buffer          &buffer
-            , vk::raii::DeviceMemory    &bufferMemory
-        )
-        {
-            vk::BufferCreateInfo bufferInfo
-            {
-                  .size                                     = size
-                , .usage                                    = usage
-                , .sharingMode                              = vk::SharingMode::eExclusive
-            };
-
-            buffer                                          = device.createBuffer(bufferInfo);
-
-            vk::MemoryRequirements  memRequirements         = buffer.getMemoryRequirements();
-
-            vk::MemoryAllocateInfo  allocInfo
-            {
-                  .allocationSize                           = memRequirements.size
-                , .memoryTypeIndex                          = findMemoryType(
-                                                                               memRequirements.memoryTypeBits
-                                                                             , properties
-                                                                            )
-            };
-
-            bufferMemory                                    = device.allocateMemory(allocInfo);
-            
-            buffer.bindMemory(*bufferMemory, 0);
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           copyBuffer
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void copyBuffer(  
-              vk::Buffer        srcBuffer
-            , vk::Buffer        dstBuffer
-            , vk::DeviceSize    size
-        )
-        {
-            vk::raii::CommandBuffer     commandBuffer		= beginSingleTimeCommands();
-	    
-            vk::BufferCopy		        copyRegion
-            {
-                .size	                                    = size
-            };
-	
-            commandBuffer.copyBuffer(  
-                  srcBuffer
-                , dstBuffer
-                , copyRegion
-            );
-
-            endSingleTimeCommands(commandBuffer);
-        }
-
-        
-
-//******************************************************************************************
-// 
-//  Name:           copyBufferToImage
-//  Arguments:      N/A
-//  Returns:        
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void copyBufferToImage(
-		      vk::Buffer    buffer
-            , vk::Image     image
-            , uint32_t      width
-            , uint32_t      height
-        )
-        {
-            vk::raii::CommandBuffer         commandBuffer   = beginSingleTimeCommands();
-	    
-            vk::BufferImageCopy             region
-            {
-                  .bufferOffset                             = 0
-                , .bufferRowLength                          = 0
-                , .bufferImageHeight                        = 0
-                , .imageSubresource                         =
-                {
-                      .aspectMask			                = vk::ImageAspectFlagBits::eColor
-                    , .mipLevel				                = 0
-                    , .baseArrayLayer			            = 0
-                    , .layerCount			                = 1
-                }
-                , .imageOffset                              = { 0, 0, 0 }
-                , .imageExtent                              = { width, height, 1}
-            };
-
-            commandBuffer.copyBufferToImage(
-                  buffer
-                , image
-                , vk::ImageLayout::eTransferDstOptimal
-                , region
-            );
-
-            endSingleTimeCommands(commandBuffer);
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           createImage
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createImage(
-              uint32_t                  width
-            , uint32_t                  height
-            , uint32_t                  mipLevels
-            , vk::SampleCountFlagBits   numSamples
-            , vk::Format                format
-            , vk::ImageTiling           tiling
-            , vk::ImageUsageFlags       usage
-            , vk::MemoryPropertyFlags   properties
-            , vk::raii::Image           &image
-            , vk::raii::DeviceMemory    &imageMemory
-        )
-        {
-            vk::ImageCreateInfo             imageInfo
-            {
-                  .imageType                                = vk::ImageType::e2D
-                , .format                                   = format
-                , .extent                                   = 
-                { 
-                      .width	                            = width
-                    , .height	                            = height
-                    , .depth	                            = 1 
-                }
-                , .mipLevels                                = mipLevels
-                , .arrayLayers                              = 1
-                , .samples                                  = numSamples
-                , .tiling                                   = tiling
-                , .usage                                    = usage
-                , .sharingMode                              = vk::SharingMode::eExclusive
-                , .initialLayout                            = vk::ImageLayout::eUndefined
-            };
-
-            image                                           = device.createImage(imageInfo);
-            
-            vk::MemoryRequirements          memRequirements = image.getMemoryRequirements();
-	    
-            vk::MemoryAllocateInfo          allocInfo
-            {
-                  .allocationSize                           = memRequirements.size
-                , .memoryTypeIndex                          = findMemoryType(
-                                                                               memRequirements.memoryTypeBits
-                                                                             , properties
-                                                                            )
-            };
-	    
-            imageMemory                                     = device.allocateMemory(allocInfo);
-            image.bindMemory(*imageMemory
-				, 0
-				);
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           transitionImageLayout
-//  Arguments:      N/A
-//  Returns:        
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void transitionImageLayout(
-              vk::Image         image
-	    , vk::Format	format
-            , vk::ImageLayout               oldLayout
-            , vk::ImageLayout               newLayout
-            , uint32_t                      mipLevels
-        )
-        {
-            vk::raii::CommandBuffer         commandBuffer   = beginSingleTimeCommands();
-
-            vk::ImageMemoryBarrier          barrier         
-            {
-                  .oldLayout                                = oldLayout
-                , .newLayout                                = newLayout
-                , .srcQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
-                , .dstQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
-                , .image                                    = image
-                , .subresourceRange                         = 
-                {
-                      .baseMipLevel		                    = 0
-                    , .levelCount		                    = mipLevels
-                    , .baseArrayLayer		                = 0
-                    , .layerCount		                    = 1
-                }
-            };
-	    
-            if (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
-            {
-                barrier.subresourceRange.aspectMask		    = vk::ImageAspectFlagBits::eDepth;
-            
-                if (hasStencilComponent(format))
-                {
-                    barrier.subresourceRange.aspectMask     |= vk::ImageAspectFlagBits::eStencil;
-                }
-            }
-            else
-            {
-                barrier.subresourceRange.aspectMask		    = vk::ImageAspectFlagBits::eColor;
-            }
-
-            vk::PipelineStageFlags sourceStage;
-            vk::PipelineStageFlags destinationStage;
-
-            if (   oldLayout == vk::ImageLayout::eUndefined 
-                && newLayout == vk::ImageLayout::eTransferDstOptimal)
-            {
-                barrier.srcAccessMask                       = vk::AccessFlagBits::eNone;
-                barrier.dstAccessMask                       = vk::AccessFlagBits::eTransferWrite;
-
-                sourceStage                                 = vk::PipelineStageFlagBits::eTopOfPipe;
-                destinationStage                            = vk::PipelineStageFlagBits::eTransfer;
-            }
-            else if (   oldLayout == vk::ImageLayout::eTransferDstOptimal
-                     && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
-            {
-                barrier.srcAccessMask                       = vk::AccessFlagBits::eTransferWrite;
-                barrier.dstAccessMask                       = vk::AccessFlagBits::eShaderRead;
-
-                sourceStage                                 = vk::PipelineStageFlagBits::eTransfer;
-                destinationStage                            = vk::PipelineStageFlagBits::eFragmentShader;
-            }
-            else if (   oldLayout == vk::ImageLayout::eUndefined
-                     && newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
-            {
-                barrier.srcAccessMask			            = vk::AccessFlagBits::eNone;
-                barrier.dstAccessMask			            = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-                
-                sourceStage				                    = vk::PipelineStageFlagBits::eTopOfPipe;
-                destinationStage			                = vk::PipelineStageFlagBits::eEarlyFragmentTests;
-            }
-            else
-            {
-                throw std::invalid_argument("Unsupported layout transition!");
-            }
-
-            commandBuffer.pipelineBarrier(
-                  sourceStage
-                , destinationStage
-                , {}
-                , std::array<vk::MemoryBarrier, 0>{}
-                , std::array<vk::BufferMemoryBarrier, 0>{}
-                , std::array<vk::ImageMemoryBarrier, 1>{barrier}
-            );
-
-            endSingleTimeCommands(commandBuffer);
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           beginSingleTimeCommands
-//  Arguments:      N/A
-//  Returns:        std::unique_ptr<vk::raii::CommandBuffer>
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        vk::raii::CommandBuffer beginSingleTimeCommands()
-        {
-            vk::CommandBufferAllocateInfo   allocInfo
-            {
-                  .commandPool                              = *commandPool
-                , .level                                    = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount                       = 1
-            };
-
-            vk::raii::CommandBuffer        commandBuffer 	= std::move(device.allocateCommandBuffers(allocInfo).front());
-	    
-            vk::CommandBufferBeginInfo      beginInfo
-            {
-                  .flags                                    = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-            };
-
-            commandBuffer.begin(beginInfo);
-
-            return commandBuffer;
-        }
-
-
-
-//******************************************************************************************
-// 
-//  Name:           endSingleTimeCommands
-//  Arguments:      vk::raii::CommandBuffer &&commandBuffer
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void endSingleTimeCommands(vk::raii::CommandBuffer &commandBuffer)
-        {
-            commandBuffer.end();
-
-            vk::SubmitInfo                  submitInfo
-            {
-                  .commandBufferCount                       = 1
-                , .pCommandBuffers                          = &*commandBuffer
-            };
-
-            queue.submit(submitInfo, nullptr);
-
-            queue.waitIdle();
-        }
-        
-
-//******************************************************************************************
-// 
 //  Name:           createCommandBuffers
 //  Arguments:      N/A
 //  Returns:        void
@@ -2438,6 +2088,127 @@ if PLATFORM_ANDROID
             commandBuffers                                  = device.allocateCommandBuffers(allocInfo);
         }
 
+
+
+
+//******************************************************************************************
+// 
+//  Name:           transition_image_layout
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void transition_image_layout(
+              vk::Image                     image
+            , vk::ImageLayout               old_layout
+            , vk::ImageLayout               new_layout
+            , vk::AccessFlags2              src_access_mask
+            , vk::AccessFlags2              dst_access_mask
+            , vk::PipelineStageFlags2       src_stage_mask
+            , vk::PipelineStageFlags2       dst_stage_mask
+            , vk::ImageAspectFlags          image_aspect_flags
+        )
+        {
+            vk::ImageMemoryBarrier2         barrier         = 
+            {
+                  .srcStageMask                             = src_stage_mask
+                , .srcAccessMask                            = src_access_mask
+                , .dstStageMask                             = dst_stage_mask
+                , .dstAccessMask                            = dst_access_mask
+                , .oldLayout                                = old_layout
+                , .newLayout                                = new_layout
+                , .srcQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
+                , .dstQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
+                , .image                                    = image
+                , .subresourceRange                         = 
+                {
+                      .aspectMask                           = image_aspect_flags
+                    , .baseMipLevel                         = 0
+                    , .levelCount                           = 1
+                    , .baseArrayLayer                       = 0
+                    , .layerCount                           = 1
+                }
+            };
+
+            vk::DependencyInfo dependency_info              =
+            {
+                  .dependencyFlags                          = {}
+                , .imageMemoryBarrierCount                  = 1
+                , .pImageMemoryBarriers                     = &barrier
+            };
+
+            commandBuffers[frameIndex].pipelineBarrier2(dependency_info);
+        }
+
+
+//******************************************************************************************
+// 
+//  Name:           createSyncObjects
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createSyncObjects()
+        {
+            imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+            renderFinishedSemaphores.reserve(swapChainImages.size());
+            inFlightFences.reserve(MAX_FRAMES_IN_FLIGHT);
+            
+            vk::SemaphoreCreateInfo		    semaphoreInfo{};
+            vk::FenceCreateInfo		        fenceInfo
+                                            {
+                                                .flags		= vk::FenceCreateFlagBits::eSignaled
+                                            };
+		
+            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+		        imageAvailableSemaphores.push_back(device.createSemaphore(semaphoreInfo));
+                inFlightFences.push_back(device.createFence(fenceInfo));
+            }
+
+            for (size_t i = 0; i < swapChainImages.size(); i++)
+            {
+                renderFinishedSemaphores.push_back(device.createSemaphore(semaphoreInfo));
+            }
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           cleanupSwapChain
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+        
+	// Clean up swap chain
+        void cleanupSwapChain()
+        {
+            swapChainFramebuffers.clear();
+            swapChainImageViews.clear();
+            
+            // Semaphores tied to swapchain image indices need to be rebuilt on resize
+            renderFinishedSemaphores.clear();
+            
+            for (auto &imageView : swapChainImageViews)
+            {
+                imageView			                        = nullptr;
+            }
+            
+            swapChainImageViews.clear();
+            swapChain = nullptr;
+        }
         
 
 //******************************************************************************************
@@ -2451,49 +2222,14 @@ if PLATFORM_ANDROID
 // 
 //******************************************************************************************
 
-        void recordCommandBuffer(uint32_t imageIndex)
+        void recordCommandBuffer(
+		vk::raii::CommandBuffer &commandBuffer
+		, uint32_t imageIndex
+	)
         {
-            auto &commandBuffer                             = commandBuffers[frameIndex];
-            commandBuffer.begin({});
+		vk::CommandBufferBeginInfo	beginInfo{};
+            commandBuffer.begin(beginInfo);
 
-            // Transition the attachments to the correct layouts for dynamic rendering
-	    
-            // Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
-	        // 1) Multisampled color attachment image -> ColorAttachmentOptimal
-            transition_image_layout(
-                  *colorImage
-                , vk::ImageLayout::eUndefined
-                , vk::ImageLayout::eColorAttachmentOptimal
-                , vk::AccessFlagBits2::eColorAttachmentWrite
-                , vk::AccessFlagBits2::eColorAttachmentWrite
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput
-                , vk::ImageAspectFlagBits::eColor
-            );
-
-            // 2) Depth attachment image -> DepthStencilAttachmentOptimal
-            transition_image_layout(
-                  *depthImage
-                , vk::ImageLayout::eUndefined
-                , vk::ImageLayout::eDepthAttachmentOptimal
-                , vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-                , vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-                , vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests
-                , vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests
-                , vk::ImageAspectFlagBits::eDepth
-            );
-
-            // 3) Resolve (swapchain) image -> ColorAttachmentOptimal
-            transition_image_layout(
-                  swapChainImages[imageIndex]
-                , vk::ImageLayout::eUndefined
-                , vk::ImageLayout::eColorAttachmentOptimal
-                , {}                                                    // srcAccessMask (No need to wait for previous operations)
-                , vk::AccessFlagBits2::eColorAttachmentWrite            // dstAccessMask
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // srcStage
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // dstStage
-                , vk::ImageAspectFlagBits::eColor
-            );
 
             // Clear values for color and depth
             vk::ClearValue clearColor{};
@@ -2648,177 +2384,6 @@ if PLATFORM_ANDROID
 	    
             commandBuffer.end();
         }
-
-
-
-//******************************************************************************************
-// 
-//  Name:           transition_image_layout
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void transition_image_layout(
-              vk::Image                     image
-            , vk::ImageLayout               old_layout
-            , vk::ImageLayout               new_layout
-            , vk::AccessFlags2              src_access_mask
-            , vk::AccessFlags2              dst_access_mask
-            , vk::PipelineStageFlags2       src_stage_mask
-            , vk::PipelineStageFlags2       dst_stage_mask
-            , vk::ImageAspectFlags          image_aspect_flags
-        )
-        {
-            vk::ImageMemoryBarrier2         barrier         = 
-            {
-                  .srcStageMask                             = src_stage_mask
-                , .srcAccessMask                            = src_access_mask
-                , .dstStageMask                             = dst_stage_mask
-                , .dstAccessMask                            = dst_access_mask
-                , .oldLayout                                = old_layout
-                , .newLayout                                = new_layout
-                , .srcQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
-                , .dstQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
-                , .image                                    = image
-                , .subresourceRange                         = 
-                {
-                      .aspectMask                           = image_aspect_flags
-                    , .baseMipLevel                         = 0
-                    , .levelCount                           = 1
-                    , .baseArrayLayer                       = 0
-                    , .layerCount                           = 1
-                }
-            };
-
-            vk::DependencyInfo dependency_info              =
-            {
-                  .dependencyFlags                          = {}
-                , .imageMemoryBarrierCount                  = 1
-                , .pImageMemoryBarriers                     = &barrier
-            };
-
-            commandBuffers[frameIndex].pipelineBarrier2(dependency_info);
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           createSyncObjects
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createSyncObjects()
-        {
-            imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
-            renderFinishedSemaphores.reserve(swapChainImages.size());
-            inFlightFences.reserve(MAX_FRAMES_IN_FLIGHT);
-            
-            vk::SemaphoreCreateInfo		    semaphoreInfo{};
-            vk::FenceCreateInfo		        fenceInfo
-                                            {
-                                                .flags		= vk::FenceCreateFlagBits::eSignaled
-                                            };
-		
-            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-		        imageAvailableSemaphores.push_back(device.createSemaphore(semaphoreInfo));
-                inFlightFences.push_back(device.createFence(fenceInfo));
-            }
-
-            for (size_t i = 0; i < swapChainImages.size(); i++)
-            {
-                renderFinishedSemaphores.push_back(device.createSemaphore(semaphoreInfo));
-            }
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           cleanupSwapChain
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-        
-	// Clean up swap chain
-        void cleanupSwapChain()
-        {
-            swapChainFramebuffers.clear();
-            swapChainImageViews.clear();
-            
-            // Semaphores tied to swapchain image indices need to be rebuilt on resize
-            renderFinishedSemaphores.clear();
-            
-            for (auto &imageView : swapChainImageViews)
-            {
-                imageView			                        = nullptr;
-            }
-            
-            swapChainImageViews.clear();
-            swapChain = nullptr;
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           updateUniformBuffer
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void updateUniformBuffer(uint32_t currentImage)
-        {
-            static auto             startTime               = std::chrono::high_resolution_clock::now();
-
-            auto                    currentTime             = std::chrono::high_resolution_clock::now();
-            float                   time                    = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-            UniformBufferObject     ubo{};
-
-            ubo.model                                       = glm::rotate(
-                                                                          glm::mat4(1.0f)
-                                                                        , time * glm::radians(90.0f)
-                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
-                                                                        );
-            
-            ubo.view                                        = glm::lookAt(
-                                                                          glm::vec3(2.0f, 2.0f, 2.0f)
-                                                                        , glm::vec3(0.0f, 0.0f, 0.0f)
-                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
-                                                                        );
-
-            ubo.proj                                        = glm::perspective(
-                                                                          glm::radians(45.0f)
-                                                                        , static_cast<float>(swapChainExtent.width) / (float) swapChainExtent.height
-                                                                        , 0.1f
-                                                                        , 10.0f
-                                                                        );
-
-            ubo.proj[1][1] *= -1;
-
-            memcpy(
-                      uniformBuffersMapped[currentImage]
-                   , &ubo
-                   , sizeof(ubo)
-                );
-        }
-
 
 
 //******************************************************************************************
@@ -3036,84 +2601,6 @@ if PLATFORM_ANDROID
 		
 		return extensions;
 	}
-
-
-//******************************************************************************************
-// 
-//  Name:           getMaxUsableSampleCount
-//  Arguments:      N/A
-//  Returns:        vk::SampleCountFlagBits
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        vk::SampleCountFlagBits getMaxUsableSampleCount()
-        {
-            vk::PhysicalDeviceProperties                    physicalDeviceProperties
-                                                            = physicalDevice.getProperties();
-
-            vk::SampleCountFlags            counts          =   physicalDeviceProperties.limits.framebufferColorSampleCounts
-                                                              & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
-
-            if (counts & vk::SampleCountFlagBits::e64)
-            {
-                return vk::SampleCountFlagBits::e64;
-            }
-            if (counts & vk::SampleCountFlagBits::e32)
-            {
-                return vk::SampleCountFlagBits::e32;
-            }
-            if (counts & vk::SampleCountFlagBits::e16)
-            {
-                return vk::SampleCountFlagBits::e16;
-            }
-            if (counts & vk::SampleCountFlagBits::e8)
-            {
-                return vk::SampleCountFlagBits::e8;
-            }
-            if (counts & vk::SampleCountFlagBits::e4)
-            {
-                return vk::SampleCountFlagBits::e4;
-            }
-            if (counts & vk::SampleCountFlagBits::e2)
-            {
-                return vk::SampleCountFlagBits::e2;
-            }
-
-            return vk::SampleCountFlagBits::e1;
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           findMemoryType
-//  Arguments:      N/A
-//  Returns:        uint32_t
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        uint32_t findMemoryType(
-              uint32_t typeFilter
-            , vk::MemoryPropertyFlags properties
-        )
-        {
-            vk::PhysicalDeviceMemoryProperties              memProperties = physicalDevice.getMemoryProperties();
-
-            for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-            {
-                if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-                {
-                    return i;
-                }
-            }
-
-            throw std::runtime_error("Failed to find suitable memory type!");
-        }
 	
 	
 //******************************************************************************************
@@ -3364,6 +2851,114 @@ if PLATFORM_ANDROID
 
 //******************************************************************************************
 // 
+//  Name:           createBuffer
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createBuffer(  
+              vk::DeviceSize            size
+            , vk::BufferUsageFlags      usage
+            , vk::MemoryPropertyFlags   properties
+            , vk::raii::Buffer          &buffer
+            , vk::raii::DeviceMemory    &bufferMemory
+        )
+        {
+            vk::BufferCreateInfo bufferInfo
+            {
+                  .size                                     = size
+                , .usage                                    = usage
+                , .sharingMode                              = vk::SharingMode::eExclusive
+            };
+
+            buffer                                          = device.createBuffer(bufferInfo);
+
+            vk::MemoryRequirements  memRequirements         = buffer.getMemoryRequirements();
+
+            vk::MemoryAllocateInfo  allocInfo
+            {
+                  .allocationSize                           = memRequirements.size
+                , .memoryTypeIndex                          = findMemoryType(
+                                                                               memRequirements.memoryTypeBits
+                                                                             , properties
+                                                                            )
+            };
+
+            bufferMemory                                    = device.allocateMemory(allocInfo);
+            
+            buffer.bindMemory(*bufferMemory, 0);
+        }
+
+
+//******************************************************************************************
+// 
+//  Name:           copyBuffer
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void copyBuffer(  
+              vk::raii::Buffer        &srcBuffer
+            , vk::raii::Buffer        &dstBuffer
+            , vk::DeviceSize    size
+        )
+        {
+            vk::raii::CommandBuffer     commandBuffer		= beginSingleTimeCommands();
+	    
+            vk::BufferCopy		        copyRegion
+            {
+                .size	                                    = size
+            };
+	
+            commandBuffer.copyBuffer(  
+                  srcBuffer
+                , dstBuffer
+                , copyRegion
+            );
+
+            endSingleTimeCommands(commandBuffer);
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           findMemoryType
+//  Arguments:      N/A
+//  Returns:        uint32_t
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        uint32_t findMemoryType(
+              uint32_t typeFilter
+            , vk::MemoryPropertyFlags properties
+        )
+        {
+            vk::PhysicalDeviceMemoryProperties              memProperties = physicalDevice.getMemoryProperties();
+
+            for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+            {
+                if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                {
+                    return i;
+                }
+            }
+
+            throw std::runtime_error("Failed to find suitable memory type!");
+        }
+
+//******************************************************************************************
+// 
 //  Name:           createImageView
 //  Arguments:      N/A
 //  Returns:        vk::raii::ImageView
@@ -3378,7 +2973,7 @@ if PLATFORM_ANDROID
             , vk::Format format
             , vk::ImageAspectFlags aspectFlags
             , uint32_t mipLevels
-        ) 
+        ) const
         {
             vk::ImageViewCreateInfo     viewInfo
             {
@@ -3396,6 +2991,266 @@ if PLATFORM_ANDROID
             };
 
             return vk::raii::ImageView(device, viewInfo);
+        }
+
+
+//******************************************************************************************
+// 
+//  Name:           createImage
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createImage(
+              uint32_t                  width
+            , uint32_t                  height
+            , uint32_t                  mipLevels
+            , vk::Format                format
+            , vk::ImageTiling           tiling
+            , vk::ImageUsageFlags       usage
+            , vk::MemoryPropertyFlags   properties
+            , vk::raii::Image           &image
+            , vk::raii::DeviceMemory    &imageMemory
+        )
+        {
+            vk::ImageCreateInfo             imageInfo
+            {
+                  .imageType                                = vk::ImageType::e2D
+                , .format                                   = format
+                , .extent                                   = 
+                { 
+                      width
+                    , height
+                    , 1 
+                }
+                , .mipLevels                                = mipLevels
+                , .arrayLayers                              = 1
+                , .samples                                  = vk::SampleCountFlagBits::e1
+                , .tiling                                   = tiling
+                , .usage                                    = usage
+                , .sharingMode                              = vk::SharingMode::eExclusive
+                , .initialLayout                            = vk::ImageLayout::eUndefined
+            };
+
+            image                                           = vk::raii::Image(device, imageInfo);
+            
+            vk::MemoryRequirements          memRequirements = image.getMemoryRequirements();
+	    
+            vk::MemoryAllocateInfo          allocInfo
+            {
+                  .allocationSize                           = memRequirements.size
+                , .memoryTypeIndex                          = findMemoryType(
+                                                                               memRequirements.memoryTypeBits
+                                                                             , properties
+                                                                            )
+            };
+	    
+            imageMemory                                     = vk::raii::DeviceMemory(device, allocInfo);
+            image.bindMemory(*imageMemory, 0);
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           transitionImageLayout
+//  Arguments:      N/A
+//  Returns:        
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void transitionImageLayout(
+              vk::Image         image
+	    , vk::Format	format
+            , vk::ImageLayout               oldLayout
+            , vk::ImageLayout               newLayout
+            , uint32_t                      mipLevels
+        )
+        {
+            vk::raii::CommandBuffer         commandBuffer   = beginSingleTimeCommands();
+
+            vk::ImageMemoryBarrier          barrier         
+            {
+                  .oldLayout                                = oldLayout
+                , .newLayout                                = newLayout
+                , .srcQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
+                , .dstQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
+                , .image                                    = image
+                , .subresourceRange                         = 
+                {
+                      .baseMipLevel		                    = 0
+                    , .levelCount		                    = mipLevels
+                    , .baseArrayLayer		                = 0
+                    , .layerCount		                    = 1
+                }
+            };
+	    
+            if (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
+            {
+                barrier.subresourceRange.aspectMask		    = vk::ImageAspectFlagBits::eDepth;
+            
+                if (hasStencilComponent(format))
+                {
+                    barrier.subresourceRange.aspectMask     |= vk::ImageAspectFlagBits::eStencil;
+                }
+            }
+            else
+            {
+                barrier.subresourceRange.aspectMask		    = vk::ImageAspectFlagBits::eColor;
+            }
+
+            vk::PipelineStageFlags sourceStage;
+            vk::PipelineStageFlags destinationStage;
+
+            if (   oldLayout == vk::ImageLayout::eUndefined 
+                && newLayout == vk::ImageLayout::eTransferDstOptimal)
+            {
+                barrier.srcAccessMask                       = vk::AccessFlagBits::eNone;
+                barrier.dstAccessMask                       = vk::AccessFlagBits::eTransferWrite;
+
+                sourceStage                                 = vk::PipelineStageFlagBits::eTopOfPipe;
+                destinationStage                            = vk::PipelineStageFlagBits::eTransfer;
+            }
+            else if (   oldLayout == vk::ImageLayout::eTransferDstOptimal
+                     && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+            {
+                barrier.srcAccessMask                       = vk::AccessFlagBits::eTransferWrite;
+                barrier.dstAccessMask                       = vk::AccessFlagBits::eShaderRead;
+
+                sourceStage                                 = vk::PipelineStageFlagBits::eTransfer;
+                destinationStage                            = vk::PipelineStageFlagBits::eFragmentShader;
+            }
+            else if (   oldLayout == vk::ImageLayout::eUndefined
+                     && newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
+            {
+                barrier.srcAccessMask			            = vk::AccessFlagBits::eNone;
+                barrier.dstAccessMask			            = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                
+                sourceStage				                    = vk::PipelineStageFlagBits::eTopOfPipe;
+                destinationStage			                = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+            }
+            else
+            {
+                throw std::invalid_argument("Unsupported layout transition!");
+            }
+
+            commandBuffer.pipelineBarrier(
+                  sourceStage
+                , destinationStage
+                , {}
+                , std::array<vk::MemoryBarrier, 0>{}
+                , std::array<vk::BufferMemoryBarrier, 0>{}
+                , std::array<vk::ImageMemoryBarrier, 1>{barrier}
+            );
+
+            endSingleTimeCommands(commandBuffer);
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           copyBufferToImage
+//  Arguments:      N/A
+//  Returns:        
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void copyBufferToImage(
+		      vk::Buffer    buffer
+            , vk::Image     image
+            , uint32_t      width
+            , uint32_t      height
+        )
+        {
+            vk::raii::CommandBuffer         commandBuffer   = beginSingleTimeCommands();
+	    
+            vk::BufferImageCopy             region
+            {
+                  .bufferOffset                             = 0
+                , .bufferRowLength                          = 0
+                , .bufferImageHeight                        = 0
+                , .imageSubresource                         =
+                {
+                      .aspectMask			                = vk::ImageAspectFlagBits::eColor
+                    , .mipLevel				                = 0
+                    , .baseArrayLayer			            = 0
+                    , .layerCount			                = 1
+                }
+                , .imageOffset                              = { 0, 0, 0 }
+                , .imageExtent                              = { width, height, 1}
+            };
+
+            commandBuffer.copyBufferToImage(
+                  buffer
+                , image
+                , vk::ImageLayout::eTransferDstOptimal
+                , region
+            );
+
+            endSingleTimeCommands(commandBuffer);
+        }
+
+
+//******************************************************************************************
+// 
+//  Name:           updateUniformBuffer
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void updateUniformBuffer(uint32_t currentImage)
+        {
+            static auto             startTime               = std::chrono::high_resolution_clock::now();
+
+            auto                    currentTime             = std::chrono::high_resolution_clock::now();
+            float                   time                    = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+            UniformBufferObject     ubo{};
+
+            ubo.model                                       = glm::rotate(
+                                                                          glm::mat4(1.0f)
+                                                                        , time * glm::radians(90.0f)
+                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
+                                                                        );
+            
+            ubo.view                                        = glm::lookAt(
+                                                                          glm::vec3(2.0f, 2.0f, 2.0f)
+                                                                        , glm::vec3(0.0f, 0.0f, 0.0f)
+                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
+                                                                        );
+
+            ubo.proj                                        = glm::perspective(
+                                                                          glm::radians(45.0f)
+                                                                        , swapChainExtent.width / (float) swapChainExtent.height
+                                                                        , 0.1f
+                                                                        , 10.0f
+                                                                        );
+
+            ubo.proj[1][1] *= -1;
+
+		void *data;
+		data						= uniformBuffersMemory[currentImage].mapMemory(0, sizeof(ubo));
+
+            memcpy(
+			data
+                   , &ubo
+                   , sizeof(ubo)
+                );
+		
+		uniformBuffersMemory[currentImage].unmapMemory();
         }
 };
         
