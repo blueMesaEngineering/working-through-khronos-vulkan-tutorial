@@ -1737,6 +1737,27 @@ if PLATFORM_ANDROID
             std::vector<tinyobj::material_t>    materials;
             std::string                         warn, err;
 
+#if PLATFORM_ANDROID
+		// Load OBJ file from Android assets
+		std::optional<AssetManagerType *>	optionalAssetManager	= assetManager;
+		std::vector<char>			objData			= readFile(MODEL_PATH, optionalAssetManager);
+		std::string				objString(objData.begin(), objData.end());
+		std::istringstream			objStream(objString);
+		
+		if (!tinyobj::LoadObj(
+				&attrib
+				, &shapes
+				, &materials
+				, &warn
+				, &err
+				, &objStream
+				)
+			)
+		{
+			throw std::runtime_error("Failed to load model: " + MODEL_PATH + " - " + warn + err);
+		}
+#else
+		// Load OBJ file from filesystem
             if (!tinyobj::LoadObj(
                            &attrib
                          , &shapes
@@ -1747,8 +1768,9 @@ if PLATFORM_ANDROID
                         )
                 )
             {
-                throw std::runtime_error(warn + err);
+                throw std::runtime_error("Failed to load model: " + MODEL_PATH + " - " + warn + err);
             }
+#endif
 
             std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
@@ -1782,6 +1804,8 @@ if PLATFORM_ANDROID
                     indices.push_back(uniqueVertices[vertex]);
                 }
             }
+	    
+	    LOG_INFO("Model loaded successfully");
         }
         
 
@@ -1812,7 +1836,8 @@ if PLATFORM_ANDROID
                 , stagingBufferMemory
             );
 
-            void *data                                      = stagingBufferMemory.mapMemory(0, bufferSize);
+            void *data;
+	    data                                      		= stagingBufferMemory.mapMemory(0, bufferSize);
 
             memcpy(
                   data
@@ -1832,8 +1857,8 @@ if PLATFORM_ANDROID
             );
 
             copyBuffer(
-                  *stagingBuffer
-                , *vertexBuffer
+                  stagingBuffer
+                , vertexBuffer
                 , bufferSize
             );
         }
@@ -1866,8 +1891,8 @@ if PLATFORM_ANDROID
                 , stagingBufferMemory
             );
 
-            void                *data                       = stagingBufferMemory.mapMemory(0
-											, bufferSize);
+            void                *data;
+	    data			                       = stagingBufferMemory.mapMemory(0, bufferSize);
 
             memcpy(
                   data
@@ -1887,8 +1912,8 @@ if PLATFORM_ANDROID
             );
 
             copyBuffer(
-                  *stagingBuffer
-                , *indexBuffer
+                  stagingBuffer
+                , indexBuffer
                 , bufferSize
             );
         }
@@ -1909,30 +1934,25 @@ if PLATFORM_ANDROID
         {
             vk::DeviceSize              bufferSize          = sizeof(UniformBufferObject);
 
-            // Reserve space but don't resize, as RAII objects can't be default-constructed
-            uniformBuffers.reserve(MAX_FRAMES_IN_FLIGHT);
-            uniformBuffersMemory.reserve(MAX_FRAMES_IN_FLIGHT);
-            uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+		uniformBuffers.clear();
+		uniformBuffersMemory.clear();
 	    
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-                vk::raii::Buffer        buffer              = nullptr;
-                vk::raii::DeviceMemory  bufferMemory        = nullptr;
+		uniformBuffers.push_back(nullptr);
+		uniformBuffersMemory.push_back(nullptr);
+	    }
 
+            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
                 createBuffer(
                       bufferSize
                     , vk::BufferUsageFlagBits::eUniformBuffer
                     , vk::MemoryPropertyFlagBits::eHostVisible
                     | vk::MemoryPropertyFlagBits::eHostCoherent
-                    , buffer
-                    , bufferMemory
+                    , uniformBuffers[i]
+                    , uniformBuffersMemory[i]
                 );
-
-                uniformBuffers.push_back(std::move(buffer));
-
-                uniformBuffersMemory.push_back(std::move(bufferMemory));
-
-                uniformBuffersMapped[i] 		            = uniformBuffersMemory[i].mapMemory(0, bufferSize);
             }
         }
 
@@ -1950,16 +1970,22 @@ if PLATFORM_ANDROID
 
         void createDescriptorPool()
         {
-            std::array <vk::DescriptorPoolSize, 2> poolSizes{};
-	    
-            poolSizes[0].type				                = vk::DescriptorType::eUniformBuffer;
-            poolSizes[0].descriptorCount		            = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-            poolSizes[1].type				                = vk::DescriptorType::eCombinedImageSampler;
-            poolSizes[1].descriptorCount		            = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+            std::array <vk::DescriptorPoolSize, 2> poolSizes		=
+	    {
+		vk::DescriptorPoolSize
+		{
+			.type						= vk::DescriptorType::eUniformBuffer
+			, .descriptorCount				= static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
+		}
+		, vk::DescriptorPoolSize
+		{
+			.type						= vk::DescriptorType::eCombinedImageSampler
+			, .descriptorCount				= static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
+		}
+	    };
 
             vk::DescriptorPoolCreateInfo    poolInfo
             {
-                  .flags                                    = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
                 , .maxSets                                  = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
                 , .poolSizeCount                            = static_cast<uint32_t>(poolSizes.size())
                 , .pPoolSizes                               = poolSizes.data()
