@@ -2035,27 +2035,32 @@ if PLATFORM_ANDROID
                     , .imageLayout                          = vk::ImageLayout::eShaderReadOnlyOptimal
                 };
 
-                std::array<vk::WriteDescriptorSet, 2> descriptorWrites{};
-		
-                descriptorWrites[0].dstSet                  = *descriptorSets[i];
-                descriptorWrites[0].dstBinding              = 0;
-                descriptorWrites[0].dstArrayElement         = 0;
-                descriptorWrites[0].descriptorType          = vk::DescriptorType::eUniformBuffer;
-                descriptorWrites[0].descriptorCount         = 1;
-                descriptorWrites[0].pBufferInfo             = &bufferInfo;
-
-                descriptorWrites[1].dstSet                  = *descriptorSets[i];
-                descriptorWrites[1].dstBinding              = 1;
-                descriptorWrites[1].dstArrayElement         = 0;
-                descriptorWrites[1].descriptorType          = vk::DescriptorType::eCombinedImageSampler;
-                descriptorWrites[1].descriptorCount         = 1;
-                descriptorWrites[1].pImageInfo              = &imageInfo;
+                std::array<vk::WriteDescriptorSet, 2> descriptorWrites	=
+		{
+			vk::WriteDescriptorSet
+			{
+				  .dstSet                  = *descriptorSets[i]
+				, .dstBinding              = 0
+				, .dstArrayElement         = 0
+				, .descriptorCount         = 1
+				, .descriptorType          = vk::DescriptorType::eUniformBuffer
+				, .pBufferInfo             = &bufferInfo
+			}
+			, vk::WriteDescriptorSet
+			{
+				  .dstSet                  = *descriptorSets[i]
+				, .dstBinding              = 1
+				, .dstArrayElement         = 0
+				, .descriptorCount         = 1
+				, .descriptorType          = vk::DescriptorType::eCombinedImageSampler
+				, .pImageInfo              = &imageInfo
+			}
+		};
 
                 device.updateDescriptorSets(  descriptorWrites
                                             , nullptr);
             }
         }
-
         
 
 //******************************************************************************************
@@ -2714,9 +2719,8 @@ if PLATFORM_ANDROID
         void createSyncObjects()
         {
             imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
-            renderFinishedSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+            renderFinishedSemaphores.reserve(swapChainImages.size());
             inFlightFences.reserve(MAX_FRAMES_IN_FLIGHT);
-            presentCompleteSemaphore.reserve(swapChainImages.size());
             
             vk::SemaphoreCreateInfo		    semaphoreInfo{};
             vk::FenceCreateInfo		        fenceInfo
@@ -2727,13 +2731,12 @@ if PLATFORM_ANDROID
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
 		        imageAvailableSemaphores.push_back(device.createSemaphore(semaphoreInfo));
-                renderFinishedSemaphores.push_back(device.createSemaphore(semaphoreInfo));
                 inFlightFences.push_back(device.createFence(fenceInfo));
             }
 
             for (size_t i = 0; i < swapChainImages.size(); i++)
             {
-                presentCompleteSemaphore.push_back(device.createSemaphore(semaphoreInfo));
+                renderFinishedSemaphores.push_back(device.createSemaphore(semaphoreInfo));
             }
         }
         
@@ -2831,16 +2834,11 @@ if PLATFORM_ANDROID
 
         void drawFrame()
         {
-            vk::Result fenceResult                          =  device.waitForFences(
-                                                                                  {*inFlightFences[frameIndex]}
-                                                                                , VK_TRUE
-                                                                                , UINT64_MAX
-                                                                                );
-
-            if (fenceResult != vk::Result::eSuccess)
-            {
-                throw std::runtime_error("Failed to wait for fence!");
-            }
+            static_cast<void>(device.waitForFences(
+					{*inFlightFences[frameIndex]}
+					, VK_TRUE
+					, UINT64_MAX)
+				);
 
             auto [
                   result
@@ -2871,13 +2869,17 @@ if PLATFORM_ANDROID
                 throw std::runtime_error("Failed to acquire swap chain image!");
             }
 
+		// Update uniform buffer with current transformation
             updateUniformBuffer(frameIndex);
 
             // Only reset the fence if we are submitting work                    
             device.resetFences(*inFlightFences[frameIndex]);
 
             commandBuffers[frameIndex].reset();
-            recordCommandBuffer(imageIndex);
+            recordCommandBuffer(
+		commandBuffers[frameIndex]
+		, imageIndex
+	    );
 
             vk::PipelineStageFlags  waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
 
@@ -2889,7 +2891,7 @@ if PLATFORM_ANDROID
                 , .commandBufferCount                       = 1
                 , .pCommandBuffers                          = &*commandBuffers[frameIndex]
                 , .signalSemaphoreCount                     = 1
-                , .pSignalSemaphores                        = &*presentCompleteSemaphore[imageIndex]
+                , .pSignalSemaphores                        = &*renderFinishedSemaphores[imageIndex]
             };
 
             queue.submit(
@@ -2900,7 +2902,7 @@ if PLATFORM_ANDROID
             const vk::PresentInfoKHR    presentInfoKHR
             {
                   .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*presentCompleteSemaphore[imageIndex]
+                , .pWaitSemaphores                          = &*renderFinishedSemaphores[imageIndex]
                 , .swapchainCount                           = 1
                 , .pSwapchains                              = &*swapChain
                 , .pImageIndices                            = &imageIndex
@@ -2942,49 +2944,99 @@ if PLATFORM_ANDROID
 	// Recreate swap chain
         void recreateSwapChain()
         {
+#if !PLATFORM_ANDROID
+		// On desktop, wait until the framebuffer has a non-zero size (e.g., when window is minimized)
             int   width         = 0
                 , height        = 0;
             
-            glfwGetFramebufferSize(  window
-                                   , &width
-                                   , &height);
+	    if (window)
+	    {
+		glfwGetFramebufferSize(
+				  window
+				, &width
+				, &height
+			);
 
-            while (width == 0 || height == 0)
-            {
-                glfwGetFramebufferSize(  window
+	            while (width == 0 || height == 0)
+		    {
+			glfwGetFramebufferSize(
+					  window
                                        , &width
-                                       , &height);
-                glfwWaitEvents();
-            }
-
+                                       , &height
+				);
+			glfwWaitEvents();
+		    }
+	    }
+#endif
+		// Wait for device to finishe operations
             device.waitIdle();
 
+		// Clean up old swap chain
             cleanupSwapChain();
-	    
+	
+		// Create new swap chain and dependent resources
             createSwapChain();
             createImageViews();
-	    
-            // Recreate traditional render pass and framebuffers if not using profiles
-            if (!appInfo.profileSupported)
-            {
-                createRenderPass();
+	    createDepthResources();
                 createFramebuffers();
-            }
             
-            createColorResources();
-            createDepthResources();
-            
-            // Recreate per-swapchain-image present semaphores after resize
-            presentCompleteSemaphore.reserve(swapChainImages.size());
+            // Recreate per-swapchain-image present semaphores for presenting
+            renderFinishedSemaphores.reserve(swapChainImages.size());
             vk::SemaphoreCreateInfo semaphoreInfo{};
 
             for (size_t i = 0; i < swapChainImages.size(); ++i)
             {
-                presentCompleteSemaphore.push_back(device.createSemaphore(semaphoreInfo));
+                renderFinishedSemaphores.push_back(device.createSemaphore(semaphoreInfo));
             }
         }
         
+	// Get required extensions
+	std::vector<const char *> getRequiredInstanceExtensions()
+	{
+#if PLATFORM_ANDROID
+		// Android requires these extensions
+		std::vector<const char *>  extensions		= 
+		{
+			VK_KHR_SURFACE_EXTENSION_NAME
+			, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
+		};
+#else
+		// Get the required extensions from GLFW
+		uint32_t			glfwExtensionCount		= 0;
+		, auto				glfwExtensions			= glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+		, std::vector<const char *> 	extensions(
+							glfwExtensions
+							, glfwExtensions + glfwExtensionCount
+						);
+#endif
         
+		// Check if the debug utils extension is available
+		std::vector<vk::ExtensionProperties>	props			= context.enumerateInstanceExtensionProperties();
+		bool					debugUtilsAvailable	= std::ranges::any_of(
+												props
+												, [](vk::ExtensionProperties const &ep
+												)
+												{
+													return strcmp(
+															ep.extensionName
+															, vk::EXTDebugUtilsExtensionName
+															) == 0;
+												});
+		// Always include the debug utils extension if available
+		if (debugUtilsAvailable)
+		{
+			extensions.push_back(vk::EXTDebugUtilsExtensionName);
+#if PLATFORM_DESKTOP
+		}
+		else
+		{
+			LOG_INFO("VK_EXT_debug_utils extension not available.  Validation layers may not work.");
+#endif
+		}
+		
+		return extensions;
+	}
+
 
 //******************************************************************************************
 // 
@@ -3062,6 +3114,8 @@ if PLATFORM_ANDROID
 
             throw std::runtime_error("Failed to find suitable memory type!");
         }
+	
+	
 //******************************************************************************************
 // 
 //  Name:           chooseSwapMinImageCount
@@ -3096,7 +3150,7 @@ if PLATFORM_ANDROID
 // 
 //******************************************************************************************
 
-        static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats)
+        vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats)
         {
             assert(!availableFormats.empty());
             const auto formatIt = std::ranges::find_if(  
@@ -3109,18 +3163,24 @@ if PLATFORM_ANDROID
             return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
         }
 
+	// Choose swap present mode
         static vk::PresentModeKHR chooseSwapPresentMode(std::vector<vk::PresentModeKHR> const &availablePresentModes)
         {
-            assert(std::ranges::any_of(  availablePresentModes
+            assert(std::ranges::any_of(
+					  availablePresentModes
                                        , [](auto presentMode)
                                     {
                                         return presentMode == vk::PresentModeKHR::eFifo;
-                                    }));
-            return std::ranges::any_of(  availablePresentModes
+                                    }
+				)
+			);
+            return std::ranges::any_of(
+					  availablePresentModes
                                        , [](const vk::PresentModeKHR value)
                                     {
                                         return vk::PresentModeKHR::eMailbox == value;
-                                    }) ?
+                                    }
+				) ?
                                     vk::PresentModeKHR::eMailbox :
                                     vk::PresentModeKHR::eFifo;
         }
@@ -3144,19 +3204,37 @@ if PLATFORM_ANDROID
             {
                 return capabilities.currentExtent;
             }
+	    else
+	    {
+#if PLATFORM_ANDROID
+		// Get the window size from Android
+		int32_t		width			= ANativeWindow_getWidth(androidApp->window);
+		int32_t		height			= ANativeWindow_getHeight(androidApp->window);
+#else
+		// Get the window size from GLFW
             int width, height;
-            glfwGetFramebufferSize(  window
+            glfwGetFramebufferSize(
+				  window
                                    , &width
-                                   , &height);
+                                   , &height
+				);
+#endif
 
-            return {
-                  std::clamp<uint32_t>(  width
+		vk::Extent2D		actualExtent		= 
+		{
+			static_cast<uint32_t>(width)
+			, static_cast<uint32_t>(height)
+		};
+
+                  actualExtent.width	= std::clamp(  actualExtent.width
                                        , capabilities.minImageExtent.width
-                                       , capabilities.maxImageExtent.width)
-                , std::clamp<uint32_t>(  height
+                                       , capabilities.maxImageExtent.width);
+                , actualExtent.height	= std::clamp(  actualExtent.height
                                        , capabilities.minImageExtent.height
-                                       , capabilities.maxImageExtent.height)
-            };
+                                       , capabilities.maxImageExtent.height);
+				       
+		return actualExtent;
+		}
         }
 
 
