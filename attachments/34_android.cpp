@@ -2089,62 +2089,6 @@ if PLATFORM_ANDROID
         }
 
 
-
-
-//******************************************************************************************
-// 
-//  Name:           transition_image_layout
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void transition_image_layout(
-              vk::Image                     image
-            , vk::ImageLayout               old_layout
-            , vk::ImageLayout               new_layout
-            , vk::AccessFlags2              src_access_mask
-            , vk::AccessFlags2              dst_access_mask
-            , vk::PipelineStageFlags2       src_stage_mask
-            , vk::PipelineStageFlags2       dst_stage_mask
-            , vk::ImageAspectFlags          image_aspect_flags
-        )
-        {
-            vk::ImageMemoryBarrier2         barrier         = 
-            {
-                  .srcStageMask                             = src_stage_mask
-                , .srcAccessMask                            = src_access_mask
-                , .dstStageMask                             = dst_stage_mask
-                , .dstAccessMask                            = dst_access_mask
-                , .oldLayout                                = old_layout
-                , .newLayout                                = new_layout
-                , .srcQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
-                , .dstQueueFamilyIndex                      = VK_QUEUE_FAMILY_IGNORED
-                , .image                                    = image
-                , .subresourceRange                         = 
-                {
-                      .aspectMask                           = image_aspect_flags
-                    , .baseMipLevel                         = 0
-                    , .levelCount                           = 1
-                    , .baseArrayLayer                       = 0
-                    , .layerCount                           = 1
-                }
-            };
-
-            vk::DependencyInfo dependency_info              =
-            {
-                  .dependencyFlags                          = {}
-                , .imageMemoryBarrierCount                  = 1
-                , .pImageMemoryBarriers                     = &barrier
-            };
-
-            commandBuffers[frameIndex].pipelineBarrier2(dependency_info);
-        }
-
-
 //******************************************************************************************
 // 
 //  Name:           createSyncObjects
@@ -3252,6 +3196,32 @@ if PLATFORM_ANDROID
 		
 		uniformBuffersMemory[currentImage].unmapMemory();
         }
+	
+#if PLATFORM_ANDROID
+	// Handle app commands
+	static void handleAppCommand(
+				android_app *app
+				, int32_t cmd
+	)
+	{
+		auto 		*vulkanApp			= static_cast<HelloTriangleApplication *>(app->userData);
+		switch (cmd)
+		{
+			case APP_CMD_INIT_WINDOW:
+				// Window created, initialize Vulkan
+				if (app->window != nullptr)
+				{
+					vulkanApp->initVulkan();
+				}
+				break;
+			case APP_CMD_TERM_WINDOW:
+				// Window destroyed, clean up Vulkan
+				vulkanApp->cleanup();
+				break;
+			default:
+				break;
+		}
+	}
 };
         
 
