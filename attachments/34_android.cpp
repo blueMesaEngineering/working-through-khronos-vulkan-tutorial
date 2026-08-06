@@ -2174,82 +2174,40 @@ if PLATFORM_ANDROID
 		vk::CommandBufferBeginInfo	beginInfo{};
             commandBuffer.begin(beginInfo);
 
+            vk::ClearValue clearValues[]
+	    {
+		vk::ClearValue
+		{
+			vk::ClearColorValue(  
+				  0.0f
+				, 0.0f
+				, 0.0f
+				, 1.0f
+			)
+		}
+		, vk::ClearValue 
+		{
+			vk::ClearDepthStencilValue(1.0f, 0)
+		}
+	    };
 
-            // Clear values for color and depth
-            vk::ClearValue clearColor{};
-            clearColor.color      			                = vk::ClearColorValue(  
-                                                                                  0.0f
-                                                                                , 0.0f
-                                                                                , 0.0f
-                                                                                , 1.0f
-                                                                                );
-
-            vk::ClearValue clearDepth{};
-            clearDepth.depthStencil      		            = vk::ClearDepthStencilValue{1.0f, 0};
-
-            std::array<vk::ClearValue, 2> clearValues		= {clearColor, clearDepth};
-
-            // Use different rendering approach based on profile support
-            if (appInfo.profileSupported)
-            {
-                // Use dynamic rendering with the KHR roadmap 2022 profile
-                vk::RenderingAttachmentInfo     colorAttachment
-                {
-                      .imageView                            = *colorImageView
-                    , .imageLayout                          = vk::ImageLayout::eColorAttachmentOptimal
-                    , .resolveMode                          = vk::ResolveModeFlagBits::eAverage
-                    , .resolveImageView                     = *swapChainImageViews[imageIndex]
-                    , .resolveImageLayout                   = vk::ImageLayout::eColorAttachmentOptimal
-                    , .loadOp                               = vk::AttachmentLoadOp::eClear
-                    , .storeOp                              = vk::AttachmentStoreOp::eStore
-                    , .clearValue                           = clearColor
-                };
-
-                vk::RenderingAttachmentInfo     depthAttachment
-                {
-                      .imageView                            = *depthImageView
-                    , .imageLayout                          = vk::ImageLayout::eDepthStencilAttachmentOptimal
-                    , .loadOp                               = vk::AttachmentLoadOp::eClear
-                    , .storeOp                              = vk::AttachmentStoreOp::eDontCare
-                    , .clearValue                           = clearDepth
-                };
-
-                vk::RenderingInfo               renderingInfo
-                {
-                    .renderArea                             = 
-                        {
-                              {0, 0}
-                            , swapChainExtent
-                        }
-                    , .layerCount                           = 1
-                    , .colorAttachmentCount                 = 1
-                    , .pColorAttachments                    = &colorAttachment
-                    , .pDepthAttachment                     = &depthAttachment
-                };
-
-                commandBuffer.beginRendering(renderingInfo);
-            }
-            else
-            {
-                // Use traditional render pass if not using the KHR roadmap 2022 profile
                 vk::RenderPassBeginInfo		renderPassInfo
                 {
                       .renderPass			                = *renderPass
                     , .framebuffer			                = *swapChainFramebuffers[imageIndex]
                     , .renderArea			                = 
                         {
-                              {0,0}
-                            , swapChainExtent
+                              .offset					= {0,0}
+                            , .extent					= swapChainExtent
                         }
-                    , .clearValueCount		                = static_cast<uint32_t>(clearValues.size())
-                    , .pClearValues			                = clearValues.data()
+                    , .clearValueCount		                = 2
+                    , .pClearValues			                = clearValues
                 };
                 
                 commandBuffer.beginRenderPass(
                       renderPassInfo
                     , vk::SubpassContents::eInline
                 );
-            }
 
             commandBuffer.bindPipeline(  
                   vk::PipelineBindPoint::eGraphics
@@ -2278,7 +2236,7 @@ if PLATFORM_ANDROID
 
             commandBuffer.bindVertexBuffers(  
                   0
-                , *vertexBuffer
+                , {*vertexBuffer}
                 , {0}
             );
 
@@ -2304,27 +2262,7 @@ if PLATFORM_ANDROID
                 , 0
             );
                 
-            if (appInfo.profileSupported)
-            {
-                commandBuffer.endRendering();
-                
-                // Transition the swapchain image to the correct layout for presentation
-                transition_image_layout(
-                    swapChainImages[imageIndex]
-                    , vk::ImageLayout::eColorAttachmentOptimal
-                    , vk::ImageLayout::ePresentSrcKHR
-                    , vk::AccessFlagBits2::eColorAttachmentWrite            // srcAccessMask
-                    , {}                                                    // dstAccessMask
-                    , vk::PipelineStageFlagBits2::eColorAttachmentOutput    // srcStage
-                    , vk::PipelineStageFlagBits2::eBottomOfPipe             // dstStage
-                    , vk::ImageAspectFlagBits::eColor
-                );
-            }
-            else
-            {
-                commandBuffer.endRenderPass();
-                // Traditional render pass already transitions the image to the correct layout
-            }
+	    commandBuffer.endRenderPass();
 	    
             commandBuffer.end();
         }
