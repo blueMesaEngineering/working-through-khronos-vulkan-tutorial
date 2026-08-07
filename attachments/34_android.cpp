@@ -772,7 +772,7 @@ class HelloTriangleApplication
             // Check if all required physicalDevice extensions are available
             auto availableDeviceExtensions = physicalDevice.enumerateDeviceExtensionProperties();
             bool supportsAllRequiredExtensions = 
-                std::ranges::all_of(  requiredDeviceExtension
+                std::ranges::all_of(  requiredDeviceExtensions
                                     , [&availableDeviceExtensions](auto const &requiredDeviceExtension)
                                     {
                                         return std::ranges::any_of(  availableDeviceExtensions
@@ -977,7 +977,7 @@ class HelloTriangleApplication
                 {
                       .queueCreateInfoCount		            = 1
                     , .pQueueCreateInfos		            = &deviceQueueCreateInfo
-                    , .enabledExtensionCount	            = static_cast<uint32_t>(requiredDeviceExtension.size())
+                    , .enabledExtensionCount	            = static_cast<uint32_t>(requiredDeviceExtensions.size())
                     , .ppEnabledExtensionNames	            = requiredDeviceExtensions.data()
                     , .pEnabledFeatures		                = &deviceFeatures
                 };
@@ -1257,7 +1257,7 @@ class HelloTriangleApplication
 		{
 			.codeSize						= vertShaderCode.size()
 			, .pCode						= reinterpret_cast<const uint32_t *>(vertShaderCode.data())
-		}
+		};
 		
 		vk::raii::ShaderModule			vertShaderModule	= device.createShaderModule(vertShaderModuleInfo);
 		
@@ -1419,7 +1419,7 @@ class HelloTriangleApplication
             {
                 vk::ImageView attachments[] = 
                 {
-                    , *swapChainImageViews[i]
+                      *swapChainImageViews[i]
                     , *depthImageView
                 };
                 
@@ -1562,7 +1562,7 @@ class HelloTriangleApplication
 
             stbi_uc                     *pixels             = nullptr;
 
-if PLATFORM_ANDROID
+#if PLATFORM_ANDROID
 		// Load image from Android assets
 		std::optional<AssetManagerType *>	optionalAssetManager	= assetManager;
 		std::vector<char>			imageData		= readFile(TEXTURE_PATH, optionalAssetManager);
@@ -1986,7 +1986,7 @@ if PLATFORM_ANDROID
 
             vk::DescriptorPoolCreateInfo    poolInfo
             {
-                , .maxSets                                  = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
+                  .maxSets                                  = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
                 , .poolSizeCount                            = static_cast<uint32_t>(poolSizes.size())
                 , .pPoolSizes                               = poolSizes.data()
             };
@@ -2450,8 +2450,8 @@ if PLATFORM_ANDROID
 #else
 		// Get the required extensions from GLFW
 		uint32_t			glfwExtensionCount		= 0;
-		, auto				glfwExtensions			= glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-		, std::vector<const char *> 	extensions(
+		auto				glfwExtensions			= glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+		std::vector<const char *> 	extensions(
 							glfwExtensions
 							, glfwExtensions + glfwExtensionCount
 						);
@@ -2598,7 +2598,7 @@ if PLATFORM_ANDROID
                   actualExtent.width	= std::clamp(  actualExtent.width
                                        , capabilities.minImageExtent.width
                                        , capabilities.maxImageExtent.width);
-                , actualExtent.height	= std::clamp(  actualExtent.height
+                  actualExtent.height	= std::clamp(  actualExtent.height
                                        , capabilities.minImageExtent.height
                                        , capabilities.maxImageExtent.height);
 				       
@@ -2884,7 +2884,7 @@ if PLATFORM_ANDROID
 			, .commandBufferCount				= 1
 		};
 		
-            vk::raii::CommandBuffer         commandBuffer   = std::mov(device.allocateCommandBuffers(allocInfo)[0]);
+            vk::raii::CommandBuffer         commandBuffer   = std::move(device.allocateCommandBuffers(allocInfo)[0]);
 
 		vk::CommandBufferBeginInfo	beginInfo
 		{

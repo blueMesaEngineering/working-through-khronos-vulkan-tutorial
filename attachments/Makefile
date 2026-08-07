@@ -1157,6 +1157,45 @@ depend:
 .PHONY : 33_vulkanProfiles_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 34_android
+
+# Build rule for target.
+34_android: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 34_android
+.PHONY : 34_android
+
+# fast build rule for target.
+34_android/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/34_android.dir/build.make CMakeFiles/34_android.dir/build
+.PHONY : 34_android/fast
+
+#=============================================================================
+# Target rules for targets named 34_android_shader
+
+# Build rule for target.
+34_android_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 34_android_shader
+.PHONY : 34_android_shader
+
+# fast build rule for target.
+34_android_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/34_android_shader.dir/build.make CMakeFiles/34_android_shader.dir/build
+.PHONY : 34_android_shader/fast
+
+#=============================================================================
+# Target rules for targets named 34_android_slang_shader
+
+# Build rule for target.
+34_android_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 34_android_slang_shader
+.PHONY : 34_android_slang_shader
+
+# fast build rule for target.
+34_android_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/34_android_slang_shader.dir/build.make CMakeFiles/34_android_slang_shader.dir/build
+.PHONY : 34_android_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -2381,6 +2420,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/33_vulkanProfiles.dir/build.make CMakeFiles/33_vulkanProfiles.dir/33_vulkanProfiles.cpp.s
 .PHONY : 33_vulkanProfiles.cpp.s
 
+34_android.o: 34_android.cpp.o
+.PHONY : 34_android.o
+
+# target to build an object file
+34_android.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/34_android.dir/build.make CMakeFiles/34_android.dir/34_android.cpp.o
+.PHONY : 34_android.cpp.o
+
+34_android.i: 34_android.cpp.i
+.PHONY : 34_android.i
+
+# target to preprocess a source file
+34_android.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/34_android.dir/build.make CMakeFiles/34_android.dir/34_android.cpp.i
+.PHONY : 34_android.cpp.i
+
+34_android.s: 34_android.cpp.s
+.PHONY : 34_android.s
+
+# target to generate assembly for a file
+34_android.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/34_android.dir/build.make CMakeFiles/34_android.dir/34_android.cpp.s
+.PHONY : 34_android.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -2439,6 +2502,8 @@ help:
 	@echo "... 32_ecosystemUtilities_slang_shader"
 	@echo "... 33_vulkanProfiles_shader"
 	@echo "... 33_vulkanProfiles_slang_shader"
+	@echo "... 34_android_shader"
+	@echo "... 34_android_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -2500,6 +2565,7 @@ help:
 	@echo "... 31_computeShader"
 	@echo "... 32_ecosystemUtilities"
 	@echo "... 33_vulkanProfiles"
+	@echo "... 34_android"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -2600,6 +2666,9 @@ help:
 	@echo "... 33_vulkanProfiles.o"
 	@echo "... 33_vulkanProfiles.i"
 	@echo "... 33_vulkanProfiles.s"
+	@echo "... 34_android.o"
+	@echo "... 34_android.i"
+	@echo "... 34_android.s"
 .PHONY : help
 
 
