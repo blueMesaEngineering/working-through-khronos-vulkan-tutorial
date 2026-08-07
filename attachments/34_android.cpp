@@ -2691,21 +2691,46 @@ if PLATFORM_ANDROID
             , vk::DeviceSize    size
         )
         {
-            vk::raii::CommandBuffer     commandBuffer		= beginSingleTimeCommands();
+            vk::CommandBufferAllocateInfo     allocInfo
+	    {
+		.commandPool					= *commandPool
+		, .level					= vk::CommandBufferLevel::ePrimary
+		, .commandBufferCount				= 1
+	    };
+	    
+	    vk::raii::CommandBuffer		commandBuffer	= std::move(device.allocateCommandBuffers(allocInfo)[0]);
+	    
+	    vk::CommandBufferBeginInfo		beginInfo
+	    {
+		.flags						= vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+	    };
+	    
+	    commandBuffer.begin(beginInfo);
 	    
             vk::BufferCopy		        copyRegion
             {
-                .size	                                    = size
+		.srcOffset					= 0
+		, .dstOffset					= 0
+                , .size	                                    = size
             };
 	
             commandBuffer.copyBuffer(  
-                  srcBuffer
-                , dstBuffer
+                  *srcBuffer
+                , *dstBuffer
                 , copyRegion
             );
 
-            endSingleTimeCommands(commandBuffer);
-        }
+		commandBuffer.end();
+		
+		vk::SubmitInfo 		submitInfo
+		{
+			.commandBufferCount		= 1
+			, .pCommandBuffers		= &*commandBuffer
+		};
+		
+		queue.submit(submitInfo, nullptr);
+		queue.waitIdle();
+	}
         
 
 //******************************************************************************************
@@ -2846,14 +2871,27 @@ if PLATFORM_ANDROID
 //******************************************************************************************
 
         void transitionImageLayout(
-              vk::Image         image
-	    , vk::Format	format
+              vk::raii::Image         		&image
+	    , vk::Format			format
             , vk::ImageLayout               oldLayout
             , vk::ImageLayout               newLayout
-            , uint32_t                      mipLevels
         )
         {
-            vk::raii::CommandBuffer         commandBuffer   = beginSingleTimeCommands();
+		vk::CommandBufferAllocateInfo		allocInfo
+		{
+			.commandPool					= *commandPool
+			, .level					= vk::CommandBufferLevel::ePrimary
+			, .commandBufferCount				= 1
+		};
+		
+            vk::raii::CommandBuffer         commandBuffer   = std::mov(device.allocateCommandBuffers(allocInfo)[0]);
+
+		vk::CommandBufferBeginInfo	beginInfo
+		{
+			.flags					= vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+		};
+		
+		commandBuffer.begin(beginInfo);
 
             vk::ImageMemoryBarrier          barrier         
             {
@@ -2864,26 +2902,13 @@ if PLATFORM_ANDROID
                 , .image                                    = image
                 , .subresourceRange                         = 
                 {
-                      .baseMipLevel		                    = 0
-                    , .levelCount		                    = mipLevels
-                    , .baseArrayLayer		                = 0
+			.aspectMask				= vk::ImageAspectFlagBits::eColor
+		    , .baseMipLevel		                    = 0
+                    , .levelCount		                    = 1
+                    , .baseArrayLayer		                    = 0
                     , .layerCount		                    = 1
                 }
             };
-	    
-            if (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
-            {
-                barrier.subresourceRange.aspectMask		    = vk::ImageAspectFlagBits::eDepth;
-            
-                if (hasStencilComponent(format))
-                {
-                    barrier.subresourceRange.aspectMask     |= vk::ImageAspectFlagBits::eStencil;
-                }
-            }
-            else
-            {
-                barrier.subresourceRange.aspectMask		    = vk::ImageAspectFlagBits::eColor;
-            }
 
             vk::PipelineStageFlags sourceStage;
             vk::PipelineStageFlags destinationStage;
@@ -2906,15 +2931,6 @@ if PLATFORM_ANDROID
                 sourceStage                                 = vk::PipelineStageFlagBits::eTransfer;
                 destinationStage                            = vk::PipelineStageFlagBits::eFragmentShader;
             }
-            else if (   oldLayout == vk::ImageLayout::eUndefined
-                     && newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
-            {
-                barrier.srcAccessMask			            = vk::AccessFlagBits::eNone;
-                barrier.dstAccessMask			            = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-                
-                sourceStage				                    = vk::PipelineStageFlagBits::eTopOfPipe;
-                destinationStage			                = vk::PipelineStageFlagBits::eEarlyFragmentTests;
-            }
             else
             {
                 throw std::invalid_argument("Unsupported layout transition!");
@@ -2923,13 +2939,22 @@ if PLATFORM_ANDROID
             commandBuffer.pipelineBarrier(
                   sourceStage
                 , destinationStage
-                , {}
-                , std::array<vk::MemoryBarrier, 0>{}
-                , std::array<vk::BufferMemoryBarrier, 0>{}
-                , std::array<vk::ImageMemoryBarrier, 1>{barrier}
+                , vk::DependencyFlagBits::eByRegion
+                , nullptr
+                , nullptr
+                , barrier
             );
 
-            endSingleTimeCommands(commandBuffer);
+            commandBuffer.end();
+	    
+	    vk::SubmitInfo			submitInfo
+	    {
+		.commandBufferCount				= 1
+		, .pCommandBuffers				= &*commandBuffer
+	    };
+	    
+	    queue.submit(submitInfo, nullptr);
+	    queue.waitIdle();
         }
         
 
@@ -2945,13 +2970,27 @@ if PLATFORM_ANDROID
 //******************************************************************************************
 
         void copyBufferToImage(
-		      vk::Buffer    buffer
-            , vk::Image     image
-            , uint32_t      width
-            , uint32_t      height
+		vk::raii::Buffer    	&buffer
+            , vk::raii::Image     	&image
+            , uint32_t      		width
+            , uint32_t      		height
         )
         {
-            vk::raii::CommandBuffer         commandBuffer   = beginSingleTimeCommands();
+		vk::CommandBufferAllocateInfo		allocInfo
+		{
+			.commandPool					= *commandPool
+			, .level					= vk::CommandBufferLevel::ePrimary
+			, .commandBufferCount				= 1
+		};
+
+            vk::raii::CommandBuffer         commandBuffer   = std::move(device.allocateCommandBuffers(allocInfo)[0]);
+	    
+	    vk::CommandBufferBeginInfo		beginInfo
+	    {
+		.flags						= vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+	    };
+	    
+	    commandBuffer.begin(beginInfo);
 	    
             vk::BufferImageCopy             region
             {
@@ -2970,13 +3009,22 @@ if PLATFORM_ANDROID
             };
 
             commandBuffer.copyBufferToImage(
-                  buffer
-                , image
+                  *buffer
+                , *image
                 , vk::ImageLayout::eTransferDstOptimal
                 , region
             );
 
-            endSingleTimeCommands(commandBuffer);
+            commandBuffer.end();
+	    
+	    vk::SubmitInfo submitInfo
+	    {
+		.commandBufferCount				= 1
+		, .pCommandBuffers				= &*commandBuffer
+	    };
+	    
+	    queue.submit(submitInfo, nullptr);
+	    queue.waitIdle();
         }
 
 
@@ -3058,8 +3106,63 @@ if PLATFORM_ANDROID
 				break;
 		}
 	}
+	
+	
+//******************************************************************************************
+// 
+//  Name:           handleInputEvent
+//  Arguments:      android_app *app
+//		    AInputEvent *event
+//  Returns:        int32_t
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+	
+	static int32_t handleInputEvent(
+		android_app *app
+		, AInputEvent *event
+	)
+	{
+		auto *vulkanApp					= static_cast<HelloTriangleApplication *>(app->userData);
+		if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION)
+		{
+			// Handle touch events
+			float x					= AMotionEvent_getX(event, 0);
+			float y					= AMotionEvent_getY(event, 0);
+			
+			// Process touch coordinates
+			LOGI("Touch at: %f, %f", x, y);
+			
+			return 1;
+		}
+		return 0;
+	}
+#endif
 };
         
+// Platform-specific entry point
+#if PLATFORM_ANDROID
+// Android main entry point
+void android_main(android_app *app)
+{
+	// Make sure glue isn't stripped
+	app_dummy();
+	
+	try
+	{
+		// Create and run the Vulkan application
+		HelloTriangleApplication 	vulkanApp(app);
+		vulkanApp.run();
+	}
+	catch (const std::exception &e)
+	{
+		LOGE("Exception caught: %s", e.what());
+	}
+}
+#else
+// Desktop main entry point
 
 //******************************************************************************************
 // 
@@ -3087,3 +3190,4 @@ int main()
 
     return EXIT_SUCCESS;
 }
+#endif
