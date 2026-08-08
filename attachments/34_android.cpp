@@ -230,10 +230,11 @@ std::vector<char> readFile(const std::string &filename, std::optional<AssetManag
 	if (assetManager.has_value() && *assetManager != nullptr)
 	{
 		// Open the asset
-		AAsset *asset 			= AAssetManager_open(*assetManager
-									, filename.c_str()
-									, AASSET_MODE_BUFFER
-									);
+		AAsset *asset 			                            = AAssetManager_open(
+                                                                      *assetManager
+                                                                    , filename.c_str()
+                                                                    , AASSET_MODE_BUFFER
+                                                                    );
 		if (!asset)
 		{
 			LOGE("Failed to open asset: %s", filename.c_str());
@@ -245,9 +246,11 @@ std::vector<char> readFile(const std::string &filename, std::optional<AssetManag
 		std::vector<char>	buffer(fileSize);
 		
 		// Read the file data
-		AAsset_read(  asset
-				, buffer.data()
-				, fileSize);
+		AAsset_read(  
+              asset
+			, buffer.data()
+			, fileSize
+        );
 				
 		// Close the asset
 		AAsset_close(asset);
@@ -268,10 +271,8 @@ std::vector<char> readFile(const std::string &filename, std::optional<AssetManag
 	    size_t	fileSize		= static_cast<size_t>(file.tellg());
             std::vector<char> buffer(fileSize);
 	    
-            file.seekg(  0);
-            file.read(  buffer.data()
-                      , fileSize
-                    );
+            file.seekg(0);
+            file.read(buffer.data(), fileSize);
             file.close();
 	    
             return buffer;
@@ -292,8 +293,8 @@ class HelloTriangleApplication
 	HelloTriangleApplication(android_app *app) :
 		androidApp(app)
 	{
-		androidApp->userData	= this;
-		androidApp->onAppCmd	= handleAppCommand;
+		androidApp->userData	                            = this;
+		androidApp->onAppCmd	                            = handleAppCommand;
 		// Note: onInputEvent is no longer a member of android_app in the current NDK version
 		// Input events are now handled differently
 		
@@ -320,31 +321,31 @@ class HelloTriangleApplication
         void run()
         {
 #if PLATFORM_DESKTOP
-		// Desktop main loop
+		    // Desktop main loop
             initWindow();
             initVulkan();
             mainLoop();
             cleanup();
 #else
-		// Android main loop is handled by Android
-		while (!initialized)
-		{
-			// Wait for app to initialize
-			int 			events;
-			android_poll_source	*source;
-			if (ALooper_pollOnce(
-					0
-					, nullptr
-					, &events
-					, (void **) &source
-					) >= 0)
-			{
-				if (source != nullptr)
-				{
-					source->process(androidApp, source);
-				}
-			}
-		}
+            // Android main loop is handled by Android
+            while (!initialized)
+            {
+                // Wait for app to initialize
+                int 			            events;
+                android_poll_source	        *source;
+                if (ALooper_pollOnce(
+                        0
+                        , nullptr
+                        , &events
+                        , (void **) &source
+                        ) >= 0)
+                {
+                    if (source != nullptr)
+                    {
+                        source->process(androidApp, source);
+                    }
+                }
+            }
 #endif
         }
 
@@ -473,20 +474,20 @@ class HelloTriangleApplication
     private:
 
 #if PLATFORM_ANDROID
-	// Android-specific members
-	android_app		*androidApp		= nullptr;
-	AssetManagerType	*assetManager		= nullptr;
+        // Android-specific members
+        android_app		                        *androidApp		            = nullptr;
+        AssetManagerType	                    *assetManager               = nullptr;
 #else
-	// Desktop-specific members
+	    // Desktop-specific members
 
         // Initial set up and swapchain
         GLFWwindow                              *window                     = nullptr;
 
 #endif
-	bool 					initialized			= false;
-        bool 					framebufferResized              = false;
+	    bool 					                initialized			        = false;
+        bool 					                framebufferResized          = false;
 	
-	// Vulkan objects
+	    // Vulkan objects
         vk::raii::Context                       context;
         vk::raii::Instance                      instance                    = nullptr;
         vk::raii::DebugUtilsMessengerEXT        debugMessenger              = nullptr;
@@ -608,15 +609,15 @@ class HelloTriangleApplication
             createInstance();
             createSurface();
             pickPhysicalDevice();
-	    checkFeatureSupport();
+	        checkFeatureSupport();
             createLogicalDevice();
             createSwapChain();
             createImageViews();
-	    createDepthResources();
-	    createRenderPass();
+	        createDepthResources();
+	        createRenderPass();
             createDescriptorSetLayout();
             createGraphicsPipeline();
-	    createFramebuffers();
+	        createFramebuffers();
             createCommandPool();
             createTextureImage();
             createTextureImageView();
@@ -630,7 +631,7 @@ class HelloTriangleApplication
             createCommandBuffers();
             createSyncObjects();
 	    
-	    initialized		= true;
+	        initialized		= true;
         }
         
 
@@ -650,29 +651,28 @@ class HelloTriangleApplication
 	// Create Vulkan instance
         void createInstance()
         {
-	    // Application info
+	        // Application info
             vk::ApplicationInfo appInfo
             {
-                  .pApplicationName     = "Vulkan Android"
-                , .applicationVersion   = VK_MAKE_VERSION(1, 0, 0)
-                , .pEngineName          = "No Engine"
-                , .engineVersion        = VK_MAKE_VERSION(1, 0, 0)
-                , .apiVersion           = VK_API_VERSION_1_3
+                  .pApplicationName                         = "Vulkan Android"
+                , .applicationVersion                       = VK_MAKE_VERSION(1, 0, 0)
+                , .pEngineName                              = "No Engine"
+                , .engineVersion                            = VK_MAKE_VERSION(1, 0, 0)
+                , .apiVersion                               = VK_API_VERSION_1_3
             };
 	    
             // Get required extensions.
-            std::vector<const char *> extensions = getRequiredInstanceExtensions();
+            std::vector<const char *>       extensions      = getRequiredInstanceExtensions();
             
-	    // Create Instance
+	        // Create Instance
             vk::InstanceCreateInfo createInfo
             {
-                  .pApplicationInfo         = &appInfo
-                , .enabledExtensionCount    = static_cast<uint32_t>(extensions.size())
-                , .ppEnabledExtensionNames  = extensions.data()
+                  .pApplicationInfo                         = &appInfo
+                , .enabledExtensionCount                    = static_cast<uint32_t>(extensions.size())
+                , .ppEnabledExtensionNames                  = extensions.data()
             };
             
-            instance = vk::raii::Instance(  context
-                                          , createInfo);
+            instance = vk::raii::Instance(context, createInfo);
 	    LOGI("Vulkan instance created");
         }
         
@@ -695,46 +695,45 @@ class HelloTriangleApplication
             VkSurfaceKHR _surface;
 
 #if PLATFORM_ANDROID
-		// Create Android surface
-		VkAndroidSurfaceCreateInfoKHR 		createInfo	=
-		{
-			.sType						= VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR
-			, .pNext					= nullptr
-			, .flags					= 0
-			, .window					= androidApp->window
-		};
-		
-		VkResult				result		= vkCreateAndroidSurfaceKHR(
-											*instace
-											, &createInfo
-											, nullptr
-											, &_surface
-											);
-		
-		if (result != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create Android surface");
-		}
-		
-		LOG_INFO("Android surface created");
+            // Create Android surface
+            VkAndroidSurfaceCreateInfoKHR 		createInfo	=
+            {
+                  .sType						            = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR
+                , .pNext					                = nullptr
+                , .flags					                = 0
+                , .window					                = androidApp->window
+            };
+            
+            VkResult				            result		= vkCreateAndroidSurfaceKHR(
+                                                                                *instace
+                                                                                , &createInfo
+                                                                                , nullptr
+                                                                                , &_surface
+                                                                                );
+
+            if (result != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to create Android surface");
+            }
+            
+            LOG_INFO("Android surface created");
 #else
-		// Create desktop surface using GLFW
+            // Create desktop surface using GLFW
             if (glfwCreateWindowSurface(  
-                  *instance
+                *instance
                 , window
                 , nullptr
                 , &_surface
-		) != 0
-	    )
+                ) != 0
+            )
             {
                 throw std::runtime_error("Failed to create window surface!");
             }
-	    
-	    LOG_INFO("Desktop surface created.");
+            
+            LOG_INFO("Desktop surface created.");
 #endif
 
-            surface = vk::raii::SurfaceKHR(  instance
-                                           , _surface);
+            surface = vk::raii::SurfaceKHR(instance, _surface);
         }
         
 
@@ -762,33 +761,32 @@ class HelloTriangleApplication
             bool supportsVulkan1_3 = physicalDevice.getProperties().apiVersion >= VK_API_VERSION_1_3;
 
             // Check if any of the queue families support graphics operations
-            auto queueFamilies      = physicalDevice.getQueueFamilyProperties();
-            bool supportsGraphics   = std::ranges::any_of(  queueFamilies
-                                                          , [](auto const &qfp)
-                                                        {
-                                                            return !!(qfp.queueFlags & vk::QueueFlagBits::eGraphics);
-                                                        });
+            auto                        queueFamilies       = physicalDevice.getQueueFamilyProperties();
+            bool                        supportsGraphics    = std::ranges::any_of(  queueFamilies
+                                                                                , [](auto const &qfp)
+                                                                                {
+                                                                                    return !!(qfp.queueFlags & vk::QueueFlagBits::eGraphics);
+                                                                                });
 
             // Check if all required physicalDevice extensions are available
-            auto availableDeviceExtensions = physicalDevice.enumerateDeviceExtensionProperties();
-            bool supportsAllRequiredExtensions = 
-                std::ranges::all_of(  requiredDeviceExtensions
-                                    , [&availableDeviceExtensions](auto const &requiredDeviceExtension)
-                                    {
-                                        return std::ranges::any_of(  availableDeviceExtensions
-                                                                   , [requiredDeviceExtension](auto const &availableDeviceExtension)
-                                                                    {
-                                                                        return strcmp(  availableDeviceExtension.extensionName
-                                                                                      , requiredDeviceExtension) == 0;
-                                                                    }
-                                                                  );
-                                    });
+            auto            availableDeviceExtensions       = physicalDevice.enumerateDeviceExtensionProperties();
+            bool            supportsAllRequiredExtensions   = 
+                                            std::ranges::all_of(  requiredDeviceExtensions
+                                                                , [&availableDeviceExtensions](auto const &requiredDeviceExtension)
+                                                                {
+                                                                    return std::ranges::any_of(  availableDeviceExtensions
+                                                                                            , [requiredDeviceExtension](auto const &availableDeviceExtension)
+                                                                                                {
+                                                                                                    return strcmp(  availableDeviceExtension.extensionName
+                                                                                                                , requiredDeviceExtension) == 0;
+                                                                                                }
+                                                                                            );
+                                                                });
 
             // Check if the physicalDevice supports the required features
             // Return true if the physicalDevice meets all the criteria
             return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions;
         }
-
         
 
 //******************************************************************************************
@@ -850,27 +848,27 @@ class HelloTriangleApplication
 			
 #ifdef PLATFORM_ANDROID
 			// Create a vp::ProfileDesc from our VpProfileProperties
-			vp::ProfileDesc			profileDesc		= 
+			vp::ProfileDesc			profileDesc		        = 
 			{
-				appInfo.profile.name
+				  appInfo.profile.name
 				, appInfo.profile.specVersion
 			};
 			
 			// Use vp::GetProfileSupport instead of vpGetPhysicalDeviceProfileSupport
-			bool 				result			= vp::GetProfileSupport(
-				*physicalDevice			// Pass the physical device directly
-				, &profileDesc			// Pass the profile description
-				, &supported			// Output parameter for support status
+			bool 				    result			        = vp::GetProfileSupport(
+				  *physicalDevice			// Pass the physical device directly
+				, &profileDesc			    // Pass the profile description
+				, &supported			    // Output parameter for support status
 			);
 #else
-			VkResult	            	vk_result		  	= vpGetPhysicalDeviceProfileSupport(
+			VkResult	            vk_result		  	    = vpGetPhysicalDeviceProfileSupport(
                                                                                               *instance
                                                                                             , *physicalDevice
                                                                                             , &appInfo.profile
                                                                                             , &supported
                                                                                             );
 											    
-			bool 				result				= vk_result == VK_SUCCESS;
+			bool 				    result				    = vk_result == VK_SUCCESS;
 #endif
 			
 			if (result && supported == VK_TRUE)
@@ -1050,33 +1048,33 @@ class HelloTriangleApplication
         void createImageViews()
         {
             assert(swapChainImageViews.empty());
-	    swapChainImageViews.reserve(swapChainImages.size());
-	    
-	    for (const auto &image : swapChainImages)
+            swapChainImageViews.reserve(swapChainImages.size());
+            
+            for (const auto &image : swapChainImages)
             {
-		vk::ImageViewCreateInfo		createInfo
-		{
-			.image					= image
-			, .viewType				= vk::ImageViewType::e2D
-			, .format				= swapChainSurfaceFormat.format
-			, .components				= 
-			{
-				.r			 	= vk::ComponentSwizzle::eIdentity
-				, .g				= vk::ComponentSwizzle::eIdentity
-				, .b				= vk::ComponentSwizzle::eIdentity
-				, .a				= vk::ComponentSwizzle::eIdentity
-			}
-			, .subresourceRange			= 
-			{
-				.aspectMask			= vk::ImageAspectFlagBits::eColor
-				, .baseMipLevel			= 0
-				, .levelCount			= 1
-				, .baseArrayLayer		= 0
-				, .layerCount			= 1
-			}
-		};
-		
-		swapChainImageViews.push_back(device.createImageView(createInfo));
+                vk::ImageViewCreateInfo		createInfo
+                {
+                      .image					            = image
+                    , .viewType				                = vk::ImageViewType::e2D
+                    , .format				                = swapChainSurfaceFormat.format
+                    , .components				            = 
+                    {
+                          .r			 	                = vk::ComponentSwizzle::eIdentity
+                        , .g				                = vk::ComponentSwizzle::eIdentity
+                        , .b				                = vk::ComponentSwizzle::eIdentity
+                        , .a				                = vk::ComponentSwizzle::eIdentity
+                    }
+                    , .subresourceRange			            = 
+                    {
+                          .aspectMask			            = vk::ImageAspectFlagBits::eColor
+                        , .baseMipLevel			            = 0
+                        , .levelCount			            = 1
+                        , .baseArrayLayer		            = 0
+                        , .layerCount			            = 1
+                    }
+                };
+                
+            swapChainImageViews.push_back(device.createImageView(createInfo));
             }
         }
         
@@ -1150,17 +1148,17 @@ class HelloTriangleApplication
                 , .dstSubpass                               = 0
                 , .srcStageMask                             =   vk::PipelineStageFlagBits::eColorAttachmentOutput
                                                               | vk::PipelineStageFlagBits::eEarlyFragmentTests
-							      | vk::PipelineStageFlagBits::eLateFragmentTests
+							                                  | vk::PipelineStageFlagBits::eLateFragmentTests
                 , .dstStageMask                             =   vk::PipelineStageFlagBits::eColorAttachmentOutput
                                                               | vk::PipelineStageFlagBits::eEarlyFragmentTests
-							      | vk::PipelineStageFlagBits::eLateFragmentTests
+							                                  | vk::PipelineStageFlagBits::eLateFragmentTests
                 , .srcAccessMask                            =   vk::AccessFlagBits::eDepthStencilAttachmentWrite
                 , .dstAccessMask                            =   vk::AccessFlagBits::eColorAttachmentWrite
                                                               | vk::AccessFlagBits::eDepthStencilAttachmentWrite
             };
 
             // Create the render pass
-            vk::AttachmentDescription        attachments[] =
+            vk::AttachmentDescription   attachments[]       =
             {
                   colorAttachment
                 , depthAttachment
@@ -1238,164 +1236,164 @@ class HelloTriangleApplication
 
         void createGraphicsPipeline()
         {
-		// Load shader code from asset files
-		LOGI("Loading shaders from assets");
-		
-		// Load shader files using cross-platform function
+            // Load shader code from asset files
+            LOGI("Loading shaders from assets");
+            
+            // Load shader files using cross-platform function
 #if PLATFORM_ANDROID
-		std::optional<AssetManagerType *> 	optionalAssetManager	= assetManager;
+		    std::optional<AssetManagerType *> optionalAssetManager  = assetManager;
 #else
-		std::optional<void *>			optionalAssetManager	= std::nullopt;
+		    std::optional<void *>	        optionalAssetManager	= std::nullopt;
 #endif
-		std::vector<char>   			vertShaderCode          = readFile("shaders/vert.spv", optionalAssetManager);
-		std::vector<char>                    	fragShaderCode          = readFile("shaders/frag.spv", optionalAssetManager);
+            std::vector<char>   	        vertShaderCode          = readFile("shaders/vert.spv", optionalAssetManager);
+            std::vector<char>               fragShaderCode          = readFile("shaders/frag.spv", optionalAssetManager);
 
-		LOGI("Shaders loaded successfully");
-		
-		// Create shader modules
-		vk::ShaderModuleCreateInfo		vertShaderModuleInfo
-		{
-			.codeSize						= vertShaderCode.size()
-			, .pCode						= reinterpret_cast<const uint32_t *>(vertShaderCode.data())
-		};
-		
-		vk::raii::ShaderModule			vertShaderModule	= device.createShaderModule(vertShaderModuleInfo);
-		
-		vk::ShaderModuleCreateInfo		fragShaderModuleInfo
-		{
-			.codeSize						= fragShaderCode.size()
-			, .pCode						= reinterpret_cast<const uint32_t *>(fragShaderCode.data())
-		};
-
-		vk::raii::ShaderModule			fragShaderModule	= device.createShaderModule(fragShaderModuleInfo);
-
-		// Create shader stages
-            vk::PipelineShaderStageCreateInfo               shaderStages[] = 
+            LOGI("Shaders loaded successfully");
+            
+            // Create shader modules
+            vk::ShaderModuleCreateInfo		vertShaderModuleInfo
             {
-		{
-			.stage                                    = vk::ShaderStageFlagBits::eVertex
-			, .module                                   = *vertShaderModule
-			, .pName                                    = "main"
-		}
-		, {
-			.stage                                    = vk::ShaderStageFlagBits::eFragment
-			, .module                                   = *fragShaderModule
-			, .pName                                    = "main"
-		}
+                  .codeSize						                    = vertShaderCode.size()
+                , .pCode						                    = reinterpret_cast<const uint32_t *>(vertShaderCode.data())
+            };
+            
+            vk::raii::ShaderModule			vertShaderModule	    = device.createShaderModule(vertShaderModuleInfo);
+            
+            vk::ShaderModuleCreateInfo		fragShaderModuleInfo
+            {
+                  .codeSize						                    = fragShaderCode.size()
+                , .pCode						                    = reinterpret_cast<const uint32_t *>(fragShaderCode.data())
             };
 
-		// Vertex input
-            auto                    bindingDescription      = Vertex::getBindingDescription();
-            auto                    attributeDescriptions   = Vertex::getAttributeDescriptions();
+            vk::raii::ShaderModule			fragShaderModule	    = device.createShaderModule(fragShaderModuleInfo);
 
-            vk::PipelineVertexInputStateCreateInfo          vertexInputInfo
+            // Create shader stages
+            vk::PipelineShaderStageCreateInfo                       shaderStages[] = 
             {
-                  .vertexBindingDescriptionCount            = 1
-                , .pVertexBindingDescriptions               = &bindingDescription
-                , .vertexAttributeDescriptionCount          = static_cast<uint32_t>(attributeDescriptions.size())
-                , .pVertexAttributeDescriptions             = attributeDescriptions.data()
+                {
+                      .stage                                        = vk::ShaderStageFlagBits::eVertex
+                    , .module                                       = *vertShaderModule
+                    , .pName                                        = "main"
+                }
+                , {
+                      .stage                                        = vk::ShaderStageFlagBits::eFragment
+                    , .module                                       = *fragShaderModule
+                    , .pName                                        = "main"
+                }
             };
 
-		// Input assembly
-            vk::PipelineInputAssemblyStateCreateInfo        inputAssembly
+            // Vertex input
+            auto                            bindingDescription      = Vertex::getBindingDescription();
+            auto                            attributeDescriptions   = Vertex::getAttributeDescriptions();
+
+            vk::PipelineVertexInputStateCreateInfo                  vertexInputInfo
             {
-                  .topology                                 = vk::PrimitiveTopology::eTriangleList
-                , .primitiveRestartEnable                   = VK_FALSE
+                  .vertexBindingDescriptionCount                    = 1
+                , .pVertexBindingDescriptions                       = &bindingDescription
+                , .vertexAttributeDescriptionCount                  = static_cast<uint32_t>(attributeDescriptions.size())
+                , .pVertexAttributeDescriptions                     = attributeDescriptions.data()
             };
 
-		// Viewport and scissor
-            vk::PipelineViewportStateCreateInfo             viewportState
+		    // Input assembly
+            vk::PipelineInputAssemblyStateCreateInfo                inputAssembly
             {
-                  .viewportCount                            = 1
-                , .scissorCount                             = 1
+                  .topology                                         = vk::PrimitiveTopology::eTriangleList
+                , .primitiveRestartEnable                           = VK_FALSE
             };
 
-		// Rasterization
-            vk::PipelineRasterizationStateCreateInfo        rasterizer
+		    // Viewport and scissor
+            vk::PipelineViewportStateCreateInfo                     viewportState
             {
-                  .depthClampEnable                         = VK_FALSE
-                , .rasterizerDiscardEnable                  = VK_FALSE
-                , .polygonMode                              = vk::PolygonMode::eFill
-                , .cullMode                                 = vk::CullModeFlagBits::eBack
-                , .frontFace                                = vk::FrontFace::eCounterClockwise
-                , .depthBiasEnable                          = VK_FALSE
-                , .lineWidth                                = 1.0f
+                  .viewportCount                                    = 1
+                , .scissorCount                                     = 1
             };
 
-		// Depth/Stencil
-            vk::PipelineDepthStencilStateCreateInfo         depthStencil
+		    // Rasterization
+            vk::PipelineRasterizationStateCreateInfo                rasterizer
             {
-                  .depthTestEnable                          = vk::True
-                , .depthWriteEnable                         = vk::True
-                , .depthCompareOp                           = vk::CompareOp::eLessOrEqual
+                  .depthClampEnable                                 = VK_FALSE
+                , .rasterizerDiscardEnable                          = VK_FALSE
+                , .polygonMode                                      = vk::PolygonMode::eFill
+                , .cullMode                                         = vk::CullModeFlagBits::eBack
+                , .frontFace                                        = vk::FrontFace::eCounterClockwise
+                , .depthBiasEnable                                  = VK_FALSE
+                , .lineWidth                                        = 1.0f
             };
 
-		// Multisampling
-            vk::PipelineMultisampleStateCreateInfo          multisampling
+		    // Depth/Stencil
+            vk::PipelineDepthStencilStateCreateInfo                 depthStencil
             {
-                  .rasterizationSamples                     = vk::SampleCountFlagBits::e1
-                , .sampleShadingEnable                      = VK_FALSE
+                  .depthTestEnable                                  = vk::True
+                , .depthWriteEnable                                 = vk::True
+                , .depthCompareOp                                   = vk::CompareOp::eLessOrEqual
             };
 
-		// Color blending
-            vk::PipelineColorBlendAttachmentState           colorBlendAttachment
+		    // Multisampling
+            vk::PipelineMultisampleStateCreateInfo                  multisampling
             {
-                  .blendEnable                              = VK_FALSE
-                , .colorWriteMask                           =       vk::ColorComponentFlagBits::eR
-                                                                |   vk::ColorComponentFlagBits::eG
-                                                                |   vk::ColorComponentFlagBits::eB
-                                                                |   vk::ColorComponentFlagBits::eA
+                  .rasterizationSamples                             = vk::SampleCountFlagBits::e1
+                , .sampleShadingEnable                              = VK_FALSE
             };
 
-            vk::PipelineColorBlendStateCreateInfo           colorBlending
+		    // Color blending
+            vk::PipelineColorBlendAttachmentState                   colorBlendAttachment
             {
-                  .logicOpEnable                            = VK_FALSE
-                , .logicOp                                  = vk::LogicOp::eCopy
-                , .attachmentCount                          = 1
-                , .pAttachments                             = &colorBlendAttachment
+                  .blendEnable                                      = VK_FALSE
+                , .colorWriteMask                                   =       vk::ColorComponentFlagBits::eR
+                                                                        |   vk::ColorComponentFlagBits::eG
+                                                                        |   vk::ColorComponentFlagBits::eB
+                                                                        |   vk::ColorComponentFlagBits::eA
             };
 
-		// Dynamic states
-            std::vector<vk::DynamicState>     dynamicStates = 
+            vk::PipelineColorBlendStateCreateInfo                   colorBlending
+            {
+                  .logicOpEnable                                    = VK_FALSE
+                , .logicOp                                          = vk::LogicOp::eCopy
+                , .attachmentCount                                  = 1
+                , .pAttachments                                     = &colorBlendAttachment
+            };
+
+		    // Dynamic states
+            std::vector<vk::DynamicState>   dynamicStates           = 
             {
                   vk::DynamicState::eViewport
                 , vk::DynamicState::eScissor
             };
             
-            vk::PipelineDynamicStateCreateInfo              dynamicState
+            vk::PipelineDynamicStateCreateInfo                      dynamicState
             {
-                  .dynamicStateCount                        = static_cast<uint32_t>(dynamicStates.size())
-                , .pDynamicStates                           = dynamicStates.data()
+                  .dynamicStateCount                                = static_cast<uint32_t>(dynamicStates.size())
+                , .pDynamicStates                                   = dynamicStates.data()
             };
 
-		// Pipeline layout
-            vk::PipelineLayoutCreateInfo                    pipelineLayoutInfo
+		    // Pipeline layout
+            vk::PipelineLayoutCreateInfo                            pipelineLayoutInfo
             {
-                  .setLayoutCount                           = 1
-                , .pSetLayouts                              = &*descriptorSetLayout
+                  .setLayoutCount                                   = 1
+                , .pSetLayouts                                      = &*descriptorSetLayout
             };
 
-            pipelineLayout                                  = device.createPipelineLayout(pipelineLayoutInfo);
+            pipelineLayout                                          = device.createPipelineLayout(pipelineLayoutInfo);
 
-		// Create the graphics pipeline
-		vk::GraphicsPipelineCreateInfo		pipelineInfo            
-                {
-                      .stageCount                           = 2
-                    , .pStages                              = shaderStages
-                    , .pVertexInputState                    = &vertexInputInfo
-                    , .pInputAssemblyState                  = &inputAssembly
-                    , .pViewportState                       = &viewportState
-                    , .pRasterizationState                  = &rasterizer
-                    , .pMultisampleState                    = &multisampling
-                    , .pDepthStencilState                   = &depthStencil
-                    , .pColorBlendState                     = &colorBlending
-                    , .pDynamicState                        = &dynamicState
-                    , .layout                               = *pipelineLayout
-                    , .renderPass                           = *renderPass
-		    , .subpass				    = 0
-                };
+            // Create the graphics pipeline
+            vk::GraphicsPipelineCreateInfo		pipelineInfo            
+            {
+                  .stageCount                                       = 2
+                , .pStages                                          = shaderStages
+                , .pVertexInputState                                = &vertexInputInfo
+                , .pInputAssemblyState                              = &inputAssembly
+                , .pViewportState                                   = &viewportState
+                , .pRasterizationState                              = &rasterizer
+                , .pMultisampleState                                = &multisampling
+                , .pDepthStencilState                               = &depthStencil
+                , .pColorBlendState                                 = &colorBlending
+                , .pDynamicState                                    = &dynamicState
+                , .layout                                           = *pipelineLayout
+                , .renderPass                                       = *renderPass
+                , .subpass				                            = 0
+            };
             
-	    // Create the pipeline
+	        // Create the pipeline
             graphicsPipeline = device.createGraphicsPipeline(nullptr, pipelineInfo);
         }
         
@@ -1425,9 +1423,9 @@ class HelloTriangleApplication
                 
                 vk::FramebufferCreateInfo framebufferInfo
                 {
-                      .renderPass		                = *renderPass
-                    , .attachmentCount	                    	= 2
-                    , .pAttachments		                = attachments
+                      .renderPass		                    = *renderPass
+                    , .attachmentCount	                    = 2
+                    , .pAttachments		                    = attachments
                     , .width		                        = swapChainExtent.width
                     , .height		                        = swapChainExtent.height
                     , .layers		                        = 1
@@ -1511,15 +1509,15 @@ class HelloTriangleApplication
 
         void createDepthResources()
         {
-                              depthFormat         = findSupportedFormat(
-									{
-										vk::Format::eD32Sfloat
-										, vk::Format::eD32SfloatS8Uint
-										, vk::Format::eD24UnormS8Uint
-									}
-									, vk::ImageTiling::eOptimal
-									, vk::FormatFeatureFlagBits::eDepthStencilAttachment
-								);
+            depthFormat                                     = findSupportedFormat(
+                {
+                    vk::Format::eD32Sfloat
+                    , vk::Format::eD32SfloatS8Uint
+                    , vk::Format::eD24UnormS8Uint
+                }
+                , vk::ImageTiling::eOptimal
+                , vk::FormatFeatureFlagBits::eDepthStencilAttachment
+            );
 
             createImage(
                   swapChainExtent.width
@@ -1555,7 +1553,7 @@ class HelloTriangleApplication
 
         void createTextureImage()
         {
-		// Load texture image
+		    // Load texture image
             int                         texWidth
                                       , texHeight
                                       , texChannels;
@@ -1563,26 +1561,26 @@ class HelloTriangleApplication
             stbi_uc                     *pixels             = nullptr;
 
 #if PLATFORM_ANDROID
-		// Load image from Android assets
-		std::optional<AssetManagerType *>	optionalAssetManager	= assetManager;
-		std::vector<char>			imageData		= readFile(TEXTURE_PATH, optionalAssetManager);
-		pixels								= stbi_load_from_memory(
-												reinterpret_cast<const stbi_uc *>(imageData.data())
-												, static_cast<int>(imageData.size())
-												, &texWidth
-												, &texHeight
-												, &texChannels
-												, STBI_rgb_alpha
-											);
+            // Load image from Android assets
+            std::optional<AssetManagerType *>	optionalAssetManager	= assetManager;
+            std::vector<char>			    imageData		= readFile(TEXTURE_PATH, optionalAssetManager);
+            pixels								            = stbi_load_from_memory(
+                                                                    reinterpret_cast<const stbi_uc *>(imageData.data())
+                                                                    , static_cast<int>(imageData.size())
+                                                                    , &texWidth
+                                                                    , &texHeight
+                                                                    , &texChannels
+                                                                    , STBI_rgb_alpha
+                                                                );
 #else
-		// Load image from filesystem
-		pixels						= stbi_load(  
-									TEXTURE_PATH.c_str()
+		    // Load image from filesystem
+		    pixels						                    = stbi_load(  
+									                                      TEXTURE_PATH.c_str()
                                                                         , &texWidth
                                                                         , &texHeight
                                                                         , &texChannels
                                                                         , STBI_rgb_alpha
-									);
+									                                );
 #endif
 
 
@@ -1591,11 +1589,11 @@ class HelloTriangleApplication
                 throw std::runtime_error("Failed to load texture image: " + TEXTURE_PATH);
             }
 	    
-	    LOG_INFO("Texture loaded successfully");
+	        LOG_INFO("Texture loaded successfully");
 
             vk::DeviceSize              imageSize           = texWidth * texHeight * 4;
 
-		// Create staging buffer
+		    // Create staging buffer
             vk::raii::Buffer            stagingBuffer       = nullptr;
             vk::raii::DeviceMemory      stagingBufferMemory = nullptr;
 
@@ -1608,9 +1606,9 @@ class HelloTriangleApplication
                 , stagingBufferMemory
             );
 
-		// Copy pixel data to staging buffer
+		    // Copy pixel data to staging buffer
             void                        *data;
-	    data				               = stagingBufferMemory.mapMemory(0, imageSize);
+	        data				                            = stagingBufferMemory.mapMemory(0, imageSize);
 
             memcpy(  
                   data
@@ -1620,12 +1618,12 @@ class HelloTriangleApplication
 
             stagingBufferMemory.unmapMemory();
 
-		// Free the pixel data
-		if (pixels != nullptr)
-		{
-			stbi_image_free(pixels);
-		}
-		// Create image
+            // Free the pixel data
+            if (pixels != nullptr)
+            {
+                stbi_image_free(pixels);
+            }
+            // Create image
             createImage(  
                   texWidth
                 , texHeight
@@ -1640,10 +1638,10 @@ class HelloTriangleApplication
                 , textureImageMemory
             );
 
-		// Transition image layout and copy buffer to image
+		    // Transition image layout and copy buffer to image
             transitionImageLayout(  
                   textureImage
-		, vk::Format::eR8G8B8A8Srgb
+		        , vk::Format::eR8G8B8A8Srgb
                 , vk::ImageLayout::eUndefined
                 , vk::ImageLayout::eTransferDstOptimal
             );
@@ -1738,26 +1736,26 @@ class HelloTriangleApplication
             std::string                         warn, err;
 
 #if PLATFORM_ANDROID
-		// Load OBJ file from Android assets
-		std::optional<AssetManagerType *>	optionalAssetManager	= assetManager;
-		std::vector<char>			objData			= readFile(MODEL_PATH, optionalAssetManager);
-		std::string				objString(objData.begin(), objData.end());
-		std::istringstream			objStream(objString);
-		
-		if (!tinyobj::LoadObj(
-				&attrib
-				, &shapes
-				, &materials
-				, &warn
-				, &err
-				, &objStream
-				)
-			)
-		{
-			throw std::runtime_error("Failed to load model: " + MODEL_PATH + " - " + warn + err);
-		}
+            // Load OBJ file from Android assets
+            std::optional<AssetManagerType *>	optionalAssetManager	= assetManager;
+            std::vector<char>			        objData	                = readFile(MODEL_PATH, optionalAssetManager);
+            std::string				            objString(objData.begin(), objData.end());
+            std::istringstream			        objStream(objString);
+            
+            if (!tinyobj::LoadObj(
+                    &attrib
+                    , &shapes
+                    , &materials
+                    , &warn
+                    , &err
+                    , &objStream
+                    )
+                )
+            {
+                throw std::runtime_error("Failed to load model: " + MODEL_PATH + " - " + warn + err);
+            }
 #else
-		// Load OBJ file from filesystem
+		    // Load OBJ file from filesystem
             if (!tinyobj::LoadObj(
                            &attrib
                          , &shapes
@@ -1771,7 +1769,6 @@ class HelloTriangleApplication
                 throw std::runtime_error("Failed to load model: " + MODEL_PATH + " - " + warn + err);
             }
 #endif
-
             std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
             for (const auto &shape : shapes)
@@ -1805,7 +1802,7 @@ class HelloTriangleApplication
                 }
             }
 	    
-	    LOG_INFO("Model loaded successfully");
+	        LOG_INFO("Model loaded successfully");
         }
         
 
@@ -1837,7 +1834,7 @@ class HelloTriangleApplication
             );
 
             void *data;
-	    data                                      		= stagingBufferMemory.mapMemory(0, bufferSize);
+	        data                                      		= stagingBufferMemory.mapMemory(0, bufferSize);
 
             memcpy(
                   data
@@ -1891,8 +1888,8 @@ class HelloTriangleApplication
                 , stagingBufferMemory
             );
 
-            void                *data;
-	    data			                       = stagingBufferMemory.mapMemory(0, bufferSize);
+            void                    *data;
+	        data			                                = stagingBufferMemory.mapMemory(0, bufferSize);
 
             memcpy(
                   data
@@ -1934,14 +1931,14 @@ class HelloTriangleApplication
         {
             vk::DeviceSize              bufferSize          = sizeof(UniformBufferObject);
 
-		uniformBuffers.clear();
-		uniformBuffersMemory.clear();
+            uniformBuffers.clear();
+            uniformBuffersMemory.clear();
 	    
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-		uniformBuffers.push_back(nullptr);
-		uniformBuffersMemory.push_back(nullptr);
-	    }
+                uniformBuffers.push_back(nullptr);
+                uniformBuffersMemory.push_back(nullptr);
+            }
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
@@ -1970,19 +1967,19 @@ class HelloTriangleApplication
 
         void createDescriptorPool()
         {
-            std::array <vk::DescriptorPoolSize, 2> poolSizes		=
-	    {
-		vk::DescriptorPoolSize
-		{
-			.type						= vk::DescriptorType::eUniformBuffer
-			, .descriptorCount				= static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
-		}
-		, vk::DescriptorPoolSize
-		{
-			.type						= vk::DescriptorType::eCombinedImageSampler
-			, .descriptorCount				= static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
-		}
-	    };
+            std::array <vk::DescriptorPoolSize, 2> poolSizes =
+            {
+                vk::DescriptorPoolSize
+                {
+                      .type						            = vk::DescriptorType::eUniformBuffer
+                    , .descriptorCount				        = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
+                }
+                , vk::DescriptorPoolSize
+                {
+                      .type						            = vk::DescriptorType::eCombinedImageSampler
+                    , .descriptorCount				        = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
+                }
+            };
 
             vk::DescriptorPoolCreateInfo    poolInfo
             {
@@ -2021,14 +2018,14 @@ class HelloTriangleApplication
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-                vk::DescriptorBufferInfo            bufferInfo
+                vk::DescriptorBufferInfo        bufferInfo
                 {
                       .buffer                               = *uniformBuffers[i]
                     , .offset                               = 0
                     , .range                                = sizeof(UniformBufferObject)
                 };
 
-                vk::DescriptorImageInfo             imageInfo
+                vk::DescriptorImageInfo         imageInfo
                 {
                       .sampler                              = *textureSampler
                     , .imageView                            = *textureImageView
@@ -2036,26 +2033,26 @@ class HelloTriangleApplication
                 };
 
                 std::array<vk::WriteDescriptorSet, 2> descriptorWrites	=
-		{
-			vk::WriteDescriptorSet
-			{
-				  .dstSet                  = *descriptorSets[i]
-				, .dstBinding              = 0
-				, .dstArrayElement         = 0
-				, .descriptorCount         = 1
-				, .descriptorType          = vk::DescriptorType::eUniformBuffer
-				, .pBufferInfo             = &bufferInfo
-			}
-			, vk::WriteDescriptorSet
-			{
-				  .dstSet                  = *descriptorSets[i]
-				, .dstBinding              = 1
-				, .dstArrayElement         = 0
-				, .descriptorCount         = 1
-				, .descriptorType          = vk::DescriptorType::eCombinedImageSampler
-				, .pImageInfo              = &imageInfo
-			}
-		};
+                {
+                    vk::WriteDescriptorSet
+                    {
+                          .dstSet                           = *descriptorSets[i]
+                        , .dstBinding                       = 0
+                        , .dstArrayElement                  = 0
+                        , .descriptorCount                  = 1
+                        , .descriptorType                   = vk::DescriptorType::eUniformBuffer
+                        , .pBufferInfo                      = &bufferInfo
+                    }
+                    , vk::WriteDescriptorSet
+                    {
+                          .dstSet                           = *descriptorSets[i]
+                        , .dstBinding                       = 1
+                        , .dstArrayElement                  = 0
+                        , .descriptorCount                  = 1
+                        , .descriptorType                   = vk::DescriptorType::eCombinedImageSampler
+                        , .pImageInfo                       = &imageInfo
+                    }
+                };
 
                 device.updateDescriptorSets(  descriptorWrites
                                             , nullptr);
@@ -2167,54 +2164,54 @@ class HelloTriangleApplication
 //******************************************************************************************
 
         void recordCommandBuffer(
-		vk::raii::CommandBuffer &commandBuffer
-		, uint32_t imageIndex
-	)
+            vk::raii::CommandBuffer &commandBuffer
+            , uint32_t imageIndex
+        )
         {
-		vk::CommandBufferBeginInfo	beginInfo{};
+		    vk::CommandBufferBeginInfo	beginInfo{};
             commandBuffer.begin(beginInfo);
 
             vk::ClearValue clearValues[]
-	    {
-		vk::ClearValue
-		{
-			vk::ClearColorValue(  
-				  0.0f
-				, 0.0f
-				, 0.0f
-				, 1.0f
-			)
-		}
-		, vk::ClearValue 
-		{
-			vk::ClearDepthStencilValue(1.0f, 0)
-		}
-	    };
-
-                vk::RenderPassBeginInfo		renderPassInfo
+            {
+                vk::ClearValue
                 {
-                      .renderPass			                = *renderPass
-                    , .framebuffer			                = *swapChainFramebuffers[imageIndex]
-                    , .renderArea			                = 
-                        {
-                              .offset					= {0,0}
-                            , .extent					= swapChainExtent
-                        }
-                    , .clearValueCount		                = 2
-                    , .pClearValues			                = clearValues
-                };
-                
-                commandBuffer.beginRenderPass(
-                      renderPassInfo
-                    , vk::SubpassContents::eInline
-                );
+                    vk::ClearColorValue(  
+                          0.0f
+                        , 0.0f
+                        , 0.0f
+                        , 1.0f
+                    )
+                }
+                , vk::ClearValue 
+                {
+                    vk::ClearDepthStencilValue(1.0f, 0)
+                }
+            };
+
+            vk::RenderPassBeginInfo		renderPassInfo
+            {
+                  .renderPass			                    = *renderPass
+                , .framebuffer			                    = *swapChainFramebuffers[imageIndex]
+                , .renderArea			                    = 
+                    {
+                          .offset					        = {0,0}
+                        , .extent					        = swapChainExtent
+                    }
+                , .clearValueCount		                    = 2
+                , .pClearValues			                    = clearValues
+            };
+            
+            commandBuffer.beginRenderPass(
+                  renderPassInfo
+                , vk::SubpassContents::eInline
+            );
 
             commandBuffer.bindPipeline(  
                   vk::PipelineBindPoint::eGraphics
                 , *graphicsPipeline
             );
 
-            vk::Viewport 		viewport
+            vk::Viewport 		        viewport
             {
                   .x			                            = 0.0f
                 , .y			                            = 0.0f
@@ -2261,8 +2258,8 @@ class HelloTriangleApplication
                 , 0
                 , 0
             );
-                
-	    commandBuffer.endRenderPass();
+
+	        commandBuffer.endRenderPass();
 	    
             commandBuffer.end();
         }
@@ -2282,10 +2279,10 @@ class HelloTriangleApplication
         void drawFrame()
         {
             static_cast<void>(device.waitForFences(
-					{*inFlightFences[frameIndex]}
-					, VK_TRUE
-					, UINT64_MAX)
-				);
+                  {*inFlightFences[frameIndex]}
+                , VK_TRUE
+                , UINT64_MAX)
+			);
 
             auto [
                   result
@@ -2316,7 +2313,7 @@ class HelloTriangleApplication
                 throw std::runtime_error("Failed to acquire swap chain image!");
             }
 
-		// Update uniform buffer with current transformation
+		    // Update uniform buffer with current transformation
             updateUniformBuffer(frameIndex);
 
             // Only reset the fence if we are submitting work                    
@@ -2324,9 +2321,9 @@ class HelloTriangleApplication
 
             commandBuffers[frameIndex].reset();
             recordCommandBuffer(
-		commandBuffers[frameIndex]
-		, imageIndex
-	    );
+                  commandBuffers[frameIndex]
+                , imageIndex
+            );
 
             vk::PipelineStageFlags  waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
 
@@ -2392,40 +2389,40 @@ class HelloTriangleApplication
         void recreateSwapChain()
         {
 #if !PLATFORM_ANDROID
-		// On desktop, wait until the framebuffer has a non-zero size (e.g., when window is minimized)
+		    // On desktop, wait until the framebuffer has a non-zero size (e.g., when window is minimized)
             int   width         = 0
                 , height        = 0;
             
-	    if (window)
-	    {
-		glfwGetFramebufferSize(
-				  window
-				, &width
-				, &height
-			);
+            if (window)
+            {
+                glfwGetFramebufferSize(
+                      window
+                    , &width
+                    , &height
+                );
 
-	            while (width == 0 || height == 0)
-		    {
-			glfwGetFramebufferSize(
-					  window
-                                       , &width
-                                       , &height
-				);
-			glfwWaitEvents();
-		    }
-	    }
+                while (width == 0 || height == 0)
+                {
+                    glfwGetFramebufferSize(
+                          window
+                        , &width
+                        , &height
+                    );
+                    glfwWaitEvents();
+                }
+            }
 #endif
-		// Wait for device to finishe operations
+		    // Wait for device to finishe operations
             device.waitIdle();
 
-		// Clean up old swap chain
+		    // Clean up old swap chain
             cleanupSwapChain();
 	
-		// Create new swap chain and dependent resources
+		    // Create new swap chain and dependent resources
             createSwapChain();
             createImageViews();
-	    createDepthResources();
-                createFramebuffers();
+	        createDepthResources();
+            createFramebuffers();
             
             // Recreate per-swapchain-image present semaphores for presenting
             renderFinishedSemaphores.reserve(swapChainImages.size());
@@ -2437,49 +2434,60 @@ class HelloTriangleApplication
             }
         }
         
-	// Get required extensions
-	std::vector<const char *> getRequiredInstanceExtensions()
-	{
-#if PLATFORM_ANDROID
-		// Android requires these extensions
-		std::vector<const char *>  extensions		= 
-		{
-			VK_KHR_SURFACE_EXTENSION_NAME
-			, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
-		};
-#else
-		// Get the required extensions from GLFW
-		uint32_t			glfwExtensionCount		= 0;
-		auto				glfwExtensions			= glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-		std::vector<const char *> 	extensions(
-							glfwExtensions
-							, glfwExtensions + glfwExtensionCount
-						);
-#endif
+
+//******************************************************************************************
+// 
+//  Name:           getRequiredInstanceExtensions
+//  Arguments:      N/A
+//  Returns:        std::vector<const char *>
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
         
-		// Check if the debug utils extension is available
-		std::vector<vk::ExtensionProperties>	props			= context.enumerateInstanceExtensionProperties();
-		bool					debugUtilsAvailable	= std::ranges::any_of(
-												props
-												, [](vk::ExtensionProperties const &ep
-												)
-												{
-													return strcmp(
-															ep.extensionName
-															, vk::EXTDebugUtilsExtensionName
-															) == 0;
-												});
-		// Always include the debug utils extension if available
-		if (debugUtilsAvailable)
-		{
-			extensions.push_back(vk::EXTDebugUtilsExtensionName);
-#if PLATFORM_DESKTOP
-		}
-		else
-		{
-			LOG_INFO("VK_EXT_debug_utils extension not available.  Validation layers may not work.");
+	    // Get required extensions
+        std::vector<const char *> getRequiredInstanceExtensions()
+        {
+#if PLATFORM_ANDROID
+            // Android requires these extensions
+            std::vector<const char *>  extensions		    = 
+            {
+                  VK_KHR_SURFACE_EXTENSION_NAME
+                , VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
+            };
+#else
+            // Get the required extensions from GLFW
+            uint32_t			glfwExtensionCount		    = 0;
+            auto				glfwExtensions			    = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+            std::vector<const char *> 	extensions(
+                                              glfwExtensions
+                                            , glfwExtensions + glfwExtensionCount
+                                        );
 #endif
-		}
+            // Check if the debug utils extension is available
+            std::vector<vk::ExtensionProperties>	props	= context.enumerateInstanceExtensionProperties();
+            bool				debugUtilsAvailable	        = std::ranges::any_of(
+                                                                            props
+                                                                            , [](vk::ExtensionProperties const &ep
+                                                                            )
+                                                                            {
+                                                                                return strcmp(
+                                                                                        ep.extensionName
+                                                                                        , vk::EXTDebugUtilsExtensionName
+                                                                                        ) == 0;
+                                                                            });
+            // Always include the debug utils extension if available
+            if (debugUtilsAvailable)
+            {
+                extensions.push_back(vk::EXTDebugUtilsExtensionName);
+#if PLATFORM_DESKTOP
+            }
+            else
+            {
+                LOG_INFO("VK_EXT_debug_utils extension not available.  Validation layers may not work.");
+#endif
+		    }
 		
 		return extensions;
 	}
@@ -2522,29 +2530,42 @@ class HelloTriangleApplication
         vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats)
         {
             assert(!availableFormats.empty());
-            const auto formatIt = std::ranges::find_if(  
-							availableFormats
-                                                       , [](const auto &format) 
-                                                       {
-                                                            return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
-                                                       }
-						       );
+            const auto formatIt                             = std::ranges::find_if(  
+                                                                              av<ailableFormats
+                                                                            , [](const auto &format) 
+                                                                            {
+                                                                                    return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
+                                                                            }
+                                                                            );
             return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
         }
+        
 
-	// Choose swap present mode
+//******************************************************************************************
+// 
+//  Name:           chooseSwapPresentMode
+//  Arguments:      N/A
+//  Returns:        static vk::SurfaceFormatKHR
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	    // Choose swap present mode
         static vk::PresentModeKHR chooseSwapPresentMode(std::vector<vk::PresentModeKHR> const &availablePresentModes)
         {
             assert(std::ranges::any_of(
-					  availablePresentModes
+					                     availablePresentModes
                                        , [](auto presentMode)
                                     {
                                         return presentMode == vk::PresentModeKHR::eFifo;
                                     }
 				)
 			);
+
             return std::ranges::any_of(
-					  availablePresentModes
+					                     availablePresentModes
                                        , [](const vk::PresentModeKHR value)
                                     {
                                         return vk::PresentModeKHR::eMailbox == value;
@@ -2573,37 +2594,38 @@ class HelloTriangleApplication
             {
                 return capabilities.currentExtent;
             }
-	    else
-	    {
+            else
+            {
 #if PLATFORM_ANDROID
-		// Get the window size from Android
-		int32_t		width			= ANativeWindow_getWidth(androidApp->window);
-		int32_t		height			= ANativeWindow_getHeight(androidApp->window);
+                // Get the window size from Android
+                int32_t		            width			    = ANativeWindow_getWidth(androidApp->window);
+                int32_t		            height			    = ANativeWindow_getHeight(androidApp->window);
 #else
-		// Get the window size from GLFW
-            int width, height;
-            glfwGetFramebufferSize(
-				  window
-                                   , &width
-                                   , &height
-				);
+		        // Get the window size from GLFW
+                int width, height;
+
+                glfwGetFramebufferSize(
+                      window
+                    , &width
+                    , &height
+                );
 #endif
 
-		vk::Extent2D		actualExtent		= 
-		{
-			static_cast<uint32_t>(width)
-			, static_cast<uint32_t>(height)
-		};
+                vk::Extent2D		    actualExtent		= 
+                {
+                      static_cast<uint32_t>(width)
+                    , static_cast<uint32_t>(height)
+                };
 
-                  actualExtent.width	= std::clamp(  actualExtent.width
-                                       , capabilities.minImageExtent.width
-                                       , capabilities.maxImageExtent.width);
-                  actualExtent.height	= std::clamp(  actualExtent.height
-                                       , capabilities.minImageExtent.height
-                                       , capabilities.maxImageExtent.height);
+                actualExtent.width	                        = std::clamp(  actualExtent.width
+                                                                         , capabilities.minImageExtent.width
+                                                                         , capabilities.maxImageExtent.width);
+                actualExtent.height	                        = std::clamp(  actualExtent.height
+                                                                         , capabilities.minImageExtent.height
+                                                                         , capabilities.maxImageExtent.height);
 				       
-		return actualExtent;
-		}
+		        return actualExtent;
+		    }
         }
 
 
@@ -2686,31 +2708,31 @@ class HelloTriangleApplication
 //******************************************************************************************
 
         void copyBuffer(  
-              vk::raii::Buffer        &srcBuffer
-            , vk::raii::Buffer        &dstBuffer
-            , vk::DeviceSize    size
+              vk::raii::Buffer              &srcBuffer
+            , vk::raii::Buffer              &dstBuffer
+            , vk::DeviceSize                size
         )
         {
-            vk::CommandBufferAllocateInfo     allocInfo
-	    {
-		.commandPool					= *commandPool
-		, .level					= vk::CommandBufferLevel::ePrimary
-		, .commandBufferCount				= 1
-	    };
-	    
-	    vk::raii::CommandBuffer		commandBuffer	= std::move(device.allocateCommandBuffers(allocInfo)[0]);
-	    
-	    vk::CommandBufferBeginInfo		beginInfo
-	    {
-		.flags						= vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-	    };
-	    
-	    commandBuffer.begin(beginInfo);
-	    
-            vk::BufferCopy		        copyRegion
+            vk::CommandBufferAllocateInfo   allocInfo
             {
-		.srcOffset					= 0
-		, .dstOffset					= 0
+                  .commandPool					            = *commandPool
+                , .level					                = vk::CommandBufferLevel::ePrimary
+                , .commandBufferCount				        = 1
+            };
+            
+            vk::raii::CommandBuffer		    commandBuffer	= std::move(device.allocateCommandBuffers(allocInfo)[0]);
+            
+            vk::CommandBufferBeginInfo		beginInfo
+            {
+                .flags						                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+            };
+            
+            commandBuffer.begin(beginInfo);
+	    
+            vk::BufferCopy		            copyRegion
+            {
+                  .srcOffset					            = 0
+                , .dstOffset					            = 0
                 , .size	                                    = size
             };
 	
@@ -2720,17 +2742,17 @@ class HelloTriangleApplication
                 , copyRegion
             );
 
-		commandBuffer.end();
-		
-		vk::SubmitInfo 		submitInfo
-		{
-			.commandBufferCount		= 1
-			, .pCommandBuffers		= &*commandBuffer
-		};
-		
-		queue.submit(submitInfo, nullptr);
-		queue.waitIdle();
-	}
+            commandBuffer.end();
+            
+            vk::SubmitInfo 		            submitInfo
+            {
+                  .commandBufferCount		                = 1
+                , .pCommandBuffers		                    = &*commandBuffer
+            };
+            
+            queue.submit(submitInfo, nullptr);
+            queue.waitIdle();
+        }
         
 
 //******************************************************************************************
@@ -2780,7 +2802,7 @@ class HelloTriangleApplication
             , uint32_t mipLevels
         ) const
         {
-            vk::ImageViewCreateInfo     viewInfo
+            vk::ImageViewCreateInfo         viewInfo
             {
                   .image                                    = *image
                 , .viewType                                 = vk::ImageViewType::e2D
@@ -2872,26 +2894,26 @@ class HelloTriangleApplication
 
         void transitionImageLayout(
               vk::raii::Image         		&image
-	    , vk::Format			format
+	        , vk::Format			        format
             , vk::ImageLayout               oldLayout
             , vk::ImageLayout               newLayout
         )
         {
-		vk::CommandBufferAllocateInfo		allocInfo
-		{
-			.commandPool					= *commandPool
-			, .level					= vk::CommandBufferLevel::ePrimary
-			, .commandBufferCount				= 1
-		};
+            vk::CommandBufferAllocateInfo   allocInfo
+            {
+                  .commandPool					            = *commandPool
+                , .level					                = vk::CommandBufferLevel::ePrimary
+                , .commandBufferCount				        = 1
+            };
 		
             vk::raii::CommandBuffer         commandBuffer   = std::move(device.allocateCommandBuffers(allocInfo)[0]);
 
-		vk::CommandBufferBeginInfo	beginInfo
-		{
-			.flags					= vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-		};
-		
-		commandBuffer.begin(beginInfo);
+            vk::CommandBufferBeginInfo	    beginInfo
+            {
+                .flags					                    = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+            };
+            
+            commandBuffer.begin(beginInfo);
 
             vk::ImageMemoryBarrier          barrier         
             {
@@ -2902,10 +2924,10 @@ class HelloTriangleApplication
                 , .image                                    = image
                 , .subresourceRange                         = 
                 {
-			.aspectMask				= vk::ImageAspectFlagBits::eColor
-		    , .baseMipLevel		                    = 0
+                      .aspectMask				            = vk::ImageAspectFlagBits::eColor
+                    , .baseMipLevel		                    = 0
                     , .levelCount		                    = 1
-                    , .baseArrayLayer		                    = 0
+                    , .baseArrayLayer		                = 0
                     , .layerCount		                    = 1
                 }
             };
@@ -2947,14 +2969,14 @@ class HelloTriangleApplication
 
             commandBuffer.end();
 	    
-	    vk::SubmitInfo			submitInfo
-	    {
-		.commandBufferCount				= 1
-		, .pCommandBuffers				= &*commandBuffer
-	    };
-	    
-	    queue.submit(submitInfo, nullptr);
-	    queue.waitIdle();
+            vk::SubmitInfo			        submitInfo
+            {
+                  .commandBufferCount				        = 1
+                , .pCommandBuffers				            = &*commandBuffer
+            };
+            
+            queue.submit(submitInfo, nullptr);
+            queue.waitIdle();
         }
         
 
@@ -2970,27 +2992,27 @@ class HelloTriangleApplication
 //******************************************************************************************
 
         void copyBufferToImage(
-		vk::raii::Buffer    	&buffer
-            , vk::raii::Image     	&image
-            , uint32_t      		width
-            , uint32_t      		height
+		      vk::raii::Buffer    	        &buffer
+            , vk::raii::Image     	        &image
+            , uint32_t      		        width
+            , uint32_t      		        height
         )
         {
-		vk::CommandBufferAllocateInfo		allocInfo
-		{
-			.commandPool					= *commandPool
-			, .level					= vk::CommandBufferLevel::ePrimary
-			, .commandBufferCount				= 1
-		};
+            vk::CommandBufferAllocateInfo	allocInfo
+            {
+                  .commandPool					            = *commandPool
+                , .level					                = vk::CommandBufferLevel::ePrimary
+                , .commandBufferCount				        = 1
+            };
 
             vk::raii::CommandBuffer         commandBuffer   = std::move(device.allocateCommandBuffers(allocInfo)[0]);
-	    
-	    vk::CommandBufferBeginInfo		beginInfo
-	    {
-		.flags						= vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-	    };
-	    
-	    commandBuffer.begin(beginInfo);
+            
+            vk::CommandBufferBeginInfo		beginInfo
+            {
+                .flags						                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+            };
+            
+            commandBuffer.begin(beginInfo);
 	    
             vk::BufferImageCopy             region
             {
@@ -3017,14 +3039,14 @@ class HelloTriangleApplication
 
             commandBuffer.end();
 	    
-	    vk::SubmitInfo submitInfo
-	    {
-		.commandBufferCount				= 1
-		, .pCommandBuffers				= &*commandBuffer
-	    };
-	    
-	    queue.submit(submitInfo, nullptr);
-	    queue.waitIdle();
+            vk::SubmitInfo submitInfo
+            {
+                  .commandBufferCount				        = 1
+                , .pCommandBuffers				            = &*commandBuffer
+            };
+            
+            queue.submit(submitInfo, nullptr);
+            queue.waitIdle();
         }
 
 
@@ -3069,26 +3091,26 @@ class HelloTriangleApplication
 
             ubo.proj[1][1] *= -1;
 
-		void *data;
-		data						= uniformBuffersMemory[currentImage].mapMemory(0, sizeof(ubo));
+		    void *data;
+		    data						                    = uniformBuffersMemory[currentImage].mapMemory(0, sizeof(ubo));
 
             memcpy(
-			data
-                   , &ubo
-                   , sizeof(ubo)
-                );
+			      data
+                , &ubo
+                , sizeof(ubo)
+            );
 		
-		uniformBuffersMemory[currentImage].unmapMemory();
+		    uniformBuffersMemory[currentImage].unmapMemory();
         }
 	
 #if PLATFORM_ANDROID
 	// Handle app commands
 	static void handleAppCommand(
-				android_app *app
-				, int32_t cmd
+          android_app *app
+        , int32_t cmd
 	)
 	{
-		auto 		*vulkanApp			= static_cast<HelloTriangleApplication *>(app->userData);
+		auto 		                    *vulkanApp			= static_cast<HelloTriangleApplication *>(app->userData);
 		switch (cmd)
 		{
 			case APP_CMD_INIT_WINDOW:
@@ -3112,7 +3134,7 @@ class HelloTriangleApplication
 // 
 //  Name:           handleInputEvent
 //  Arguments:      android_app *app
-//		    AInputEvent *event
+//		            AInputEvent *event
 //  Returns:        int32_t
 //  Calls:          
 //  Called by:      
@@ -3121,7 +3143,7 @@ class HelloTriangleApplication
 //******************************************************************************************
 	
 	static int32_t handleInputEvent(
-		android_app *app
+		  android_app *app
 		, AInputEvent *event
 	)
 	{
