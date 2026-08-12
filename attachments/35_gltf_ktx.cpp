@@ -19,8 +19,8 @@ import vulkan_hpp;
 #endif
 //clang-format off
 #if defined(__ANDROID__)
-#	include <vulkan/vulkan_core.h>
 #	include <vulkan/vulkan_android.h>
+#	include <vulkan/vulkan_core.h>
 #endif
 //clang-format on
 //#include <vulkan/vulkan_profiles.hpp>
@@ -36,16 +36,16 @@ import vulkan_hpp;
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
+// Includ KTX library for texture loading
+#include <ktx.h>
 
 // Platform-specific includes
 #if PLATFORM_ANDROID
 // Android-specific includes
-#	include <android/log.h>
-#	include <game-activity/native_app_glue/android_native_app_glue.h>
 #	include <android/asset_manager.h>
 #	include <android/asset_manager_jni.h>
+#	include <android/log.h>
+#	include <game-activity/native_app_glue/android_native_app_glue.h>
 
 // Declare and implement app_dummy function from native_app_glue
 extern "C" void app_dummy()
