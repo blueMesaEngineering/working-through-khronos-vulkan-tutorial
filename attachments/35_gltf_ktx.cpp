@@ -95,12 +95,13 @@ typedef void AssetManagerType;
 
 constexpr uint32_t                  WIDTH                   = 800;
 constexpr uint32_t                  HEIGHT                  = 600;
-const std::string                   MODEL_PATH              = "models/viking_room.obj";
-const std::string                   TEXTURE_PATH            = "textures/viking_room.png";
+// Update paths to use glTF model and KTX2 texture
+const std::string                   MODEL_PATH              = "models/viking_room.glb";
+const std::string                   TEXTURE_PATH            = "textures/viking_room.ktx2";
 constexpr int                       MAX_FRAMES_IN_FLIGHT    = 2;
 
+// Define VpProfileProperties structure for Android only
 #if PLATFORM_ANDROID
-// Define VpProfileProperties structure if not already defined
 #	ifndef VP_PROFILE_PROPERTIES_DEFINED
 #		define VP_PROFILE_PROPERTIES_DEFINED
 struct VpProfileProperties
@@ -109,7 +110,7 @@ struct VpProfileProperties
 	uint32_t	specVersion;
 };
 #	endif
-
+#endif
 // Define Vulkan Profile constants
 #	ifndef VP_KHR_ROADMAP_2022_NAME
 #		define VP_KHR_ROADMAP_2022_NAME "VP_KHR_roadmap_2022"
@@ -118,15 +119,29 @@ struct VpProfileProperties
 #	ifndef VP_KHR_ROADMAP_2022_SPEC_VERSION
 #		define VP_KHR_ROADMAP_2022_SPEC_VERSION 1
 #	endif
-#endif
-
-// Application info structure to store profile support flags
 
 struct AppInfo
 {
 	bool			profileSupported		= false;
 	VpProfileProperties	profile;
 };
+
+#if PLATFORM_ANDROID
+void android_main(android_app *app);
+
+struct AndroidAppState
+{
+	ANativeWindow 		*nativeWindow			= nullptr;
+	bool			initialized			= false;
+	android_app		*app				= nullptr;
+};
+#endif
+
+#ifdef NDEBUG
+constexpr bool			enableValidationLayers		= false;
+#else
+constexpr bool			enableValidationLayers		= true;
+#endif
 
 struct Vertex
 {
