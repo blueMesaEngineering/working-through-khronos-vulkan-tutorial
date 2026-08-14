@@ -17,31 +17,28 @@
 #else
 import vulkan_hpp;
 #endif
-//clang-format off
 #if defined(__ANDROID__)
 #	include <vulkan/vulkan_android.h>
 #	include <vulkan/vulkan_core.h>
 #endif
-//clang-format on
 //#include <vulkan/vulkan_profiles.hpp>
 #include "/home/nik/vulkanSDK/1.4.350.1/x86_64/include/vulkan/vulkan_profiles.hpp"
 
-// Platform detection
 #if defined(__ANDROID__)
 #	define PLATFORM_ANDROID 1
 #else
 #	define PLATFORM_DESKTOP 1
 #endif
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+// Include tinygltf instead of tinyobjloader
+// TINYGLTF_IMPLEMENTATION is already defined in the command line
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <tiny_gltf.h>
 
-// Includ KTX library for texture loading
+// Include KTX library for texture loading
 #include <ktx.h>
 
-// Platform-specific includes
 #if PLATFORM_ANDROID
-// Android-specific includes
 #	include <android/asset_manager.h>
 #	include <android/asset_manager_jni.h>
 #	include <android/log.h>
@@ -57,12 +54,9 @@ extern "C" void app_dummy()
 // Define AAssetManager type for Android
 typedef AAssetManager AssetManagerType;
 
-// Define logging macros for Android
 #	define LOGI(...) ((void) __android_log_print(ANDROID_LOG_INFO, "VulkanTutorial", __VA_ARGS__))
 #	define LOGW(...) ((void) __android_log_print(ANDROID_LOG_WARN, "VulkanTutorial", __VA_ARGS__))
 #	define LOGE(...) ((void) __android_log_print(ANDROID_LOG_ERROR, "VulkanTutorial", __VA_ARGS__))
-#	define LOG_INFO(msg) LOGI("%s", msg)
-#	define LOG_ERROR(msg) LOGE("%s", msg)
 #else
 // Define AAssetManager type for non-Android platforms
 typedef void AssetManagerType;
@@ -81,8 +75,6 @@ typedef void AssetManagerType;
 #	define LOGE(...)		\
 		fprintf(stderr, __VA_ARGS__); \
 		fprintf(stderr, "\n")
-#	define LOG_INFO(msg)  std::cout << msg << std::endl
-#	define LOG_ERROR(msg) std::cerr << msg << std::endl
 #endif
 
 #define GLM_FORCE_RADIANS
