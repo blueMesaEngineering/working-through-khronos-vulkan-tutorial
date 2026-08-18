@@ -216,74 +216,6 @@ struct UniformBufferObject
     alignas(16) glm::mat4 proj;
 };
 
-// Cross-platform file reading function
-        
-
-//******************************************************************************************
-// 
-//  Name:           readFile
-//  Arguments:      filename
-//  Returns:        static std::vector<char>
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-std::vector<char> readFile(const std::string &filename, std::optional<AssetManagerType *> assetManager = std::nullopt)
-{
-#if PLATFORM_ANDROID
-	// On Android, use asset manager if provided
-	if (assetManager.has_value() && *assetManager != nullptr)
-	{
-		// Open the asset
-		AAsset *asset 			                            = AAssetManager_open(
-                                                                      *assetManager
-                                                                    , filename.c_str()
-                                                                    , AASSET_MODE_BUFFER
-                                                                    );
-		if (!asset)
-		{
-			LOGE("Failed to open asset: %s", filename.c_str());
-			throw std::runtime_error("Failed to open file: " + filename);
-		}
-
-		// Get the file size
-		off_t			fileSize		= AAsset_getLength(asset);
-		std::vector<char>	buffer(fileSize);
-		
-		// Read the file data
-		AAsset_read(  
-              asset
-			, buffer.data()
-			, fileSize
-        );
-				
-		// Close the asset
-		AAsset_close(asset);
-		
-		return buffer;
-	}
-#endif
-
-	    // Desktop version or Android fallback to filesystem
-            std::ifstream file(  filename
-                               , std::ios::ate | std::ios::binary);
-
-            if (!file.is_open())
-            {
-                throw std::runtime_error("Failed to open file:" + filename);
-            }
-	    
-	    size_t	fileSize		= static_cast<size_t>(file.tellg());
-            std::vector<char> buffer(fileSize);
-	    
-            file.seekg(0);
-            file.read(buffer.data(), fileSize);
-            file.close();
-	    
-            return buffer;
-        }
 	
 // Cross-platform application class
 class HelloTriangleApplication
@@ -3191,6 +3123,70 @@ void android_main(android_app *app)
 	}
 }
 #else
+
+// Cross-platform file reading function
+        
+
+//******************************************************************************************
+// 
+//  Name:           readFile
+//  Arguments:      filename
+//  Returns:        static std::vector<char>
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+std::vector<char> readFile(const std::string &filename)
+{
+#if PLATFORM_ANDROID
+	// Android asset loading
+	if (androidAppState.app == nullptr)
+	{
+		LOGE("Android app not initialized");
+		throw std::runtime_error("Android app not initialized");
+	}
+	AAsset *asset 			                            = AAssetManager_open(
+                                                                      androidAppState.app->activity->assetManager
+                                                                    , filename.c_str()
+                                                                    , AASSET_MODE_BUFFER
+                                                                    );
+	if (!asset)
+	{
+		throw std::runtime_error("Failed to open file: " + filename);
+	}
+
+		size_t			size		= AAsset_getLength(asset);
+		std::vector<char>	buffer(size);
+		
+		AAsset_read(  
+			asset
+			, buffer.data()
+			, size
+		);
+		AAsset_close(asset);
+		
+#else
+	    // Desktop version or Android fallback to filesystem
+            std::ifstream file(  filename
+                               , std::ios::ate | std::ios::binary);
+
+            if (!file.is_open())
+            {
+                throw std::runtime_error("Failed to open file:" + filename);
+            }
+	    
+	    size_t	fileSize		= static_cast<size_t>(file.tellg());
+            std::vector<char> buffer(fileSize);
+	    
+            file.seekg(0);
+            file.read(buffer.data(), fileSize);
+            file.close();
+#endif
+            return buffer;
+        }
+
 // Desktop main entry point
 
 //******************************************************************************************
