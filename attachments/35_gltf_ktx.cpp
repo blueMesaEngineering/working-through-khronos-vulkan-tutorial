@@ -822,8 +822,14 @@ class VulkanApplication
                                                                 });
 
             // Check if the physicalDevice supports the required features
+	    
+	    auto 			features			= physicalDevice
+		.template getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
+	    bool 			supportsRequiredFeatures	= features.template get<vk::PhysicalDevicevulkan13Features>().dynamicRendering &&
+									  features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
+
             // Return true if the physicalDevice meets all the criteria
-            return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions;
+            return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions && supportsRequiredFeatures;
         }
         
 
@@ -854,10 +860,17 @@ class VulkanApplication
             }
             physicalDevice                                          = *devIter;
 	    
-            // Print device information
-            vk::PhysicalDeviceProperties 	deviceProperties	    = physicalDevice.getProperties();
-
-	LOGI("Selected GPU: %s", deviceProperties.deviceName.data());
+	    // Check for Vulkan profile support
+	    VpProfileProperties			profileProperties;
+#if PLATFORM_ANDROID
+	    strcpy(profileProperties.name
+			, VP_KHR_ROADMAP_2022_NAME);
+#else	    
+	    strcpy(profileProperties.profileName
+			, VP_KHR_ROADMAP_2022_NAME);
+#endif
+	    profileProperties.specVersion			= VP_KHR_ROADMAP_2022_SPEC_VERSION;
+	
         }
         
 
