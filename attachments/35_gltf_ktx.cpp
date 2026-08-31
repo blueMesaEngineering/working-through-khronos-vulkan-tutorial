@@ -103,6 +103,7 @@ struct VpProfileProperties
 };
 #	endif
 #endif
+
 // Define Vulkan Profile constants
 #	ifndef VP_KHR_ROADMAP_2022_NAME
 #		define VP_KHR_ROADMAP_2022_NAME "VP_KHR_roadmap_2022"
@@ -216,31 +217,50 @@ struct UniformBufferObject
     alignas(16) glm::mat4 proj;
 };
 
-	
+
 // Cross-platform application class
-class HelloTriangleApplication
+class VulkanApplication
 {
     public:
-#if PLATFORM_DESKTOP
-	// Desktop constructor
-	HelloTriangleApplication()
+#if PLATFORM_ANDROID
+	void run(android_app *app)
 	{
-		// No Android-specific initialization needed
-	}
-#else
-	// Android constructor
-	HelloTriangleApplication(android_app *app) :
-		androidApp(app)
-	{
-		androidApp->userData	                            = this;
-		androidApp->onAppCmd	                            = handleAppCommand;
+		androidAppState.nativeWindow		= app->window;
+		androidAppState.app			= app;
+		app->userData				= &androidAppState;
+		app->onAppCmd				= handleAppCommand;
 		// Note: onInputEvent is no longer a member of android_app in the current NDK version
 		// Input events are now handled differently
 		
-		// Get the asset manager
-		assetManager		= androidApp->activity->assetManager;
+		int					events;
+		android_poll_source 			*source;
+		
+		while (app->destroyRequested == 0)
+		{
+			while (ALooper_pollOnce(
+				androidAppState.initialized ? 0 : -1
+				, nullptr
+				, &events
+				, (void **) &source) >= 0)
+			{
+				if (source != nullptr)
+				{
+					source->process(app, source);
+				}
+			}
+
+			if (androidAppState.initialized && androidAppState.nativeWindow != nullptr)
+			{
+				drawFrame();
+			}
+		}
+
+		if (androidAppState.initialized)
+		{
+			device.waitIdle();
+		}
 	}
-#endif
+#else
 
 
 //******************************************************************************************
@@ -259,38 +279,144 @@ class HelloTriangleApplication
     
         void run()
         {
-#if PLATFORM_DESKTOP
-		    // Desktop main loop
             initWindow();
             initVulkan();
             mainLoop();
             cleanup();
-#else
-            // Android main loop is handled by Android
-            while (!initialized)
-            {
-                // Wait for app to initialize
-                int 			            events;
-                android_poll_source	        *source;
-                if (ALooper_pollOnce(
-                        0
-                        , nullptr
-                        , &events
-                        , (void **) &source
-                        ) >= 0)
-                {
-                    if (source != nullptr)
-                    {
-                        source->process(androidApp, source);
-                    }
-                }
             }
 #endif
-        }
 
+    private:
+
+#if PLATFORM_ANDROID
+	AndroidAppState 			androidAppState;
+	
+	static void handleAppCommand(
+		android_app *app
+		, int32_t cmd
+	)
+	{
+		auto *appState			= static_cast<AndroidAppState *>(app->userData);
+		
+		switch (cmd)
+		{
+			case APP_CMD_INIT_WINDOW:
+				if (app->window != nullptr)
+				{
+					appState->nativeWindow		= app->window;
+					// We can't cast AndroidAppState to VulkanApplication directly
+					// Instead, we need to access the VulkanApplication instance through a global variable
+					// or another mechanism. For now, we'll just set the initialized flag.
+					appState->initialized		= true;
+				}
+				break;
+			case APP_CMD_TERM_WINDOW:
+				appState->nativeWindow 			= nullptr;
+				break;
+			default:
+				break;
+				}
+		}
+		
+		static int32_t handleInputEvent(
+			android_app *app
+			, AInputEvent *event
+		)
+		{
+			if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION)
+			{
+				float x					= AMotionEvent_getX(event, 0);
+				float y					= AMotionEvent_getY(event, 0);
+				
+				LOGI("Touch at: %f, %f", x, y);
+				
+				return 1;
+			}
+		return 0;
+	}
+#else
+
+        // Initial set up and swapchain
+        GLFWwindow                              *window                     = nullptr;
+
+#endif
+	
+        // Application info
+        AppInfo 				appInfo;
+	
+	// Vulkan objects
+        vk::raii::Context                       context;
+        vk::raii::Instance                      instance                    = nullptr;
+        vk::raii::DebugUtilsMessengerEXT        debugMessenger              = nullptr;
+        vk::raii::SurfaceKHR                    surface                     = nullptr;
+        vk::raii::PhysicalDevice                physicalDevice              = nullptr;
+        vk::raii::Device                        device                      = nullptr;
+        uint32_t                                queueIndex                  = ~0;
+        vk::raii::Queue                         queue                       = nullptr;
+        vk::raii::SwapchainKHR                  swapChain                   = nullptr;
+        std::vector<vk::Image>                  swapChainImages;
+        vk::SurfaceFormatKHR                    swapChainSurfaceFormat;
+        vk::Extent2D                            swapChainExtent;
+        std::vector<vk::raii::ImageView>        swapChainImageViews;
+
+        // Traditional render pass (fallback for non-dynamic rendering)
+        vk::raii::RenderPass                    renderPass                  = nullptr;
+
+        // Descriptor sets and pipeline
+        vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
+        vk::raii::PipelineLayout                pipelineLayout              = nullptr;
+        vk::raii::Pipeline                      graphicsPipeline            = nullptr;
+	
+        // Depth management
+        vk::raii::Image                         depthImage                  = nullptr;
+        vk::raii::DeviceMemory                  depthImageMemory            = nullptr;
+        vk::raii::ImageView                     depthImageView              = nullptr;
+	
+        // Mipmapping
+        vk::raii::Image                         textureImage                = nullptr;
+        vk::raii::DeviceMemory                  textureImageMemory          = nullptr;
+        vk::raii::ImageView                     textureImageView            = nullptr;
+        vk::raii::Sampler                       textureSampler              = nullptr;
+	vk::Format				textureImageFormat	    = vk::Format::eUndefined;
+	
+	// Model data
+        std::vector<Vertex>                     vertices;
+        std::vector<uint32_t>                   indices;
+	
+	// Command pool - maybe???
+        vk::raii::Buffer                        vertexBuffer                = nullptr;
+        vk::raii::DeviceMemory                  vertexBufferMemory          = nullptr;
+        vk::raii::Buffer                        indexBuffer                 = nullptr;
+        vk::raii::DeviceMemory                  indexBufferMemory           = nullptr;
+
+        // Uniform buffers
+        std::vector<vk::raii::Buffer>           uniformBuffers;
+        std::vector<vk::raii::DeviceMemory>     uniformBuffersMemory;
+	std::vector<void *>			uniformBuffersMapped;
+
+        // Descriptor pool
+        vk::raii::DescriptorPool                descriptorPool              = nullptr;
+        std::vector<vk::raii::DescriptorSet>    descriptorSets;
+	
+        // Command pool
+        vk::raii::CommandPool                   commandPool                 = nullptr;
+        std::vector<vk::raii::CommandBuffer>    commandBuffers;
+	
+        // Synchronization objects - Semaphores and fences
+	std::vector<vk::raii::Semaphore>	    presentCompleteSemaphores;
+        std::vector<vk::raii::Semaphore>        renderFinishedSemaphores;
+        std::vector<vk::raii::Fence>            inFlightFences;
+        uint32_t                                frameIndex                  = 0;
+	
+        bool 					                framebufferResized          = false;
+
+        std::vector<const char *>         requiredDeviceExtensions    =
+	{
+		vk::KHRSwapchainExtensionName,
+		vk::KHRCreateRenderpass2ExtensionName
+	};
+        
 #if PLATFORM_DESKTOP
-	// Initialize window (Desktop only)
-
 
 //******************************************************************************************
 // 
@@ -318,44 +444,17 @@ class HelloTriangleApplication
 
             window = glfwCreateWindow(  WIDTH
                                       , HEIGHT
-                                      , "Vulkan Cross-Platform"
+                                      , "Vulkan"
                                       , nullptr
                                       , nullptr);
 
             glfwSetWindowUserPointer(  window
                                      , this);
+
             glfwSetFramebufferSizeCallback(  window
                                            , framebufferResizeCallback);
-					   
-	    LOG_INFO("Desktop window created");
         }
-        
 
-//******************************************************************************************
-// 
-//  Name:           mainLoop
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          glfwWindowShouldClose
-//                  glfwPollEvents
-//  Called by:      run
-//  Description:    Checks events acted on the window (for now...).  Checks to see if 
-//                  window is closed.
-// 
-//******************************************************************************************
-
-	// Desktop main loop
-        void mainLoop()
-        {
-            while (!glfwWindowShouldClose(window))
-            {
-                glfwPollEvents();
-                drawFrame();
-            }
-
-            device.waitIdle();      // Wait for device to finish operations before destroying resources
-        }
-        
 
 //******************************************************************************************
 // 
@@ -368,145 +467,18 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-	// Desktop framebuffer resize callback
         static void framebufferResizeCallback(
               GLFWwindow *window
-            , int
-            , int
+            , int width
+            , int height
         )
         {
-            auto app                                        = reinterpret_cast<HelloTriangleApplication *>(glfwGetWindowUserPointer(window));
+            auto app                                        = static_cast<VulkanApplication *>(glfwGetWindowUserPointer(window));
             app->framebufferResized                         = true;
         }
 #endif
 
-
-//******************************************************************************************
-// 
-//  Name:           cleanup
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          glfwDestroyWindow
-//                  glfwTerminate
-//  Called by:      run
-//  Description:    
-// 
-//******************************************************************************************
-
-        void cleanup()
-        {
-		if (initialized)
-		{
-			// Wait for device to finish operations
-			if (*device)
-			{
-				device.waitIdle();
-			}
-			
-			// Cleanup resources
-			cleanupSwapChain();
-			
-			initialized		= false;
-		}
-        }
-	
-    private:
-
-#if PLATFORM_ANDROID
-        // Android-specific members
-        android_app		                        *androidApp		            = nullptr;
-        AssetManagerType	                    *assetManager               = nullptr;
-#else
-	    // Desktop-specific members
-
-        // Initial set up and swapchain
-        GLFWwindow                              *window                     = nullptr;
-
-#endif
-	    bool 					                initialized			        = false;
-        bool 					                framebufferResized          = false;
-	
-	    // Vulkan objects
-        vk::raii::Context                       context;
-        vk::raii::Instance                      instance                    = nullptr;
-        vk::raii::DebugUtilsMessengerEXT        debugMessenger              = nullptr;
-        vk::raii::SurfaceKHR                    surface                     = nullptr;
-        vk::raii::PhysicalDevice                physicalDevice              = nullptr;
-        vk::raii::Device                        device                      = nullptr;
-        uint32_t                                queueIndex                  = ~0;
-        vk::raii::Queue                         queue                       = nullptr;
-        vk::raii::SwapchainKHR                  swapChain                   = nullptr;
-        std::vector<vk::Image>                  swapChainImages;
-        vk::SurfaceFormatKHR                    swapChainSurfaceFormat;
-        vk::Extent2D                            swapChainExtent;
-        std::vector<vk::raii::ImageView>        swapChainImageViews;
-
-        // Traditional render pass (fallback for non-dynamic rendering)
-        vk::raii::RenderPass                    renderPass                  = nullptr;
-
-        // Descriptor sets and pipeline
-        vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
-        vk::raii::PipelineLayout                pipelineLayout              = nullptr;
-        vk::raii::Pipeline                      graphicsPipeline            = nullptr;
-	
-        // Depth management
-	vk::Format				depthFormat;
-        vk::raii::Image                         depthImage                  = nullptr;
-        vk::raii::DeviceMemory                  depthImageMemory            = nullptr;
-        vk::raii::ImageView                     depthImageView              = nullptr;
-        std::vector<vk::raii::Framebuffer>      swapChainFramebuffers;
-
-        // Command pool
-        vk::raii::CommandPool                   commandPool                 = nullptr;
-        std::vector<vk::raii::CommandBuffer>    commandBuffers;
-        vk::raii::Buffer                        vertexBuffer                = nullptr;
-        vk::raii::DeviceMemory                  vertexBufferMemory          = nullptr;
-        vk::raii::Buffer                        indexBuffer                 = nullptr;
-        vk::raii::DeviceMemory                  indexBufferMemory           = nullptr;
-
-        // Mipmapping
-        vk::raii::Image                         textureImage                = nullptr;
-        vk::raii::DeviceMemory                  textureImageMemory          = nullptr;
-        vk::raii::ImageView                     textureImageView            = nullptr;
-        vk::raii::Sampler                       textureSampler              = nullptr;
-	
-        // Uniform buffers
-        std::vector<vk::raii::Buffer>           uniformBuffers;
-        std::vector<vk::raii::DeviceMemory>     uniformBuffersMemory;
-
-        // Descriptor pool
-        vk::raii::DescriptorPool                descriptorPool              = nullptr;
-        std::vector<vk::raii::DescriptorSet>    descriptorSets;
-
-        // Synchronization objects - Semaphores and fences
-	    std::vector<vk::raii::Semaphore>	    imageAvailableSemaphores;
-        std::vector<vk::raii::Semaphore>        renderFinishedSemaphores;
-        std::vector<vk::raii::Fence>            inFlightFences;
-        uint32_t                                frameIndex                  = 0;
-	
-        // Application info
-        AppInfo 				appInfo;
-	
-	// Model data
-        std::vector<Vertex>                     vertices;
-        std::vector<uint32_t>                   indices;
-
-	// Swap chain support details
-        struct SwapChainSupportDetails
-        {
-            vk::SurfaceCapabilitiesKHR          capabilities;
-            std::vector<vk::SurfaceFormatKHR>   formats;
-            std::vector<vk::PresentModeKHR>     presentModes;
-        };
-
-	// Required device extensions
-        const std::vector<const char *>         requiredDeviceExtensions    =
-        {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
-        };
-
-	// Initialize Vulkan
-
+	public:
 
 //******************************************************************************************
 // 
@@ -546,18 +518,16 @@ class HelloTriangleApplication
         void initVulkan()
         {
             createInstance();
+	    setupDebugMessenger();
             createSurface();
             pickPhysicalDevice();
-	        checkFeatureSupport();
             createLogicalDevice();
             createSwapChain();
             createImageViews();
-	        createDepthResources();
-	        createRenderPass();
             createDescriptorSetLayout();
             createGraphicsPipeline();
-	        createFramebuffers();
             createCommandPool();
+	    createDepthResources();
             createTextureImage();
             createTextureImageView();
             createTextureSampler();
@@ -569,10 +539,87 @@ class HelloTriangleApplication
             createDescriptorSets();
             createCommandBuffers();
             createSyncObjects();
-	    
-	        initialized		= true;
+        }
+
+	private:
+#if PLATFORM_DESKTOP
+	
+//******************************************************************************************
+// 
+//  Name:           mainLoop
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          glfwWindowShouldClose
+//                  glfwPollEvents
+//  Called by:      run
+//  Description:    Checks events acted on the window (for now...).  Checks to see if 
+//                  window is closed.
+// 
+//******************************************************************************************
+
+        void mainLoop()
+        {
+            while (!glfwWindowShouldClose(window))
+            {
+                glfwPollEvents();
+                drawFrame();
+            }
+
+            device.waitIdle();      // Wait for device to finish operations before destroying resources
+        }
+#endif
+
+
+//******************************************************************************************
+// 
+//  Name:           cleanupSwapChain
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+        
+	// Clean up swap chain
+        void cleanupSwapChain()
+        {
+            swapChainFramebuffers.clear();
+            swapChainImageViews.clear();
+            
+            // Semaphores tied to swapchain image indices need to be rebuilt on resize
+            renderFinishedSemaphores.clear();
+            
+            for (auto &imageView : swapChainImageViews)
+            {
+                imageView			                        = nullptr;
+            }
+            
+            swapChainImageViews.clear();
+            swapChain = nullptr;
         }
         
+#if PLATFORM_DESKTOP
+
+//******************************************************************************************
+// 
+//  Name:           cleanup
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          glfwDestroyWindow
+//                  glfwTerminate
+//  Called by:      run
+//  Description:    
+// 
+//******************************************************************************************
+
+        void cleanup() const
+        {
+		glfwDestroyWindow(window);
+		glfwTerminate();
+        }
+#endif
+	
 
 //******************************************************************************************
 // 
@@ -587,13 +634,11 @@ class HelloTriangleApplication
 // 
 //******************************************************************************************
 
-	// Create Vulkan instance
         void createInstance()
         {
-	        // Application info
             vk::ApplicationInfo appInfo
             {
-                  .pApplicationName                         = "Vulkan Android"
+                  .pApplicationName                         = "Hello Triangle"
                 , .applicationVersion                       = VK_MAKE_VERSION(1, 0, 0)
                 , .pEngineName                              = "No Engine"
                 , .engineVersion                            = VK_MAKE_VERSION(1, 0, 0)
@@ -2058,36 +2103,6 @@ class HelloTriangleApplication
             {
                 renderFinishedSemaphores.push_back(device.createSemaphore(semaphoreInfo));
             }
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           cleanupSwapChain
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-        
-	// Clean up swap chain
-        void cleanupSwapChain()
-        {
-            swapChainFramebuffers.clear();
-            swapChainImageViews.clear();
-            
-            // Semaphores tied to swapchain image indices need to be rebuilt on resize
-            renderFinishedSemaphores.clear();
-            
-            for (auto &imageView : swapChainImageViews)
-            {
-                imageView			                        = nullptr;
-            }
-            
-            swapChainImageViews.clear();
-            swapChain = nullptr;
         }
         
 
