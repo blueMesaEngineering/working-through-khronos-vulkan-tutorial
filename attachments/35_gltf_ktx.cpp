@@ -486,30 +486,29 @@ class VulkanApplication
 //  Arguments:      N/A
 //  Returns:        void
 //  Calls:          
-//            createInstance();
-//            createSurface();
-//            pickPhysicalDevice();
-//            checkFeatureSupport();
-//            createLogicalDevice();
-//            createSwapChain();
-//            createImageViews();
-//            createDepthResources();
-//            createRenderPass();
-//            createDescriptorSetLayout();
-//            createGraphicsPipeline();
-//            createFramebuffers();
-//            createCommandPool();
-//            createTextureImage();
-//            createTextureImageView();
-//            createTextureSampler();
-//            loadModel();
-//            createVertexBuffer();
-//            createIndexBuffer();
-//            createUniformBuffers();
-//            createDescriptorPool();
-//            createDescriptorSets();
-//            createCommandBuffers();
-//            createSyncObjects();
+//                  createInstance();
+//                  setupDebugMessenger();
+//                  createSurface();
+//                  pickPhysicalDevice();
+//                  createLogicalDevice();
+//                  createSwapChain();
+//                  createImageViews();
+//                  createDescriptorSetLayout();
+//                  createGraphicsPipeline();
+//                  createCommandPool();
+//                  createDepthResources();
+//                  createTextureImage();
+//                  createTextureImageView();
+//                  createTextureSampler();
+//                  loadModel();
+//                  createVertexBuffer();
+//                  createIndexBuffer();
+//                  createUniformBuffers();
+//                  createDescriptorPool();
+//                  createDescriptorSets();
+//                  createCommandBuffers();
+//                  createSyncObjects();
+//
 //  Called by:      initVulkan
 //  Description:    Control structure for initializing the Vulkan framework.
 // 
@@ -518,7 +517,7 @@ class VulkanApplication
         void initVulkan()
         {
             createInstance();
-	    setupDebugMessenger();
+	        setupDebugMessenger();
             createSurface();
             pickPhysicalDevice();
             createLogicalDevice();
@@ -527,7 +526,7 @@ class VulkanApplication
             createDescriptorSetLayout();
             createGraphicsPipeline();
             createCommandPool();
-	    createDepthResources();
+	        createDepthResources();
             createTextureImage();
             createTextureImageView();
             createTextureSampler();
