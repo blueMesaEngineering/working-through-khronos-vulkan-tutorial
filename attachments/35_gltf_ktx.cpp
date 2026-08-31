@@ -480,6 +480,7 @@ class VulkanApplication
 
 	public:
 
+
 //******************************************************************************************
 // 
 //  Name:           initVulkan
@@ -517,7 +518,7 @@ class VulkanApplication
         void initVulkan()
         {
             createInstance();
-	        setupDebugMessenger();
+	    setupDebugMessenger();
             createSurface();
             pickPhysicalDevice();
             createLogicalDevice();
@@ -526,7 +527,7 @@ class VulkanApplication
             createDescriptorSetLayout();
             createGraphicsPipeline();
             createCommandPool();
-	        createDepthResources();
+	    createDepthResources();
             createTextureImage();
             createTextureImageView();
             createTextureSampler();
@@ -580,20 +581,8 @@ class VulkanApplication
 // 
 //******************************************************************************************
         
-	// Clean up swap chain
         void cleanupSwapChain()
         {
-            swapChainFramebuffers.clear();
-            swapChainImageViews.clear();
-            
-            // Semaphores tied to swapchain image indices need to be rebuilt on resize
-            renderFinishedSemaphores.clear();
-            
-            for (auto &imageView : swapChainImageViews)
-            {
-                imageView			                        = nullptr;
-            }
-            
             swapChainImageViews.clear();
             swapChain = nullptr;
         }
@@ -622,6 +611,53 @@ class VulkanApplication
 
 //******************************************************************************************
 // 
+//  Name:           recreateSwapChain
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void recreateSwapChain()
+        {
+#if PLATFORM_DESKTOP
+	    // On desktop, wait until the framebuffer has a non-zero size (e.g., when window is minimized)
+            int   width         = 0
+                , height        = 0;
+            
+                glfwGetFramebufferSize(
+                      window
+                    , &width
+                    , &height
+                );
+
+                while (width == 0 || height == 0)
+                {
+                    glfwGetFramebufferSize(
+                          window
+                        , &width
+                        , &height
+                    );
+                    glfwWaitEvents();
+                }
+#endif
+	    // Wait for device to finishe operations
+            device.waitIdle();
+
+	    // Clean up old swap chain
+            cleanupSwapChain();
+	
+	    // Create new swap chain and dependent resources
+            createSwapChain();
+            createImageViews();
+	    createDepthResources();
+        }
+        
+
+//******************************************************************************************
+// 
 //  Name:           createInstance
 //  Arguments:      N/A
 //  Returns:        void
@@ -635,7 +671,7 @@ class VulkanApplication
 
         void createInstance()
         {
-            vk::ApplicationInfo appInfo
+            constexpr vk::ApplicationInfo appInfo
             {
                   .pApplicationName                         = "Hello Triangle"
                 , .applicationVersion                       = VK_MAKE_VERSION(1, 0, 0)
@@ -645,7 +681,7 @@ class VulkanApplication
             };
 	    
             // Get required extensions.
-            std::vector<const char *>       extensions      = getRequiredInstanceExtensions();
+            auto       extensions      = getRequiredInstanceExtensions();
             
 	        // Create Instance
             vk::InstanceCreateInfo createInfo
@@ -658,7 +694,28 @@ class VulkanApplication
             instance = vk::raii::Instance(context, createInfo);
 	    LOGI("Vulkan instance created");
         }
-        
+
+
+//******************************************************************************************
+// 
+//  Name:           setupDebugMessenger
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	void setupDebugMessenger()
+	{
+		// Debug messenger setup is disabled for now to avoid compatibility issues
+		// This is a simplified approach to get the code compiling
+		if (!enableValidationLayers)
+			return;
+
+		LOGI("Debug messenger setup skipped for compatibility");
+	}
 
 //******************************************************************************************
 // 
@@ -675,48 +732,46 @@ class VulkanApplication
 
         void createSurface()
         {
+#if PLATFORM_DESKTOP
             VkSurfaceKHR _surface;
 
-#if PLATFORM_ANDROID
-            // Create Android surface
-            VkAndroidSurfaceCreateInfoKHR 		createInfo	=
-            {
-                  .sType						            = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR
-                , .pNext					                = nullptr
-                , .flags					                = 0
-                , .window					                = androidApp->window
-            };
-            
-            VkResult				            result		= vkCreateAndroidSurfaceKHR(
-                                                                                *instace
-                                                                                , &createInfo
-                                                                                , nullptr
-                                                                                , &_surface
-                                                                                );
-
-            if (result != VK_SUCCESS)
-            {
-                throw std::runtime_error("Failed to create Android surface");
-            }
-            
-            LOG_INFO("Android surface created");
-#else
             // Create desktop surface using GLFW
+
             if (glfwCreateWindowSurface(  
                 *instance
                 , window
                 , nullptr
                 , &_surface
-                ) != 0
+                ) != VK_SUCCESS
             )
             {
                 throw std::runtime_error("Failed to create window surface!");
             }
-            
-            LOG_INFO("Desktop surface created.");
-#endif
-
             surface = vk::raii::SurfaceKHR(instance, _surface);
+#else
+
+            VkSurfaceKHR _surface;
+
+            // Create Android surface
+            VkAndroidSurfaceCreateInfoKHR 		createInfo
+            {
+                  .sType						            = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR
+                , .window					                = androidAppState.nativeWindow
+            };
+
+            if (vkCreateAndroidSurfaceKHR(
+                                                                                *instance
+                                                                                , &createInfo
+                                                                                , nullptr
+                                                                                , &_surface
+                                                                                ) != VK_SUCCESS
+									)
+            {
+                throw std::runtime_error("Failed to create Android surface");
+            }
+            
+            surface = vk::raii::SurfaceKHR(instance, _surface);
+#endif
         }
         
 
@@ -754,7 +809,7 @@ class VulkanApplication
             // Check if all required physicalDevice extensions are available
             auto            availableDeviceExtensions       = physicalDevice.enumerateDeviceExtensionProperties();
             bool            supportsAllRequiredExtensions   = 
-                                            std::ranges::all_of(  requiredDeviceExtensions
+                                            std::ranges::all_of(  requiredDeviceExtension
                                                                 , [&availableDeviceExtensions](auto const &requiredDeviceExtension)
                                                                 {
                                                                     return std::ranges::any_of(  availableDeviceExtensions
@@ -2324,67 +2379,6 @@ class VulkanApplication
             }
 
             frameIndex                                      = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           recreateSwapChain
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-	// Recreate swap chain
-        void recreateSwapChain()
-        {
-#if !PLATFORM_ANDROID
-		    // On desktop, wait until the framebuffer has a non-zero size (e.g., when window is minimized)
-            int   width         = 0
-                , height        = 0;
-            
-            if (window)
-            {
-                glfwGetFramebufferSize(
-                      window
-                    , &width
-                    , &height
-                );
-
-                while (width == 0 || height == 0)
-                {
-                    glfwGetFramebufferSize(
-                          window
-                        , &width
-                        , &height
-                    );
-                    glfwWaitEvents();
-                }
-            }
-#endif
-		    // Wait for device to finishe operations
-            device.waitIdle();
-
-		    // Clean up old swap chain
-            cleanupSwapChain();
-	
-		    // Create new swap chain and dependent resources
-            createSwapChain();
-            createImageViews();
-	        createDepthResources();
-            createFramebuffers();
-            
-            // Recreate per-swapchain-image present semaphores for presenting
-            renderFinishedSemaphores.reserve(swapChainImages.size());
-            vk::SemaphoreCreateInfo semaphoreInfo{};
-
-            for (size_t i = 0; i < swapChainImages.size(); ++i)
-            {
-                renderFinishedSemaphores.push_back(device.createSemaphore(semaphoreInfo));
-            }
         }
         
 
