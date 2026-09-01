@@ -871,66 +871,50 @@ class VulkanApplication
 #endif
 	    profileProperties.specVersion			= VP_KHR_ROADMAP_2022_SPEC_VERSION;
 	
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           checkFeatureSupport()
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-		void checkFeatureSupport()
-		{
-			// Define the KHR roadmap 2022 profile - more widely supported than 2024
-			appInfo.profile = 
-			{
-				  VP_KHR_ROADMAP_2022_NAME
-				, VP_KHR_ROADMAP_2022_SPEC_VERSION
-			};
+	    VkBool32	            supported	            = VK_FALSE;
+	    bool		    result			= false;
 			
-			// Check if the profile is supported
-			VkBool32	            supported	            = VK_FALSE;
-			
-#ifdef PLATFORM_ANDROID
+#if PLATFORM_ANDROID
 			// Create a vp::ProfileDesc from our VpProfileProperties
 			vp::ProfileDesc			profileDesc		        = 
 			{
-				  appInfo.profile.name
-				, appInfo.profile.specVersion
+				  profileProperties.name
+				, profileProperties.specVersion
 			};
 			
-			// Use vp::GetProfileSupport instead of vpGetPhysicalDeviceProfileSupport
-			bool 				    result			        = vp::GetProfileSupport(
+			// Use vp::GetProfileSupport for Android
+			result			        = vp::GetProfileSupport(
 				  *physicalDevice			// Pass the physical device directly
 				, &profileDesc			    // Pass the profile description
 				, &supported			    // Output parameter for support status
 			);
 #else
+			// Use vpGetPhysicalDeviceProfileSupport for Desktop
 			VkResult	            vk_result		  	    = vpGetPhysicalDeviceProfileSupport(
                                                                                               *instance
                                                                                             , *physicalDevice
-                                                                                            , &appInfo.profile
+                                                                                            , &profileProperties
                                                                                             , &supported
                                                                                             );
 											    
-			bool 				    result				    = vk_result == VK_SUCCESS;
+			result				    = vk_result == static_cast<int>(vk::Result::eSuccess);
 #endif
-			
+			const char *name 	= nullptr;
+#ifdef PLATFORM_ANDROID
+			name			= profileProperties.name;
+#else
+			name			= profileProperties.profileName;
+#endif
+
 			if (result && supported == VK_TRUE)
 			{
 				appInfo.profileSupported	                = true;
-				LOGI("Using KHR roadmap 2022 profile");
+				appInfo.profile					= profileProperties;
+				LOGI("Device supports Vulkan profile: %s", name);
 			}
 			else
 			{
-				appInfo.profileSupported 	                = false;
-				LOGI("Falling back to traditional rendering (profile not supported)");
+				LOGI("Device does not support Vulkan profile: %s", name);
 			}
 		}
 
