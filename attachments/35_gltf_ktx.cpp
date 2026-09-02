@@ -961,6 +961,18 @@ class VulkanApplication
                 throw std::runtime_error("Could not find a queue for graphics and present -> terminating...");
             }
 
+		// Query for Vulkan 1.3 features
+		auto							features 		= physicalDevice.getFeatures2();
+		vk::PhysicalDeviceVulkan13Features			vulkan13Features;
+		vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT	extendedDynamicStateFeatures;
+		vulkan13Features.dynamicRendering						= vk::True;
+		vulkan13Features.synchronization2						= vk::True;
+		extendedDynamicStateFeatures.extendedDynamicState 				= vk::True;
+		vulkan13Features.pNext								= &extendedDynamicStateFeatures;
+		features.pNext									= &vulkan13Features;
+		
+		// Create a Device
+		
             float                       queuePriority       = 0.5f;
             vk::DeviceQueueCreateInfo   deviceQueueCreateInfo 
             {
@@ -968,59 +980,21 @@ class VulkanApplication
                 , .queueCount                               = 1
                 , .pQueuePriorities                         = &queuePriority
             };
-
-            if (appInfo.profileSupported)
-            {
-                // Create device with Best Practices profile
-                
-                // Enable required features
-                vk::PhysicalDeviceFeatures2	                features2;
-                vk::PhysicalDeviceFeatures	                deviceFeatures{};
-                deviceFeatures.samplerAnisotropy		    = VK_TRUE;
-                deviceFeatures.sampleRateShading		    = VK_TRUE;
-                features2.features				            = deviceFeatures;
-                
-                // Enable dynamic rendering
-                vk::PhysicalDeviceDynamicRenderingFeatures	dynamicRenderingFeatures;
-                dynamicRenderingFeatures.dynamicRendering	= VK_TRUE;
-                features2.pNext					            = &dynamicRenderingFeatures;
-                
                 // Create a vk::DeviceCreateInfo with the required features
-                vk::DeviceCreateInfo                        vkDeviceCreateInfo 
+                vk::DeviceCreateInfo                        deviceCreateInfo 
                 {
-                      .pNext                                = &features2
+                      .pNext                                = &features
                     , .queueCreateInfoCount                 = 1
                     , .pQueueCreateInfos                    = &deviceQueueCreateInfo
                     , .enabledExtensionCount                = static_cast<uint32_t>(requiredDeviceExtensions.size())
                     , .ppEnabledExtensionNames              = requiredDeviceExtensions.data()
                 };
                 
-                // Create the device with the vk::DeviceCreateInfo
+                // Create the device with the appropriate features
                 device 			                            = vk::raii::Device(  physicalDevice
-                                                                               , vkDeviceCreateInfo);
-            }
-            else
-            {
-                // Fallback to manual device creation
-                vk::PhysicalDeviceFeatures	                deviceFeatures{};
-                deviceFeatures.samplerAnisotropy	        = VK_TRUE;
-                deviceFeatures.sampleRateShading	        = VK_TRUE;
-                
-                vk::DeviceCreateInfo		                createInfo 
-                {
-                      .queueCreateInfoCount		            = 1
-                    , .pQueueCreateInfos		            = &deviceQueueCreateInfo
-                    , .enabledExtensionCount	            = static_cast<uint32_t>(requiredDeviceExtensions.size())
-                    , .ppEnabledExtensionNames	            = requiredDeviceExtensions.data()
-                    , .pEnabledFeatures		                = &deviceFeatures
-                };
-
-                device                                      = vk::raii::Device(  physicalDevice
-                                                                               , createInfo);
-            }
-	    
-            queue                                           = device.getQueue(  queueIndex
-                                                                              , 0);
+                                                                               , deviceCreateInfo);
+									       
+		queue		= vk::raii::Queue(device, queueIndex, 0);
         }
         
 
