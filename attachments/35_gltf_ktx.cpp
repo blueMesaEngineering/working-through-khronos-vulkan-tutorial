@@ -1539,7 +1539,6 @@ class VulkanApplication
                                                                                 textureImage
                                                                               , textureImageFormat
                                                                               , vk::ImageAspectFlagBits::eColor
-                                                                              , 1
                                                                              );
         }
         
@@ -1575,7 +1574,142 @@ class VulkanApplication
 
             textureSampler                                  = device.createSampler(samplerInfo);
         }
-        
+	
+
+//******************************************************************************************
+// 
+//  Name:           createImageView
+//  Arguments:      N/A
+//  Returns:        vk::raii::ImageView
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        vk::raii::ImageView createImageView(
+              vk::raii::Image &image
+            , vk::Format format
+            , vk::ImageAspectFlags aspectFlags
+        )
+        {
+            vk::ImageViewCreateInfo         viewInfo
+            {
+                  .image                                    = *image
+                , .viewType                                 = vk::ImageViewType::e2D
+                , .format                                   = format
+                , .subresourceRange                         = 
+                {
+                      aspectFlags
+                    , 0
+                    , mipLevels
+                    , 0
+                    , 1
+                }
+            };
+
+            return vk::raii::ImageView(device, viewInfo);
+        }
+
+
+//******************************************************************************************
+// 
+//  Name:           transitionImageLayout
+//  Arguments:      N/A
+//  Returns:        
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void transitionImageLayout(
+              vk::raii::Image         		&image
+	        , vk::Format			        format
+            , vk::ImageLayout               oldLayout
+            , vk::ImageLayout               newLayout
+        )
+        {
+            vk::CommandBufferAllocateInfo   allocInfo
+            {
+                  .commandPool					            = *commandPool
+                , .level					                = vk::CommandBufferLevel::ePrimary
+                , .commandBufferCount				        = 1
+            };
+		
+            vk::raii::CommandBuffer         commandBuffer   = std::move(device.allocateCommandBuffers(allocInfo)[0]);
+
+            vk::CommandBufferBeginInfo	    beginInfo
+            {
+                .flags					                    = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+            };
+            
+            commandBuffer.begin(beginInfo);
+
+            vk::ImageMemoryBarrier          barrier         
+            {
+                  .oldLayout                                = oldLayout
+                , .newLayout                                = newLayout
+                , .srcQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
+                , .dstQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
+                , .image                                    = image
+                , .subresourceRange                         = 
+                {
+                      .aspectMask				            = vk::ImageAspectFlagBits::eColor
+                    , .baseMipLevel		                    = 0
+                    , .levelCount		                    = 1
+                    , .baseArrayLayer		                = 0
+                    , .layerCount		                    = 1
+                }
+            };
+
+            vk::PipelineStageFlags sourceStage;
+            vk::PipelineStageFlags destinationStage;
+
+            if (   oldLayout == vk::ImageLayout::eUndefined 
+                && newLayout == vk::ImageLayout::eTransferDstOptimal)
+            {
+                barrier.srcAccessMask                       = vk::AccessFlagBits::eNone;
+                barrier.dstAccessMask                       = vk::AccessFlagBits::eTransferWrite;
+
+                sourceStage                                 = vk::PipelineStageFlagBits::eTopOfPipe;
+                destinationStage                            = vk::PipelineStageFlagBits::eTransfer;
+            }
+            else if (   oldLayout == vk::ImageLayout::eTransferDstOptimal
+                     && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+            {
+                barrier.srcAccessMask                       = vk::AccessFlagBits::eTransferWrite;
+                barrier.dstAccessMask                       = vk::AccessFlagBits::eShaderRead;
+
+                sourceStage                                 = vk::PipelineStageFlagBits::eTransfer;
+                destinationStage                            = vk::PipelineStageFlagBits::eFragmentShader;
+            }
+            else
+            {
+                throw std::invalid_argument("Unsupported layout transition!");
+            }
+
+            commandBuffer.pipelineBarrier(
+                  sourceStage
+                , destinationStage
+                , vk::DependencyFlagBits::eByRegion
+                , nullptr
+                , nullptr
+                , barrier
+            );
+
+            commandBuffer.end();
+	    
+            vk::SubmitInfo			        submitInfo
+            {
+                  .commandBufferCount				        = 1
+                , .pCommandBuffers				            = &*commandBuffer
+            };
+            
+            queue.submit(submitInfo, nullptr);
+            queue.waitIdle();
+        }
+
 
 //******************************************************************************************
 // 
@@ -2555,43 +2689,6 @@ class VulkanApplication
 
 //******************************************************************************************
 // 
-//  Name:           createImageView
-//  Arguments:      N/A
-//  Returns:        vk::raii::ImageView
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        [[nodiscard]] vk::raii::ImageView createImageView(
-              const vk::raii::Image &image
-            , vk::Format format
-            , vk::ImageAspectFlags aspectFlags
-            , uint32_t mipLevels
-        ) const
-        {
-            vk::ImageViewCreateInfo         viewInfo
-            {
-                  .image                                    = *image
-                , .viewType                                 = vk::ImageViewType::e2D
-                , .format                                   = format
-                , .subresourceRange                         = 
-                {
-                      aspectFlags
-                    , 0
-                    , mipLevels
-                    , 0
-                    , 1
-                }
-            };
-
-            return vk::raii::ImageView(device, viewInfo);
-        }
-
-
-//******************************************************************************************
-// 
 //  Name:           createImage
 //  Arguments:      N/A
 //  Returns:        void
@@ -2647,105 +2744,6 @@ class VulkanApplication
 	    
             imageMemory                                     = vk::raii::DeviceMemory(device, allocInfo);
             image.bindMemory(*imageMemory, 0);
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           transitionImageLayout
-//  Arguments:      N/A
-//  Returns:        
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void transitionImageLayout(
-              vk::raii::Image         		&image
-	        , vk::Format			        format
-            , vk::ImageLayout               oldLayout
-            , vk::ImageLayout               newLayout
-        )
-        {
-            vk::CommandBufferAllocateInfo   allocInfo
-            {
-                  .commandPool					            = *commandPool
-                , .level					                = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount				        = 1
-            };
-		
-            vk::raii::CommandBuffer         commandBuffer   = std::move(device.allocateCommandBuffers(allocInfo)[0]);
-
-            vk::CommandBufferBeginInfo	    beginInfo
-            {
-                .flags					                    = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-            };
-            
-            commandBuffer.begin(beginInfo);
-
-            vk::ImageMemoryBarrier          barrier         
-            {
-                  .oldLayout                                = oldLayout
-                , .newLayout                                = newLayout
-                , .srcQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
-                , .dstQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
-                , .image                                    = image
-                , .subresourceRange                         = 
-                {
-                      .aspectMask				            = vk::ImageAspectFlagBits::eColor
-                    , .baseMipLevel		                    = 0
-                    , .levelCount		                    = 1
-                    , .baseArrayLayer		                = 0
-                    , .layerCount		                    = 1
-                }
-            };
-
-            vk::PipelineStageFlags sourceStage;
-            vk::PipelineStageFlags destinationStage;
-
-            if (   oldLayout == vk::ImageLayout::eUndefined 
-                && newLayout == vk::ImageLayout::eTransferDstOptimal)
-            {
-                barrier.srcAccessMask                       = vk::AccessFlagBits::eNone;
-                barrier.dstAccessMask                       = vk::AccessFlagBits::eTransferWrite;
-
-                sourceStage                                 = vk::PipelineStageFlagBits::eTopOfPipe;
-                destinationStage                            = vk::PipelineStageFlagBits::eTransfer;
-            }
-            else if (   oldLayout == vk::ImageLayout::eTransferDstOptimal
-                     && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
-            {
-                barrier.srcAccessMask                       = vk::AccessFlagBits::eTransferWrite;
-                barrier.dstAccessMask                       = vk::AccessFlagBits::eShaderRead;
-
-                sourceStage                                 = vk::PipelineStageFlagBits::eTransfer;
-                destinationStage                            = vk::PipelineStageFlagBits::eFragmentShader;
-            }
-            else
-            {
-                throw std::invalid_argument("Unsupported layout transition!");
-            }
-
-            commandBuffer.pipelineBarrier(
-                  sourceStage
-                , destinationStage
-                , vk::DependencyFlagBits::eByRegion
-                , nullptr
-                , nullptr
-                , barrier
-            );
-
-            commandBuffer.end();
-	    
-            vk::SubmitInfo			        submitInfo
-            {
-                  .commandBufferCount				        = 1
-                , .pCommandBuffers				            = &*commandBuffer
-            };
-            
-            queue.submit(submitInfo, nullptr);
-            queue.waitIdle();
         }
         
 
