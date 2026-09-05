@@ -359,8 +359,6 @@ class VulkanApplication
         vk::Extent2D                            swapChainExtent;
         std::vector<vk::raii::ImageView>        swapChainImageViews;
 
-        // Traditional render pass (fallback for non-dynamic rendering)
-        vk::raii::RenderPass                    renderPass                  = nullptr;
 
         // Descriptor sets and pipeline
         vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
@@ -1037,7 +1035,7 @@ class VulkanApplication
                 , .clipped                                          = true
             };
 
-            swapChain                                               = device.createSwapchainKHR(swapChainCreateInfo);
+            swapChain                                               = vk::raii::SwapchainKHR(device, swapChainCreateInfo);
 
             swapChainImages                                         = swapChain.getImages();
         }
@@ -1057,133 +1055,26 @@ class VulkanApplication
         void createImageViews()
         {
             assert(swapChainImageViews.empty());
-            swapChainImageViews.reserve(swapChainImages.size());
             
-            for (const auto &image : swapChainImages)
-            {
-                vk::ImageViewCreateInfo		createInfo
+                vk::ImageViewCreateInfo		imageViewCreateInfo
                 {
-                      .image					            = image
                     , .viewType				                = vk::ImageViewType::e2D
                     , .format				                = swapChainSurfaceFormat.format
-                    , .components				            = 
+                    , .subresourceRange			            	= 
                     {
-                          .r			 	                = vk::ComponentSwizzle::eIdentity
-                        , .g				                = vk::ComponentSwizzle::eIdentity
-                        , .b				                = vk::ComponentSwizzle::eIdentity
-                        , .a				                = vk::ComponentSwizzle::eIdentity
-                    }
-                    , .subresourceRange			            = 
-                    {
-                          .aspectMask			            = vk::ImageAspectFlagBits::eColor
-                        , .baseMipLevel			            = 0
-                        , .levelCount			            = 1
-                        , .baseArrayLayer		            = 0
-                        , .layerCount			            = 1
+                        vk::ImageAspectFlagBits::eColor
+                        , 0
+                        , 1
+                        , 0
+                        , 1
                     }
                 };
                 
-            swapChainImageViews.push_back(device.createImageView(createInfo));
-            }
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createRenderPass
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createRenderPass()
-        {
-		// This is only called if the Best Practices profile is not supported
-		// or if dynamic rendering is not available
-            vk::AttachmentDescription   colorAttachment
-            {
-                  .format                                   = swapChainSurfaceFormat.format
-                , .samples                                  = vk::SampleCountFlagBits::e1
-                , .loadOp                                   = vk::AttachmentLoadOp::eClear
-                , .storeOp                                  = vk::AttachmentStoreOp::eStore
-                , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
-                , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
-                , .initialLayout                            = vk::ImageLayout::eUndefined
-                , .finalLayout                              = vk::ImageLayout::ePresentSrcKHR
-            };
-
-            // Subpass references
-            vk::AttachmentReference     colorAttachmentRef
-            {
-                  .attachment                               = 0
-                , .layout                                   = vk::ImageLayout::eColorAttachmentOptimal
-            };
-	    
-            vk::AttachmentDescription   depthAttachment
-            {
-                  .format                                   = depthFormat
-                , .samples                                  = vk::SampleCountFlagBits::e1
-                , .loadOp                                   = vk::AttachmentLoadOp::eClear
-                , .storeOp                                  = vk::AttachmentStoreOp::eStore
-                , .stencilLoadOp                            = vk::AttachmentLoadOp::eDontCare
-                , .stencilStoreOp                           = vk::AttachmentStoreOp::eDontCare
-                , .initialLayout                            = vk::ImageLayout::eUndefined
-                , .finalLayout                              = vk::ImageLayout::eDepthStencilAttachmentOptimal
-            };
-
-            vk::AttachmentReference     depthAttachmentRef
-            {
-                  .attachment                               = 1
-                , .layout                                   = vk::ImageLayout::eDepthStencilAttachmentOptimal
-            };
-
-            // Subpass description
-            vk::SubpassDescription      subpass
-            {
-                  .pipelineBindPoint                        = vk::PipelineBindPoint::eGraphics
-                , .colorAttachmentCount                     = 1
-                , .pColorAttachments                        = &colorAttachmentRef
-                , .pDepthStencilAttachment                  = &depthAttachmentRef
-            };
-
-	// @todo: barrier for deoth
-            // Dependency to ensure proper image layout transitions
-            vk::SubpassDependency       dependency
-            {
-                  .srcSubpass                               = VK_SUBPASS_EXTERNAL
-                , .dstSubpass                               = 0
-                , .srcStageMask                             =   vk::PipelineStageFlagBits::eColorAttachmentOutput
-                                                              | vk::PipelineStageFlagBits::eEarlyFragmentTests
-							                                  | vk::PipelineStageFlagBits::eLateFragmentTests
-                , .dstStageMask                             =   vk::PipelineStageFlagBits::eColorAttachmentOutput
-                                                              | vk::PipelineStageFlagBits::eEarlyFragmentTests
-							                                  | vk::PipelineStageFlagBits::eLateFragmentTests
-                , .srcAccessMask                            =   vk::AccessFlagBits::eDepthStencilAttachmentWrite
-                , .dstAccessMask                            =   vk::AccessFlagBits::eColorAttachmentWrite
-                                                              | vk::AccessFlagBits::eDepthStencilAttachmentWrite
-            };
-
-            // Create the render pass
-            vk::AttachmentDescription   attachments[]       =
-            {
-                  colorAttachment
-                , depthAttachment
-            };
-
-            vk::RenderPassCreateInfo    renderPassInfo
-            {
-                  .attachmentCount                          = 2
-                , .pAttachments                             = attachments
-                , .subpassCount                             = 1
-                , .pSubpasses                               = &subpass
-                , .dependencyCount                          = 1
-                , .pDependencies                            = &dependency
-            };
-
-            renderPass                                      = device.createRenderPass(renderPassInfo);
+            for (auto &image : swapChainImages)
+	    {
+		imageViewCreateInfo.image		= image;
+		swapChainImageViews.emplace_back(device, imageViewCreateInfo);
+	    }
         }
         
 
@@ -1200,36 +1091,34 @@ class VulkanApplication
 
         void createDescriptorSetLayout()
         {
-            vk::DescriptorSetLayoutBinding      uboLayoutBinding
-            {
-                  .binding			                        = 0
-                , .descriptorType		                    = vk::DescriptorType::eUniformBuffer
-                , .descriptorCount		                    = 1
-                , .stageFlags			                    = vk::ShaderStageFlagBits::eVertex
-		    };
-		
-		    vk::DescriptorSetLayoutBinding	    samplerLayoutBinding
-		    {
-                  .binding			                        = 1
-                , .descriptorType		                    = vk::DescriptorType::eCombinedImageSampler
-                , .descriptorCount		                    = 1
-                , .stageFlags			                    = vk::ShaderStageFlagBits::eFragment
+	    std::array bindings			= 
+	    {
+		vk::DescriptorSetLayoutBinding
+		(
+			0
+			, vk::DescriptorType::eUniformBuffer
+			, 1
+			, vk::ShaderStageFlagBits::eVertex
+			, nullptr
+		)
+		, vk::DescriptorSetLayoutBinding
+		(
+			1
+			, vk::DescriptorType::eCombinedImageSampler
+			, 1
+			, vk::ShaderStageFlagBits::eFragment
+			, nullptr
+		)
             };
-		    
-		    std::array<vk::DescriptorSetLayoutBinding, 2> bindings =
-		    {
-                  uboLayoutBinding
-                , samplerLayoutBinding
-		    };
-
+	    
             vk::DescriptorSetLayoutCreateInfo   layoutInfo
             {
                   .bindingCount                             = static_cast<uint32_t>(bindings.size())
                 , .pBindings                                = bindings.data()
             };
 
-            descriptorSetLayout                             = device.createDescriptorSetLayout(layoutInfo);
-        }        
+            descriptorSetLayout                             = vk::raii::DescriptorSetLayout(device, layoutInfo);
+        }
 
 
 //******************************************************************************************
@@ -1245,50 +1134,27 @@ class VulkanApplication
 
         void createGraphicsPipeline()
         {
-            // Load shader code from asset files
-            LOGI("Loading shaders from assets");
-            
-            // Load shader files using cross-platform function
-#if PLATFORM_ANDROID
-		    std::optional<AssetManagerType *> optionalAssetManager  = assetManager;
-#else
-		    std::optional<void *>	        optionalAssetManager	= std::nullopt;
-#endif
-            std::vector<char>   	        vertShaderCode          = readFile("shaders/vert.spv", optionalAssetManager);
-            std::vector<char>               fragShaderCode          = readFile("shaders/frag.spv", optionalAssetManager);
-
-            LOGI("Shaders loaded successfully");
-            
-            // Create shader modules
-            vk::ShaderModuleCreateInfo		vertShaderModuleInfo
-            {
-                  .codeSize						                    = vertShaderCode.size()
-                , .pCode						                    = reinterpret_cast<const uint32_t *>(vertShaderCode.data())
-            };
-            
-            vk::raii::ShaderModule			vertShaderModule	    = device.createShaderModule(vertShaderModuleInfo);
-            
-            vk::ShaderModuleCreateInfo		fragShaderModuleInfo
-            {
-                  .codeSize						                    = fragShaderCode.size()
-                , .pCode						                    = reinterpret_cast<const uint32_t *>(fragShaderCode.data())
-            };
-
-            vk::raii::ShaderModule			fragShaderModule	    = device.createShaderModule(fragShaderModuleInfo);
+		vk::raii::ShaderModule		shaderModule		= createShaderModule(this->readFile("shaders/slang.spv"));
+		
+		vk::PipelineShaderStageCreateInfo		vertShaderStageInfo
+		{
+			.stage						= vk::ShaderStageFlagBits::eVertex
+			, .module					= *shaderModule
+			, .pName					= "vertMain"
+		};
+		
+		vk::PipelineShaderStageCreateInfo	fragShaderStageInfo
+		{
+			.stage						= vk::ShaderStageFlagBits::eFragment
+			, .module					= *shaderModule
+			, .pName					= "fragMain"
+		};
 
             // Create shader stages
             vk::PipelineShaderStageCreateInfo                       shaderStages[] = 
             {
-                {
-                      .stage                                        = vk::ShaderStageFlagBits::eVertex
-                    , .module                                       = *vertShaderModule
-                    , .pName                                        = "main"
-                }
-                , {
-                      .stage                                        = vk::ShaderStageFlagBits::eFragment
-                    , .module                                       = *fragShaderModule
-                    , .pName                                        = "main"
-                }
+		vertShaderStageInfo
+		, fragShaderStageInfo
             };
 
             // Vertex input
@@ -1307,7 +1173,7 @@ class VulkanApplication
             vk::PipelineInputAssemblyStateCreateInfo                inputAssembly
             {
                   .topology                                         = vk::PrimitiveTopology::eTriangleList
-                , .primitiveRestartEnable                           = VK_FALSE
+                , .primitiveRestartEnable                           = vk::False
             };
 
 		    // Viewport and scissor
@@ -1320,34 +1186,36 @@ class VulkanApplication
 		    // Rasterization
             vk::PipelineRasterizationStateCreateInfo                rasterizer
             {
-                  .depthClampEnable                                 = VK_FALSE
-                , .rasterizerDiscardEnable                          = VK_FALSE
+                  .depthClampEnable                                 = vk::False
+                , .rasterizerDiscardEnable                          = vk::False
                 , .polygonMode                                      = vk::PolygonMode::eFill
-                , .cullMode                                         = vk::CullModeFlagBits::eBack
-                , .frontFace                                        = vk::FrontFace::eCounterClockwise
-                , .depthBiasEnable                                  = VK_FALSE
+                , .cullMode                                         = vk::CullModeFlagBits::eBack	// Re-enabled culling for better performance
+                , .frontFace                                        = vk::FrontFace::eClockwise		// Keeping Clockwise for glTF
+                , .depthBiasEnable                                  = vk::False
                 , .lineWidth                                        = 1.0f
-            };
-
-		    // Depth/Stencil
-            vk::PipelineDepthStencilStateCreateInfo                 depthStencil
-            {
-                  .depthTestEnable                                  = vk::True
-                , .depthWriteEnable                                 = vk::True
-                , .depthCompareOp                                   = vk::CompareOp::eLessOrEqual
             };
 
 		    // Multisampling
             vk::PipelineMultisampleStateCreateInfo                  multisampling
             {
                   .rasterizationSamples                             = vk::SampleCountFlagBits::e1
-                , .sampleShadingEnable                              = VK_FALSE
+                , .sampleShadingEnable                              = vk::False
+            };
+	    
+		    // Depth/Stencil
+            vk::PipelineDepthStencilStateCreateInfo                 depthStencil
+            {
+                  .depthTestEnable                                  = vk::True
+                , .depthWriteEnable                                 = vk::True
+                , .depthCompareOp                                   = vk::CompareOp::eLess
+		, .depthBoundsTestEnable			    = vk::False
+		, .stencilTestEnable				    = vk::False
             };
 
 		    // Color blending
             vk::PipelineColorBlendAttachmentState                   colorBlendAttachment
             {
-                  .blendEnable                                      = VK_FALSE
+                  .blendEnable                                      = vk::False
                 , .colorWriteMask                                   =       vk::ColorComponentFlagBits::eR
                                                                         |   vk::ColorComponentFlagBits::eG
                                                                         |   vk::ColorComponentFlagBits::eB
@@ -1356,14 +1224,14 @@ class VulkanApplication
 
             vk::PipelineColorBlendStateCreateInfo                   colorBlending
             {
-                  .logicOpEnable                                    = VK_FALSE
+                  .logicOpEnable                                    = vk::False
                 , .logicOp                                          = vk::LogicOp::eCopy
                 , .attachmentCount                                  = 1
                 , .pAttachments                                     = &colorBlendAttachment
             };
 
 		    // Dynamic states
-            std::vector<vk::DynamicState>   dynamicStates           = 
+            std::vector   dynamicStates           = 
             {
                   vk::DynamicState::eViewport
                 , vk::DynamicState::eScissor
@@ -1380,14 +1248,24 @@ class VulkanApplication
             {
                   .setLayoutCount                                   = 1
                 , .pSetLayouts                                      = &*descriptorSetLayout
+		, .pushConstantRangeCount			    = 0
             };
 
-            pipelineLayout                                          = device.createPipelineLayout(pipelineLayoutInfo);
+            pipelineLayout                                          = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
 
+	    vk::Format			depthFormat		    = findDepthFormat();
+	    vk::PipelineRenderingCreateInfo	pipelineRenderingCreateInfo
+	    {
+		.colorAttachmentCount				    = 1
+		, .pColorAttachmentFormats			    = &swapChainSurfaceFormat.format
+		, .depthAttachmentFormat			    = depthFormat
+	    };
+	    
             // Create the graphics pipeline
-            vk::GraphicsPipelineCreateInfo		pipelineInfo            
+            vk::GraphicsPipelineCreateInfo		pipelineInfo
             {
-                  .stageCount                                       = 2
+		  .pNext					    = &pipelineRenderingCreateInfo
+		, .stageCount                                       = 2
                 , .pStages                                          = shaderStages
                 , .pVertexInputState                                = &vertexInputInfo
                 , .pInputAssemblyState                              = &inputAssembly
@@ -1398,50 +1276,11 @@ class VulkanApplication
                 , .pColorBlendState                                 = &colorBlending
                 , .pDynamicState                                    = &dynamicState
                 , .layout                                           = *pipelineLayout
-                , .renderPass                                       = *renderPass
-                , .subpass				                            = 0
+                , .renderPass                                       = nullptr
             };
             
 	        // Create the pipeline
-            graphicsPipeline = device.createGraphicsPipeline(nullptr, pipelineInfo);
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createFramebuffers
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createFramebuffers()
-        {
-            swapChainFramebuffers.reserve(swapChainImageViews.size());
-            
-            for (size_t i = 0; i < swapChainImageViews.size(); i++)
-            {
-                vk::ImageView attachments[] = 
-                {
-                      *swapChainImageViews[i]
-                    , *depthImageView
-                };
-                
-                vk::FramebufferCreateInfo framebufferInfo
-                {
-                      .renderPass		                    = *renderPass
-                    , .attachmentCount	                    = 2
-                    , .pAttachments		                    = attachments
-                    , .width		                        = swapChainExtent.width
-                    , .height		                        = swapChainExtent.height
-                    , .layers		                        = 1
-                };
-                
-                swapChainFramebuffers.push_back(device.createFramebuffer(framebufferInfo));
-            }
+            graphicsPipeline = vk::raii::Pipeline(device, nullptr, pipelineInfo);
         }
 
 
@@ -1464,9 +1303,42 @@ class VulkanApplication
                 , .queueFamilyIndex                         = queueIndex
             };
 
-            commandPool = device.createCommandPool(poolInfo);
+            commandPool = vk::raii::CommandPool(device, poolInfo);
         }
-        
+
+//******************************************************************************************
+// 
+//  Name:           createDepthResources
+//  Arguments:      N/A
+//  Returns:        
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createDepthResources()
+        {
+            vk::Format 			depthFormat                                     = findDepthFormat();
+
+            createImage(
+                  swapChainExtent.width
+                , swapChainExtent.height
+                , depthFormat
+                , vk::ImageTiling::eOptimal
+                , vk::ImageUsageFlagBits::eDepthStencilAttachment
+                , vk::MemoryPropertyFlagBits::eDeviceLocal
+                , depthImage
+                , depthImageMemory
+            );
+
+            depthImageView                                  = createImageView( 
+                                                                                depthImage
+                                                                              , depthFormat
+                                                                              , vk::ImageAspectFlagBits::eDepth
+                                                                            );
+        }
+
 
 //******************************************************************************************
 // 
@@ -1502,50 +1374,6 @@ class VulkanApplication
             }
 
             throw std::runtime_error("Failed to find supported format!");
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createDepthResources
-//  Arguments:      N/A
-//  Returns:        
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createDepthResources()
-        {
-            depthFormat                                     = findSupportedFormat(
-                {
-                    vk::Format::eD32Sfloat
-                    , vk::Format::eD32SfloatS8Uint
-                    , vk::Format::eD24UnormS8Uint
-                }
-                , vk::ImageTiling::eOptimal
-                , vk::FormatFeatureFlagBits::eDepthStencilAttachment
-            );
-
-            createImage(
-                  swapChainExtent.width
-                , swapChainExtent.height
-                , 1
-                , depthFormat
-                , vk::ImageTiling::eOptimal
-                , vk::ImageUsageFlagBits::eDepthStencilAttachment
-                , vk::MemoryPropertyFlagBits::eDeviceLocal
-                , depthImage
-                , depthImageMemory
-            );
-
-            depthImageView                                  = createImageView( 
-                                                                                depthImage
-                                                                              , depthFormat
-                                                                              , vk::ImageAspectFlagBits::eDepth
-                                                                              , 1
-                                                                            );
         }
         
 
