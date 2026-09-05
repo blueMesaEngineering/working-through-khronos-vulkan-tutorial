@@ -1374,6 +1374,36 @@ class VulkanApplication
             }
 
             throw std::runtime_error("Failed to find supported format!");
+	}
+
+
+//******************************************************************************************
+// 
+//  Name:           findDepthFormat
+//  Arguments:      N/A
+//  Returns:        [[nodiscard]] vk::Format
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	[[nodiscard]] vk::Format findDepthFormat() const
+	{
+		return findSupportedFormat(
+			{
+				vk::Format::eD32Sfloat
+				, vk::Format::eD32SfloatS8Uint
+				, vk::Format::eD24UnormS8Uint
+			}
+			, vk::ImageTiling::eOptimal
+			, vk::FormatFeatureFlagBits::eDepthStencilAttachment
+		);
+	}
+	
+	static bool hasStencilComponent(vk::Format format)
+	{
+		return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
         }
         
 
