@@ -1420,49 +1420,29 @@ class VulkanApplication
 
         void createTextureImage()
         {
-		    // Load texture image
-            int                         texWidth
-                                      , texHeight
-                                      , texChannels;
+		// Load KTX2 texture instead of using stb_image
+		ktxTexture	*kTexture;
+		KTX_error_code	result		= 	ktxTexture_CreateFromNamedFile(
+									TEXTURE_PATH.c_str()
+									, KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT
+									, &kTexture
+							);
 
-            stbi_uc                     *pixels             = nullptr;
-
-#if PLATFORM_ANDROID
-            // Load image from Android assets
-            std::optional<AssetManagerType *>	optionalAssetManager	= assetManager;
-            std::vector<char>			    imageData		= readFile(TEXTURE_PATH, optionalAssetManager);
-            pixels								            = stbi_load_from_memory(
-                                                                    reinterpret_cast<const stbi_uc *>(imageData.data())
-                                                                    , static_cast<int>(imageData.size())
-                                                                    , &texWidth
-                                                                    , &texHeight
-                                                                    , &texChannels
-                                                                    , STBI_rgb_alpha
-                                                                );
-#else
-		    // Load image from filesystem
-		    pixels						                    = stbi_load(  
-									                                      TEXTURE_PATH.c_str()
-                                                                        , &texWidth
-                                                                        , &texHeight
-                                                                        , &texChannels
-                                                                        , STBI_rgb_alpha
-									                                );
-#endif
-
-
-            if (!pixels)
+            if (result != KTX_SUCCESS)
             {
-                throw std::runtime_error("Failed to load texture image: " + TEXTURE_PATH);
+                throw std::runtime_error("Failed to load ktx texture image!");
             }
-	    
-	        LOG_INFO("Texture loaded successfully");
 
-            vk::DeviceSize              imageSize           = texWidth * texHeight * 4;
+	    // Get texture dimensions and data
+	    uint32_t			texWidth			= kTexture->baseWidth;
+	    uint32_t			texHeight			= kTexture->baseHeight;
+	    ktx_size_t			imageSize			= ktxTexture_GetImageSize(kTexture, 0);
+	    ktx_uint8_t			*ktxTextureData			= ktxTexture_GetData(kTexture);
+	    
 
 		    // Create staging buffer
-            vk::raii::Buffer            stagingBuffer       = nullptr;
-            vk::raii::DeviceMemory      stagingBufferMemory = nullptr;
+            vk::raii::Buffer            stagingBuffer({});
+            vk::raii::DeviceMemory      stagingBufferMemory({});
 
             createBuffer(
                   imageSize
@@ -1474,58 +1454,71 @@ class VulkanApplication
             );
 
 		    // Copy pixel data to staging buffer
-            void                        *data;
-	        data				                            = stagingBufferMemory.mapMemory(0, imageSize);
+            void                        *data = stagingBufferMemory.mapMemory(0, imageSize);
 
             memcpy(  
                   data
-                , pixels
-                , static_cast<size_t>(imageSize)
+                , ktxTextureData
+                , imageSize
             );
 
             stagingBufferMemory.unmapMemory();
 
-            // Free the pixel data
-            if (pixels != nullptr)
+            // Determine the Vulkan format from KTX format
+	    vk::Format		textureFormat;
+	    
+            if (kTexture->classId == ktxTexture2_c)
             {
-                stbi_image_free(pixels);
+		// For KTX2 files, we can get the format directly
+		auto *ktx2						= reinterpret_cast<ktxTexture2 *>(kTexture);
+		textureFormat						= static_cast<vk::Format>(ktx2->vkFormat);
+		if (textureFormat == vk::Format::eUndefined)
+		{
+			// If the format is undefined, fall backto a reasonable default
+			textureFormat					= vk::Format::eR8G8B8A8Unorm;
+		}
             }
+	    else
+	    {
+		// For KTX1 files or if we can't determine the format, use a reasonable default
+		textureFormat						= vk::Format::eR8G8B8A8Unorm;
+	    }
+	    
+	    textureImageFormat						= textureFormat;
+	    
             // Create image
             createImage(  
                   texWidth
                 , texHeight
-                , 1
-                , vk::Format::eR8G8B8A8Srgb
+                , textureFormat
                 , vk::ImageTiling::eOptimal
-                , vk::ImageUsageFlagBits::eTransferSrc
-                | vk::ImageUsageFlagBits::eTransferDst
+                , vk::ImageUsageFlagBits::eTransferDst
                 | vk::ImageUsageFlagBits::eSampled
                 , vk::MemoryPropertyFlagBits::eDeviceLocal
                 , textureImage
                 , textureImageMemory
             );
 
-		    // Transition image layout and copy buffer to image
             transitionImageLayout(  
                   textureImage
-		        , vk::Format::eR8G8B8A8Srgb
                 , vk::ImageLayout::eUndefined
                 , vk::ImageLayout::eTransferDstOptimal
             );
 
-            copyBufferToImage(  
+            copyBufferToImage(
                   stagingBuffer
                 , textureImage
-                , static_cast<uint32_t>(texWidth)
-                , static_cast<uint32_t>(texHeight)
+                , texWidth
+                , texHeight
             );
             
             transitionImageLayout(
                   textureImage
-                , vk::Format::eR8G8B8A8Srgb
                 , vk::ImageLayout::eTransferDstOptimal
                 , vk::ImageLayout::eShaderReadOnlyOptimal
             );
+	    
+	    ktxTexture_Destroy(kTexture);
         }
         
 
@@ -1544,7 +1537,7 @@ class VulkanApplication
         {
             textureImageView                                = createImageView(  
                                                                                 textureImage
-                                                                              , vk::Format::eR8G8B8A8Srgb
+                                                                              , textureImageFormat
                                                                               , vk::ImageAspectFlagBits::eColor
                                                                               , 1
                                                                              );
