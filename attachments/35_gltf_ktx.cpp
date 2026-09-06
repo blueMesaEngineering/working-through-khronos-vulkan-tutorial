@@ -1453,7 +1453,6 @@ class VulkanApplication
                 , stagingBufferMemory
             );
 
-		    // Copy pixel data to staging buffer
             void                        *data = stagingBufferMemory.mapMemory(0, imageSize);
 
             memcpy(  
@@ -1556,6 +1555,7 @@ class VulkanApplication
 
         void createTextureSampler()
         {
+		vk::PhysicalDeviceProperties 	properties	= physicalDevice.getProperties();
             vk::SamplerCreateInfo               samplerInfo
             {
                   .magFilter                                = vk::Filter::eLinear
@@ -1564,15 +1564,14 @@ class VulkanApplication
                 , .addressModeU                             = vk::SamplerAddressMode::eRepeat
                 , .addressModeV                             = vk::SamplerAddressMode::eRepeat
                 , .addressModeW                             = vk::SamplerAddressMode::eRepeat
-                , .anisotropyEnable                         = VK_TRUE
-                , .maxAnisotropy                            = 16.0f
-                , .compareEnable                            = VK_FALSE
+		, .mipLodBias				    = 0.0f
+                , .anisotropyEnable                         = vk::True
+                , .maxAnisotropy                            = properties.limits.maxSamplerAnisotropy
+                , .compareEnable                            = vk::False
                 , .compareOp                                = vk::CompareOp::eAlways
-                , .borderColor                              = vk::BorderColor::eIntOpaqueBlack
-                , .unnormalizedCoordinates                  = VK_FALSE
             };
 
-            textureSampler                                  = device.createSampler(samplerInfo);
+            textureSampler                                  = vk::raii::Sampler(device, samplerInfo);
         }
 	
 
@@ -1602,7 +1601,7 @@ class VulkanApplication
                 {
                       aspectFlags
                     , 0
-                    , mipLevels
+                    , 1
                     , 0
                     , 1
                 }
@@ -1611,6 +1610,65 @@ class VulkanApplication
             return vk::raii::ImageView(device, viewInfo);
         }
 
+
+//******************************************************************************************
+// 
+//  Name:           createImage
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createImage(
+              uint32_t                  width
+            , uint32_t                  height
+            , vk::Format                format
+            , vk::ImageTiling           tiling
+            , vk::ImageUsageFlags       usage
+            , vk::MemoryPropertyFlags   properties
+            , vk::raii::Image           &image
+            , vk::raii::DeviceMemory    &imageMemory
+        )
+        {
+            vk::ImageCreateInfo             imageInfo
+            {
+                  .imageType                                = vk::ImageType::e2D
+                , .format                                   = format
+                , .extent                                   = 
+                { 
+                      width
+                    , height
+                    , 1 
+                }
+                , .mipLevels                                = 1
+                , .arrayLayers                              = 1
+                , .samples                                  = vk::SampleCountFlagBits::e1
+                , .tiling                                   = tiling
+                , .usage                                    = usage
+                , .sharingMode                              = vk::SharingMode::eExclusive
+                , .initialLayout                            = vk::ImageLayout::eUndefined
+            };
+
+            image                                           = vk::raii::Image(device, imageInfo);
+            
+            vk::MemoryRequirements          memRequirements = image.getMemoryRequirements();
+	    
+            vk::MemoryAllocateInfo          allocInfo
+            {
+                  .allocationSize                           = memRequirements.size
+                , .memoryTypeIndex                          = findMemoryType(
+                                                                               memRequirements.memoryTypeBits
+                                                                             , properties
+                                                                            )
+            };
+	    
+            imageMemory                                     = vk::raii::DeviceMemory(device, allocInfo);
+            image.bindMemory(*imageMemory, 0);
+        }
+        
 
 //******************************************************************************************
 // 
@@ -2686,66 +2744,6 @@ class VulkanApplication
 
             throw std::runtime_error("Failed to find suitable memory type!");
         }
-
-//******************************************************************************************
-// 
-//  Name:           createImage
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createImage(
-              uint32_t                  width
-            , uint32_t                  height
-            , uint32_t                  mipLevels
-            , vk::Format                format
-            , vk::ImageTiling           tiling
-            , vk::ImageUsageFlags       usage
-            , vk::MemoryPropertyFlags   properties
-            , vk::raii::Image           &image
-            , vk::raii::DeviceMemory    &imageMemory
-        )
-        {
-            vk::ImageCreateInfo             imageInfo
-            {
-                  .imageType                                = vk::ImageType::e2D
-                , .format                                   = format
-                , .extent                                   = 
-                { 
-                      width
-                    , height
-                    , 1 
-                }
-                , .mipLevels                                = mipLevels
-                , .arrayLayers                              = 1
-                , .samples                                  = vk::SampleCountFlagBits::e1
-                , .tiling                                   = tiling
-                , .usage                                    = usage
-                , .sharingMode                              = vk::SharingMode::eExclusive
-                , .initialLayout                            = vk::ImageLayout::eUndefined
-            };
-
-            image                                           = vk::raii::Image(device, imageInfo);
-            
-            vk::MemoryRequirements          memRequirements = image.getMemoryRequirements();
-	    
-            vk::MemoryAllocateInfo          allocInfo
-            {
-                  .allocationSize                           = memRequirements.size
-                , .memoryTypeIndex                          = findMemoryType(
-                                                                               memRequirements.memoryTypeBits
-                                                                             , properties
-                                                                            )
-            };
-	    
-            imageMemory                                     = vk::raii::DeviceMemory(device, allocInfo);
-            image.bindMemory(*imageMemory, 0);
-        }
-        
 
 //******************************************************************************************
 // 
