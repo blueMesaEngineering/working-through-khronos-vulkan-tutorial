@@ -1682,42 +1682,25 @@ class VulkanApplication
 //******************************************************************************************
 
         void transitionImageLayout(
-              vk::raii::Image         		&image
-	        , vk::Format			        format
+              const vk::raii::Image         		&image
             , vk::ImageLayout               oldLayout
             , vk::ImageLayout               newLayout
         )
         {
-            vk::CommandBufferAllocateInfo   allocInfo
-            {
-                  .commandPool					            = *commandPool
-                , .level					                = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount				        = 1
-            };
-		
-            vk::raii::CommandBuffer         commandBuffer   = std::move(device.allocateCommandBuffers(allocInfo)[0]);
-
-            vk::CommandBufferBeginInfo	    beginInfo
-            {
-                .flags					                    = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-            };
-            
-            commandBuffer.begin(beginInfo);
+		auto commandBuffer			= beginSingleTimeCommands();
 
             vk::ImageMemoryBarrier          barrier         
             {
                   .oldLayout                                = oldLayout
                 , .newLayout                                = newLayout
-                , .srcQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
-                , .dstQueueFamilyIndex				        = VK_QUEUE_FAMILY_IGNORED
-                , .image                                    = image
+                , .image                                    = *image
                 , .subresourceRange                         = 
                 {
-                      .aspectMask				            = vk::ImageAspectFlagBits::eColor
-                    , .baseMipLevel		                    = 0
-                    , .levelCount		                    = 1
-                    , .baseArrayLayer		                = 0
-                    , .layerCount		                    = 1
+			vk::ImageAspectFlagBits::eColor
+                    , 0
+                    , 1
+                    , 0
+                    , 1
                 }
             };
 
@@ -1727,7 +1710,7 @@ class VulkanApplication
             if (   oldLayout == vk::ImageLayout::eUndefined 
                 && newLayout == vk::ImageLayout::eTransferDstOptimal)
             {
-                barrier.srcAccessMask                       = vk::AccessFlagBits::eNone;
+                barrier.srcAccessMask                       = {};
                 barrier.dstAccessMask                       = vk::AccessFlagBits::eTransferWrite;
 
                 sourceStage                                 = vk::PipelineStageFlagBits::eTopOfPipe;
@@ -1747,26 +1730,63 @@ class VulkanApplication
                 throw std::invalid_argument("Unsupported layout transition!");
             }
 
-            commandBuffer.pipelineBarrier(
+            commandBuffer->pipelineBarrier(
                   sourceStage
                 , destinationStage
-                , vk::DependencyFlagBits::eByRegion
-                , nullptr
+                , {}
+                , {}
                 , nullptr
                 , barrier
             );
-
-            commandBuffer.end();
-	    
-            vk::SubmitInfo			        submitInfo
-            {
-                  .commandBufferCount				        = 1
-                , .pCommandBuffers				            = &*commandBuffer
-            };
-            
-            queue.submit(submitInfo, nullptr);
-            queue.waitIdle();
+	    endSingleTimeCommands(*commandBuffer);
         }
+
+
+//******************************************************************************************
+// 
+//  Name:           copyBufferToImage
+//  Arguments:      N/A
+//  Returns:        
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void copyBufferToImage(
+		const vk::raii::Buffer    	        &buffer
+            , vk::raii::Image     	        &image
+            , uint32_t      		        width
+            , uint32_t      		        height
+        )
+        {
+	    std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = beginSingleTimeCommands();
+            vk::BufferImageCopy             region
+            {
+                  .bufferOffset                             = 0
+                , .bufferRowLength                          = 0
+                , .bufferImageHeight                        = 0
+                , .imageSubresource                         =
+                {
+                    vk::ImageAspectFlagBits::eColor
+                    , 0
+                    , 0
+                    , 1
+                }
+                , .imageOffset                              = { 0, 0, 0 }
+                , .imageExtent                              = { width, height, 1}
+            };
+
+            commandBuffer->copyBufferToImage(
+                  *buffer
+                , *image
+                , vk::ImageLayout::eTransferDstOptimal
+                , {region}
+            );
+	    
+	    endSingleTimeCommands(*commandBuffer);
+        }
+
 
 
 //******************************************************************************************
@@ -2744,76 +2764,6 @@ class VulkanApplication
 
             throw std::runtime_error("Failed to find suitable memory type!");
         }
-
-//******************************************************************************************
-// 
-//  Name:           copyBufferToImage
-//  Arguments:      N/A
-//  Returns:        
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void copyBufferToImage(
-		      vk::raii::Buffer    	        &buffer
-            , vk::raii::Image     	        &image
-            , uint32_t      		        width
-            , uint32_t      		        height
-        )
-        {
-            vk::CommandBufferAllocateInfo	allocInfo
-            {
-                  .commandPool					            = *commandPool
-                , .level					                = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount				        = 1
-            };
-
-            vk::raii::CommandBuffer         commandBuffer   = std::move(device.allocateCommandBuffers(allocInfo)[0]);
-            
-            vk::CommandBufferBeginInfo		beginInfo
-            {
-                .flags						                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-            };
-            
-            commandBuffer.begin(beginInfo);
-	    
-            vk::BufferImageCopy             region
-            {
-                  .bufferOffset                             = 0
-                , .bufferRowLength                          = 0
-                , .bufferImageHeight                        = 0
-                , .imageSubresource                         =
-                {
-                      .aspectMask			                = vk::ImageAspectFlagBits::eColor
-                    , .mipLevel				                = 0
-                    , .baseArrayLayer			            = 0
-                    , .layerCount			                = 1
-                }
-                , .imageOffset                              = { 0, 0, 0 }
-                , .imageExtent                              = { width, height, 1}
-            };
-
-            commandBuffer.copyBufferToImage(
-                  *buffer
-                , *image
-                , vk::ImageLayout::eTransferDstOptimal
-                , region
-            );
-
-            commandBuffer.end();
-	    
-            vk::SubmitInfo submitInfo
-            {
-                  .commandBufferCount				        = 1
-                , .pCommandBuffers				            = &*commandBuffer
-            };
-            
-            queue.submit(submitInfo, nullptr);
-            queue.waitIdle();
-        }
-
 
 //******************************************************************************************
 // 
