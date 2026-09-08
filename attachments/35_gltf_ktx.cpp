@@ -1949,8 +1949,8 @@ class VulkanApplication
         {
             vk::DeviceSize          bufferSize              = sizeof(vertices[0]) * vertices.size();
             
-            vk::raii::Buffer        stagingBuffer           = nullptr;
-            vk::raii::DeviceMemory  stagingBufferMemory     = nullptr;
+            vk::raii::Buffer        stagingBuffer({});
+            vk::raii::DeviceMemory  stagingBufferMemory({});
 
             createBuffer(
                   bufferSize
@@ -1961,13 +1961,12 @@ class VulkanApplication
                 , stagingBufferMemory
             );
 
-            void *data;
-	        data                                      		= stagingBufferMemory.mapMemory(0, bufferSize);
+            void *dataStaging						= stagingBufferMemory.mapMemory(0, bufferSize);
 
             memcpy(
-                  data
+                  dataStaging
                 , vertices.data()
-                , (size_t) bufferSize
+                , bufferSize
             );
 
             stagingBufferMemory.unmapMemory();
@@ -2004,8 +2003,8 @@ class VulkanApplication
         {
             vk::DeviceSize          bufferSize              = sizeof(indices[0]) * indices.size();
 
-            vk::raii::Buffer        stagingBuffer           = nullptr;
-            vk::raii::DeviceMemory  stagingBufferMemory     = nullptr;
+            vk::raii::Buffer        stagingBuffer({});
+            vk::raii::DeviceMemory  stagingBufferMemory({});
 
             createBuffer(
                   bufferSize
@@ -2016,13 +2015,12 @@ class VulkanApplication
                 , stagingBufferMemory
             );
 
-            void                    *data;
-	        data			                                = stagingBufferMemory.mapMemory(0, bufferSize);
+            void                    *data 		= stagingBufferMemory.mapMemory(0, bufferSize);
 
             memcpy(
                   data
                 , indices.data()
-                , (size_t) bufferSize
+                , bufferSize
             );
 
             stagingBufferMemory.unmapMemory();
@@ -2057,27 +2055,27 @@ class VulkanApplication
 
         void createUniformBuffers()
         {
-            vk::DeviceSize              bufferSize          = sizeof(UniformBufferObject);
-
             uniformBuffers.clear();
             uniformBuffersMemory.clear();
-	    
-            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                uniformBuffers.push_back(nullptr);
-                uniformBuffersMemory.push_back(nullptr);
-            }
+	    uniformBuffersMapped.clear();
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
+		vk::DeviceSize              bufferSize          = sizeof(UniformBufferObject);
+		vk::raii::Buffer		buffer({});
+		vk::raii::DeviceMemory		bufferMem({});
+	
                 createBuffer(
                       bufferSize
                     , vk::BufferUsageFlagBits::eUniformBuffer
                     , vk::MemoryPropertyFlagBits::eHostVisible
                     | vk::MemoryPropertyFlagBits::eHostCoherent
-                    , uniformBuffers[i]
-                    , uniformBuffersMemory[i]
+		    , buffer
+                    , bufferMem
                 );
+		uniformBuffers.emplace_back(std::move(buffer));
+		uniformBuffersMemory.emplace_back(std::move(bufferMem));
+		uniformBuffersMapped.emplace_back(uniformBuffersMemory[i].mapMemory(0, bufferSize));
             }
         }
 
@@ -2095,28 +2093,29 @@ class VulkanApplication
 
         void createDescriptorPool()
         {
-            std::array <vk::DescriptorPoolSize, 2> poolSizes =
+            std::array poolSize
             {
                 vk::DescriptorPoolSize
-                {
-                      .type						            = vk::DescriptorType::eUniformBuffer
-                    , .descriptorCount				        = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
-                }
+                (
+			vk::DescriptorType::eUniformBuffer
+			, MAX_FRAMES_IN_FLIGHT
+		)
                 , vk::DescriptorPoolSize
-                {
-                      .type						            = vk::DescriptorType::eCombinedImageSampler
-                    , .descriptorCount				        = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
-                }
+                (
+                      vk::DescriptorType::eCombinedImageSampler
+                    , MAX_FRAMES_IN_FLIGHT
+                )
             };
 
             vk::DescriptorPoolCreateInfo    poolInfo
             {
-                  .maxSets                                  = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
-                , .poolSizeCount                            = static_cast<uint32_t>(poolSizes.size())
-                , .pPoolSizes                               = poolSizes.data()
+		  .flags				    = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
+		, .maxSets                                  = MAX_FRAMES_IN_FLIGHT
+                , .poolSizeCount                            = static_cast<uint32_t>(poolSize.size())
+                , .pPoolSizes                               = poolSize.data()
             };
 
-            descriptorPool                                  = device.createDescriptorPool(poolInfo);
+            descriptorPool                                  = vk::raii::DescriptorPool(device, poolInfo);
         }
 
 
@@ -2138,10 +2137,11 @@ class VulkanApplication
             vk::DescriptorSetAllocateInfo           allocInfo
             {
                   .descriptorPool                           = *descriptorPool
-                , .descriptorSetCount                       = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
+                , .descriptorSetCount                       = static_cast<uint32_t>(layouts.size())
                 , .pSetLayouts                              = layouts.data()
             };
 
+	    descriptorSets.clear();
             descriptorSets                                  = device.allocateDescriptorSets(allocInfo);
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -2160,7 +2160,7 @@ class VulkanApplication
                     , .imageLayout                          = vk::ImageLayout::eShaderReadOnlyOptimal
                 };
 
-                std::array<vk::WriteDescriptorSet, 2> descriptorWrites	=
+                std::array descriptorWrites
                 {
                     vk::WriteDescriptorSet
                     {
@@ -2171,6 +2171,7 @@ class VulkanApplication
                         , .descriptorType                   = vk::DescriptorType::eUniformBuffer
                         , .pBufferInfo                      = &bufferInfo
                     }
+		    
                     , vk::WriteDescriptorSet
                     {
                           .dstSet                           = *descriptorSets[i]
@@ -2183,10 +2184,55 @@ class VulkanApplication
                 };
 
                 device.updateDescriptorSets(  descriptorWrites
-                                            , nullptr);
+                                            , {});
             }
         }
         
+
+//******************************************************************************************
+// 
+//  Name:           createBuffer
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createBuffer(  
+              vk::DeviceSize            size
+            , vk::BufferUsageFlags      usage
+            , vk::MemoryPropertyFlags   properties
+            , vk::raii::Buffer          &buffer
+            , vk::raii::DeviceMemory    &bufferMemory
+        )
+        {
+            vk::BufferCreateInfo bufferInfo
+            {
+                  .size                                     = size
+                , .usage                                    = usage
+                , .sharingMode                              = vk::SharingMode::eExclusive
+            };
+
+            buffer                                          = vk::raii::Buffer(device, bufferInfo);
+
+            vk::MemoryRequirements  memRequirements         = buffer.getMemoryRequirements();
+
+            vk::MemoryAllocateInfo  allocInfo
+            {
+                  .allocationSize                           = memRequirements.size
+                , .memoryTypeIndex                          = findMemoryType(
+                                                                               memRequirements.memoryTypeBits
+                                                                             , properties
+                                                                            )
+            };
+
+            bufferMemory                                    = vk::raii::DeviceMemory(device, allocInfo);
+            
+            buffer.bindMemory(*bufferMemory, 0);
+        }
+
 
 //******************************************************************************************
 // 
@@ -2213,42 +2259,6 @@ class VulkanApplication
             commandBuffers                                  = device.allocateCommandBuffers(allocInfo);
         }
 
-
-//******************************************************************************************
-// 
-//  Name:           createSyncObjects
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createSyncObjects()
-        {
-            imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
-            renderFinishedSemaphores.reserve(swapChainImages.size());
-            inFlightFences.reserve(MAX_FRAMES_IN_FLIGHT);
-            
-            vk::SemaphoreCreateInfo		    semaphoreInfo{};
-            vk::FenceCreateInfo		        fenceInfo
-                                            {
-                                                .flags		= vk::FenceCreateFlagBits::eSignaled
-                                            };
-		
-            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-		        imageAvailableSemaphores.push_back(device.createSemaphore(semaphoreInfo));
-                inFlightFences.push_back(device.createFence(fenceInfo));
-            }
-
-            for (size_t i = 0; i < swapChainImages.size(); i++)
-            {
-                renderFinishedSemaphores.push_back(device.createSemaphore(semaphoreInfo));
-            }
-        }
-        
 
 //******************************************************************************************
 // 
@@ -2362,6 +2372,42 @@ class VulkanApplication
             commandBuffer.end();
         }
 
+
+//******************************************************************************************
+// 
+//  Name:           createSyncObjects
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void createSyncObjects()
+        {
+            imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+            renderFinishedSemaphores.reserve(swapChainImages.size());
+            inFlightFences.reserve(MAX_FRAMES_IN_FLIGHT);
+            
+            vk::SemaphoreCreateInfo		    semaphoreInfo{};
+            vk::FenceCreateInfo		        fenceInfo
+                                            {
+                                                .flags		= vk::FenceCreateFlagBits::eSignaled
+                                            };
+		
+            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+		        imageAvailableSemaphores.push_back(device.createSemaphore(semaphoreInfo));
+                inFlightFences.push_back(device.createFence(fenceInfo));
+            }
+
+            for (size_t i = 0; i < swapChainImages.size(); i++)
+            {
+                renderFinishedSemaphores.push_back(device.createSemaphore(semaphoreInfo));
+            }
+        }
+        
 
 //******************************************************************************************
 // 
@@ -2687,51 +2733,6 @@ class VulkanApplication
             return details;
         }
         
-
-//******************************************************************************************
-// 
-//  Name:           createBuffer
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createBuffer(  
-              vk::DeviceSize            size
-            , vk::BufferUsageFlags      usage
-            , vk::MemoryPropertyFlags   properties
-            , vk::raii::Buffer          &buffer
-            , vk::raii::DeviceMemory    &bufferMemory
-        )
-        {
-            vk::BufferCreateInfo bufferInfo
-            {
-                  .size                                     = size
-                , .usage                                    = usage
-                , .sharingMode                              = vk::SharingMode::eExclusive
-            };
-
-            buffer                                          = device.createBuffer(bufferInfo);
-
-            vk::MemoryRequirements  memRequirements         = buffer.getMemoryRequirements();
-
-            vk::MemoryAllocateInfo  allocInfo
-            {
-                  .allocationSize                           = memRequirements.size
-                , .memoryTypeIndex                          = findMemoryType(
-                                                                               memRequirements.memoryTypeBits
-                                                                             , properties
-                                                                            )
-            };
-
-            bufferMemory                                    = device.allocateMemory(allocInfo);
-            
-            buffer.bindMemory(*bufferMemory, 0);
-        }
-
 
 //******************************************************************************************
 // 
