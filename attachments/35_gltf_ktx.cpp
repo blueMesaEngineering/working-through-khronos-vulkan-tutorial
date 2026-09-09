@@ -2232,8 +2232,118 @@ class VulkanApplication
             
             buffer.bindMemory(*bufferMemory, 0);
         }
+        
 
+//******************************************************************************************
+// 
+//  Name:           beginSingleTimeCommands
+//  Arguments:      N/A
+//  Returns:        std::unique_ptr<vk::raii::CommandBuffer>
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
 
+	std::unique_ptr<vk::raii::CommandBuffer> beginSingleTimeCommands()
+	{
+		vk::CommandBufferAllocateInfo			allocInfo
+		{
+			.commandPool						= *commandPool
+			, .level						= vk::CommandBufferLevel::ePrimary
+			, .commandBufferCount					= 1
+		};
+		
+		std::unique_ptr<vk::raii::CommandBuffer>	commandBuffer	= std::make_unique<vk::raii::CommandBuffer>(std::move(vk::raii::CommandBuffers(device, allocInfo).front()));
+		
+		vk::CommandBufferBeginInfo			beginInfo
+		{
+			.flags							= vk::CommandBufferUsageFlagsBits::eOneTimeSubmit
+		};
+		
+		commandBuffer->begin(beginInfo);
+		
+		return commandBuffer;
+	}
+        
+
+//******************************************************************************************
+// 
+//  Name:           endSingleTimeCommands
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	void endSingleTimeCommands(const vk::raii::CommandBuffer &commandBuffer) const
+	{
+		commandBuffer.end();
+		
+		vk::SubmitInfo submitInfo
+		{
+			.commandBufferCount					= 1
+			, .pCommandBuffers					= &*commandBuffer
+		};
+		
+		queue.submit(submitInfo, nullptr);
+		queue.waitIdle();
+	}
+        
+
+//******************************************************************************************
+// 
+//  Name:           copyBuffer
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void copyBuffer(  
+              vk::raii::Buffer              &srcBuffer
+            , vk::raii::Buffer              &dstBuffer
+            , vk::DeviceSize                size
+        )
+        {
+            vk::CommandBufferAllocateInfo   allocInfo
+            {
+                  .commandPool					            = *commandPool
+                , .level					                = vk::CommandBufferLevel::ePrimary
+                , .commandBufferCount				        = 1
+            };
+            
+            vk::raii::CommandBuffer		    commandCopyBuffer	= std::move(device.allocateCommandBuffers(allocInfo).front());
+            
+            commandCopyBuffer.begin(vk::CommandBufferBeginInfo
+		{
+			.flags						                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+		}
+	    );
+	    
+	
+            commandCopyBuffer.copyBuffer(
+                  *srcBuffer
+                , *dstBuffer
+                , copyRegion
+            );
+
+            commandCopyBuffer.end();
+            
+            vk::SubmitInfo 		            submitInfo
+            {
+                  .commandBufferCount		                = 1
+                , .pCommandBuffers		                    = &*commandBuffer
+            };
+            
+            queue.submit(submitInfo, nullptr);
+            queue.waitIdle();
+        }
+        
 //******************************************************************************************
 // 
 //  Name:           createCommandBuffers
@@ -2732,66 +2842,6 @@ class VulkanApplication
             
             return details;
         }
-        
-
-//******************************************************************************************
-// 
-//  Name:           copyBuffer
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void copyBuffer(  
-              vk::raii::Buffer              &srcBuffer
-            , vk::raii::Buffer              &dstBuffer
-            , vk::DeviceSize                size
-        )
-        {
-            vk::CommandBufferAllocateInfo   allocInfo
-            {
-                  .commandPool					            = *commandPool
-                , .level					                = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount				        = 1
-            };
-            
-            vk::raii::CommandBuffer		    commandBuffer	= std::move(device.allocateCommandBuffers(allocInfo)[0]);
-            
-            vk::CommandBufferBeginInfo		beginInfo
-            {
-                .flags						                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-            };
-            
-            commandBuffer.begin(beginInfo);
-	    
-            vk::BufferCopy		            copyRegion
-            {
-                  .srcOffset					            = 0
-                , .dstOffset					            = 0
-                , .size	                                    = size
-            };
-	
-            commandBuffer.copyBuffer(  
-                  *srcBuffer
-                , *dstBuffer
-                , copyRegion
-            );
-
-            commandBuffer.end();
-            
-            vk::SubmitInfo 		            submitInfo
-            {
-                  .commandBufferCount		                = 1
-                , .pCommandBuffers		                    = &*commandBuffer
-            };
-            
-            queue.submit(submitInfo, nullptr);
-            queue.waitIdle();
-        }
-        
 
 //******************************************************************************************
 // 
