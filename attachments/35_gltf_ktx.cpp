@@ -2324,26 +2324,56 @@ class VulkanApplication
 			.flags						                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
 		}
 	    );
-	    
 	
             commandCopyBuffer.copyBuffer(
                   *srcBuffer
                 , *dstBuffer
-                , copyRegion
+                , vk::BufferCopy{.size = size}
             );
 
             commandCopyBuffer.end();
             
-            vk::SubmitInfo 		            submitInfo
+            queue.submit(vk::SubmitInfo
             {
                   .commandBufferCount		                = 1
-                , .pCommandBuffers		                    = &*commandBuffer
-            };
-            
-            queue.submit(submitInfo, nullptr);
+                , .pCommandBuffers		                    = &*commandCopyBuffer
+            }
+            , nullptr
+	    );
             queue.waitIdle();
         }
         
+
+//******************************************************************************************
+// 
+//  Name:           findMemoryType
+//  Arguments:      N/A
+//  Returns:        uint32_t
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        uint32_t findMemoryType(
+              uint32_t typeFilter
+            , vk::MemoryPropertyFlags properties
+        )
+        {
+            vk::PhysicalDeviceMemoryProperties              memProperties = physicalDevice.getMemoryProperties();
+
+            for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+            {
+                if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                {
+                    return i;
+                }
+            }
+
+            throw std::runtime_error("Failed to find suitable memory type!");
+        }
+	
+	
 //******************************************************************************************
 // 
 //  Name:           createCommandBuffers
@@ -2357,16 +2387,16 @@ class VulkanApplication
 
         void createCommandBuffers()
         {
-            commandBuffers.reserve(MAX_FRAMES_IN_FLIGHT);
+            commandBuffers.clear();
 	    
             vk::CommandBufferAllocateInfo allocInfo
             {
                   .commandPool                              = *commandPool
                 , .level                                    = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount                       = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
+                , .commandBufferCount                       = MAX_FRAMES_IN_FLIGHT
             };
-	    
-            commandBuffers                                  = device.allocateCommandBuffers(allocInfo);
+
+            commandBuffers                                  = vk::raii::CommandBuffers(device, allocInfo);
         }
 
 
@@ -2382,12 +2412,11 @@ class VulkanApplication
 //******************************************************************************************
 
         void recordCommandBuffer(
-            vk::raii::CommandBuffer &commandBuffer
-            , uint32_t imageIndex
+            uint32_t imageIndex
         )
         {
-		    vk::CommandBufferBeginInfo	beginInfo{};
-            commandBuffer.begin(beginInfo);
+	    auto &commandBuffer			= commandBuffers[frameIndex];
+            commandBuffer.begin({});
 
             vk::ClearValue clearValues[]
             {
@@ -2519,6 +2548,7 @@ class VulkanApplication
         }
         
 
+
 //******************************************************************************************
 // 
 //  Name:           drawFrame
@@ -2543,7 +2573,7 @@ class VulkanApplication
                 , imageIndex
                 ]           = swapChain.acquireNextImage(
 			                                          UINT64_MAX
-                                                    , *imageAvailableSemaphores[frameIndex]
+                                                    , *presentCompleteSemaphores[frameIndex]
                                                     , nullptr
                                                     );
 
@@ -2841,35 +2871,6 @@ class VulkanApplication
             details.presentModes				            = device.getSurfacePresentModesKHR(*surface);
             
             return details;
-        }
-
-//******************************************************************************************
-// 
-//  Name:           findMemoryType
-//  Arguments:      N/A
-//  Returns:        uint32_t
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        uint32_t findMemoryType(
-              uint32_t typeFilter
-            , vk::MemoryPropertyFlags properties
-        )
-        {
-            vk::PhysicalDeviceMemoryProperties              memProperties = physicalDevice.getMemoryProperties();
-
-            for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-            {
-                if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-                {
-                    return i;
-                }
-            }
-
-            throw std::runtime_error("Failed to find suitable memory type!");
         }
 
 //******************************************************************************************
