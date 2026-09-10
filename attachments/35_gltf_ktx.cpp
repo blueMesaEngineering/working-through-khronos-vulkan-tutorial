@@ -2417,7 +2417,32 @@ class VulkanApplication
         {
 	    auto &commandBuffer			= commandBuffers[frameIndex];
             commandBuffer.begin({});
-
+	    
+	    transition_image_layout(
+		swapChainImages[imageIndex]
+		, vk::ImageLayout::eUndefined
+		, vk::ImageLayout::eColorAttachmentOptimal
+		, {}							// srcAccessMask (no need to wait for previous operations)
+		, vk::AccessFlagBits2::eColorAttachmentWrite		// dstAccessMask
+		, vk::PipelineStageFlagBits2::eColorAttachmentOutput	//srcStage
+		, vk::PipelineStageFlagBits2::eColorAttachmentOutput	// dstStage
+		, vk::ImageAspectFlagBits::eColor
+	);
+	
+	// Transition depth image to depth attachment optimal layout
+	transition_image_layout(
+		*depthImage
+		, vk::ImageLayout::eUndefined
+		, vk::ImageLayout::eDepthAttachmentOptimal
+		, vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+		, vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+		, vk::PipelineStageFlagBits2::eEarlyFragmentTests
+		| vk::PipelineStageFlagBits2::eLateFragmentTests
+		, vk::PipelineStageFlagBits2::eEarlyFragmentTests
+		| vk::PipelineStageFlagBits2::eLateFragmentTests
+		, vk::ImageAspectFlagBits::eDepth
+	);
+	
             vk::ClearValue clearValues[]
             {
                 vk::ClearValue
@@ -2548,6 +2573,86 @@ class VulkanApplication
         }
         
 
+//******************************************************************************************
+// 
+//  Name:           updateUniformBuffer
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        void updateUniformBuffer(uint32_t currentImage)
+        {
+            static auto             startTime               = std::chrono::high_resolution_clock::now();
+
+            auto                    currentTime             = std::chrono::high_resolution_clock::now();
+            float                   time                    = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+            UniformBufferObject     ubo{};
+
+            ubo.model                                       = glm::rotate(
+                                                                          glm::mat4(1.0f)
+                                                                        , time * glm::radians(90.0f)
+                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
+                                                                        );
+            
+            ubo.view                                        = glm::lookAt(
+                                                                          glm::vec3(2.0f, 2.0f, 2.0f)
+                                                                        , glm::vec3(0.0f, 0.0f, 0.0f)
+                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
+                                                                        );
+
+            ubo.proj                                        = glm::perspective(
+                                                                          glm::radians(45.0f)
+                                                                        , swapChainExtent.width / (float) swapChainExtent.height
+                                                                        , 0.1f
+                                                                        , 10.0f
+                                                                        );
+
+            ubo.proj[1][1] *= -1;
+
+		    void *data;
+		    data						                    = uniformBuffersMemory[currentImage].mapMemory(0, sizeof(ubo));
+
+            memcpy(
+			      data
+                , &ubo
+                , sizeof(ubo)
+            );
+		
+		    uniformBuffersMemory[currentImage].unmapMemory();
+        }
+	
+#if PLATFORM_ANDROID
+	// Handle app commands
+	static void handleAppCommand(
+          android_app *app
+        , int32_t cmd
+	)
+	{
+		auto 		                    *vulkanApp			= static_cast<HelloTriangleApplication *>(app->userData);
+		switch (cmd)
+		{
+			case APP_CMD_INIT_WINDOW:
+				// Window created, initialize Vulkan
+				if (app->window != nullptr)
+				{
+					vulkanApp->initVulkan();
+				}
+				break;
+			case APP_CMD_TERM_WINDOW:
+				// Window destroyed, clean up Vulkan
+				vulkanApp->cleanup();
+				break;
+			default:
+				break;
+		}
+	}
+	
+	
 
 //******************************************************************************************
 // 
@@ -2656,65 +2761,6 @@ class VulkanApplication
 
             frameIndex                                      = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
         }
-        
-
-//******************************************************************************************
-// 
-//  Name:           getRequiredInstanceExtensions
-//  Arguments:      N/A
-//  Returns:        std::vector<const char *>
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-        
-	    // Get required extensions
-        std::vector<const char *> getRequiredInstanceExtensions()
-        {
-#if PLATFORM_ANDROID
-            // Android requires these extensions
-            std::vector<const char *>  extensions		    = 
-            {
-                  VK_KHR_SURFACE_EXTENSION_NAME
-                , VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
-            };
-#else
-            // Get the required extensions from GLFW
-            uint32_t			glfwExtensionCount		    = 0;
-            auto				glfwExtensions			    = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-            std::vector<const char *> 	extensions(
-                                              glfwExtensions
-                                            , glfwExtensions + glfwExtensionCount
-                                        );
-#endif
-            // Check if the debug utils extension is available
-            std::vector<vk::ExtensionProperties>	props	= context.enumerateInstanceExtensionProperties();
-            bool				debugUtilsAvailable	        = std::ranges::any_of(
-                                                                            props
-                                                                            , [](vk::ExtensionProperties const &ep
-                                                                            )
-                                                                            {
-                                                                                return strcmp(
-                                                                                        ep.extensionName
-                                                                                        , vk::EXTDebugUtilsExtensionName
-                                                                                        ) == 0;
-                                                                            });
-            // Always include the debug utils extension if available
-            if (debugUtilsAvailable)
-            {
-                extensions.push_back(vk::EXTDebugUtilsExtensionName);
-#if PLATFORM_DESKTOP
-            }
-            else
-            {
-                LOG_INFO("VK_EXT_debug_utils extension not available.  Validation layers may not work.");
-#endif
-		    }
-		
-		return extensions;
-	}
-	
 	
 //******************************************************************************************
 // 
@@ -2850,7 +2896,64 @@ class VulkanApplication
 		        return actualExtent;
 		    }
         }
+        
 
+//******************************************************************************************
+// 
+//  Name:           getRequiredInstanceExtensions
+//  Arguments:      N/A
+//  Returns:        std::vector<const char *>
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+        
+        std::vector<const char *> getRequiredInstanceExtensions()
+        {
+#if PLATFORM_ANDROID
+            // Android requires these extensions
+            std::vector<const char *>  extensions		    = 
+            {
+                  VK_KHR_SURFACE_EXTENSION_NAME
+                , VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
+            };
+#else
+            // Get the required extensions from GLFW
+            uint32_t			glfwExtensionCount		    = 0;
+            auto				glfwExtensions			    = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+            std::vector<const char *> 	extensions(
+                                              glfwExtensions
+                                            , glfwExtensions + glfwExtensionCount
+                                        );
+#endif
+            // Check if the debug utils extension is available
+            std::vector<vk::ExtensionProperties>	props	= context.enumerateInstanceExtensionProperties();
+            bool				debugUtilsAvailable	        = std::ranges::any_of(
+                                                                            props
+                                                                            , [](vk::ExtensionProperties const &ep
+                                                                            )
+                                                                            {
+                                                                                return strcmp(
+                                                                                        ep.extensionName
+                                                                                        , vk::EXTDebugUtilsExtensionName
+                                                                                        ) == 0;
+                                                                            });
+            // Always include the debug utils extension if available
+            if (debugUtilsAvailable)
+            {
+                extensions.push_back(vk::EXTDebugUtilsExtensionName);
+#if PLATFORM_DESKTOP
+            }
+            else
+            {
+                LOG_INFO("VK_EXT_debug_utils extension not available.  Validation layers may not work.");
+#endif
+		    }
+		
+		return extensions;
+	}
+	
 
 //******************************************************************************************
 // 
@@ -2873,86 +2976,6 @@ class VulkanApplication
             return details;
         }
 
-//******************************************************************************************
-// 
-//  Name:           updateUniformBuffer
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void updateUniformBuffer(uint32_t currentImage)
-        {
-            static auto             startTime               = std::chrono::high_resolution_clock::now();
-
-            auto                    currentTime             = std::chrono::high_resolution_clock::now();
-            float                   time                    = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-            UniformBufferObject     ubo{};
-
-            ubo.model                                       = glm::rotate(
-                                                                          glm::mat4(1.0f)
-                                                                        , time * glm::radians(90.0f)
-                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
-                                                                        );
-            
-            ubo.view                                        = glm::lookAt(
-                                                                          glm::vec3(2.0f, 2.0f, 2.0f)
-                                                                        , glm::vec3(0.0f, 0.0f, 0.0f)
-                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
-                                                                        );
-
-            ubo.proj                                        = glm::perspective(
-                                                                          glm::radians(45.0f)
-                                                                        , swapChainExtent.width / (float) swapChainExtent.height
-                                                                        , 0.1f
-                                                                        , 10.0f
-                                                                        );
-
-            ubo.proj[1][1] *= -1;
-
-		    void *data;
-		    data						                    = uniformBuffersMemory[currentImage].mapMemory(0, sizeof(ubo));
-
-            memcpy(
-			      data
-                , &ubo
-                , sizeof(ubo)
-            );
-		
-		    uniformBuffersMemory[currentImage].unmapMemory();
-        }
-	
-#if PLATFORM_ANDROID
-	// Handle app commands
-	static void handleAppCommand(
-          android_app *app
-        , int32_t cmd
-	)
-	{
-		auto 		                    *vulkanApp			= static_cast<HelloTriangleApplication *>(app->userData);
-		switch (cmd)
-		{
-			case APP_CMD_INIT_WINDOW:
-				// Window created, initialize Vulkan
-				if (app->window != nullptr)
-				{
-					vulkanApp->initVulkan();
-				}
-				break;
-			case APP_CMD_TERM_WINDOW:
-				// Window destroyed, clean up Vulkan
-				vulkanApp->cleanup();
-				break;
-			default:
-				break;
-		}
-	}
-	
-	
 //******************************************************************************************
 // 
 //  Name:           handleInputEvent
