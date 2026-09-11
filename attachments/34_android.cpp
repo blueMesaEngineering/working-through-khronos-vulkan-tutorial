@@ -2531,7 +2531,7 @@ class HelloTriangleApplication
         {
             assert(!availableFormats.empty());
             const auto formatIt                             = std::ranges::find_if(  
-                                                                              av<ailableFormats
+                                                                              availableFormats
                                                                             , [](const auto &format) 
                                                                             {
                                                                                     return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
