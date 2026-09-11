@@ -2946,14 +2946,7 @@ class VulkanApplication
             {
                 return capabilities.currentExtent;
             }
-            else
-            {
-#if PLATFORM_ANDROID
-                // Get the window size from Android
-                int32_t		            width			    = ANativeWindow_getWidth(androidApp->window);
-                int32_t		            height			    = ANativeWindow_getHeight(androidApp->window);
-#else
-		        // Get the window size from GLFW
+#if PLATFORM_DESKTOP
                 int width, height;
 
                 glfwGetFramebufferSize(
@@ -2961,23 +2954,26 @@ class VulkanApplication
                     , &width
                     , &height
                 );
+#else
+		ANativeWindow		*window					= androidAppState.nativeWindow;
+		int			width					= ANativeWindow_getWidth(window);
+		in			height					= ANativeWindow_getHeight(window);
 #endif
 
-                vk::Extent2D		    actualExtent		= 
-                {
-                      static_cast<uint32_t>(width)
-                    , static_cast<uint32_t>(height)
-                };
 
-                actualExtent.width	                        = std::clamp(  actualExtent.width
+		return
+		{
+			std::clamp<uint32_t>(  
+										width
                                                                          , capabilities.minImageExtent.width
-                                                                         , capabilities.maxImageExtent.width);
-                actualExtent.height	                        = std::clamp(  actualExtent.height
+                                                                         , capabilities.maxImageExtent.width
+									 )
+			, std::clamp<uint32_t>(  
+										height
                                                                          , capabilities.minImageExtent.height
-                                                                         , capabilities.maxImageExtent.height);
-				       
-		        return actualExtent;
-		    }
+                                                                         , capabilities.maxImageExtent.height
+									 )
+		    };
         }
         
 
@@ -2992,47 +2988,29 @@ class VulkanApplication
 // 
 //******************************************************************************************
         
-        std::vector<const char *> getRequiredInstanceExtensions()
+        [[nodiscard]] std::vector<const char *> getRequiredInstanceExtensions() const
         {
-#if PLATFORM_ANDROID
-            // Android requires these extensions
-            std::vector<const char *>  extensions		    = 
-            {
-                  VK_KHR_SURFACE_EXTENSION_NAME
-                , VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
-            };
-#else
-            // Get the required extensions from GLFW
-            uint32_t			glfwExtensionCount		    = 0;
-            auto				glfwExtensions			    = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-            std::vector<const char *> 	extensions(
-                                              glfwExtensions
-                                            , glfwExtensions + glfwExtensionCount
-                                        );
-#endif
-            // Check if the debug utils extension is available
-            std::vector<vk::ExtensionProperties>	props	= context.enumerateInstanceExtensionProperties();
-            bool				debugUtilsAvailable	        = std::ranges::any_of(
-                                                                            props
-                                                                            , [](vk::ExtensionProperties const &ep
-                                                                            )
-                                                                            {
-                                                                                return strcmp(
-                                                                                        ep.extensionName
-                                                                                        , vk::EXTDebugUtilsExtensionName
-                                                                                        ) == 0;
-                                                                            });
-            // Always include the debug utils extension if available
-            if (debugUtilsAvailable)
-            {
-                extensions.push_back(vk::EXTDebugUtilsExtensionName);
+		std::vector<const char *> extensions;
+		
 #if PLATFORM_DESKTOP
-            }
-            else
-            {
-                LOG_INFO("VK_EXT_debug_utils extension not available.  Validation layers may not work.");
+		// Get GLFW extensions
+		uint32_t 		glfwExtensionCount			= 0;
+		auto			glfwExtensions				= glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+		extensions.assign(
+			glfwExtensions
+			, glfwExtensions + glfwExtensionCount
+		);
+#else
+		// Android extensions
+		extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+		extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
 #endif
-		    }
+
+		// Add debug extensions if validation layers are enabled
+		if (enableValidationLayers)
+		{
+			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		}
 		
 		return extensions;
 	}
@@ -3040,49 +3018,59 @@ class VulkanApplication
 
 //******************************************************************************************
 // 
-//  Name:           querySwapChainSupport
-//  Arguments:      filename
-//  Returns:        SwapChainSupportDetails
+//  Name:           checkValidationLayerSupport
+//  Arguments:      
+//  Returns:        bool
 //  Calls:          
 //  Called by:      
 //  Description:    
 // 
 //******************************************************************************************
 
-        SwapChainSupportDetails querySwapChainSupport(vk::raii::PhysicalDevice device)
-        {
-            SwapChainSupportDetails		    details;
-            details.capabilities				            = device.getSurfaceCapabilitiesKHR(*surface);
-            details.formats					                = device.getSurfaceFormatsKHR(*surface);
-            details.presentModes				            = device.getSurfacePresentModesKHR(*surface);
-            
-            return details;
-        }
-
-#endif
-};
-        
-// Platform-specific entry point
-#if PLATFORM_ANDROID
-// Android main entry point
-void android_main(android_app *app)
-{
-	// Make sure glue isn't stripped
-	app_dummy();
+	[[nodiscard]] bool checkValidationLayerSupport() const
+	{
+		return (std::ranges::any_of(
+					context.enumerateInstanceLayerProperties()
+					, [](vk::LayerProperties const &lp)
+					{
+						return (
+							strcmp("VK_LAYER_KHRONOS_validation"
+							, lp.layerName) == 0
+						);
+					}
+				)
+			);
+	}
 	
-	try
-	{
-		// Create and run the Vulkan application
-		HelloTriangleApplication 	vulkanApp(app);
-		vulkanApp.run();
-	}
-	catch (const std::exception &e)
-	{
-		LOGE("Exception caught: %s", e.what());
-	}
-}
-#else
 
+//******************************************************************************************
+// 
+//  Name:           checkValidationLayerSupport
+//  Arguments:      
+//  Returns:        bool
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
+		vk::DebugUtilsMessageSeverityFlagBitsEXT severity
+		, vk::DebugUtilsMessageTypeFlagsEXT type
+		, const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData
+		, void *
+	)
+	{
+		if (	   severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
+			|| severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning)
+		{
+			std::cerr << "Validation layer: type " << to_string(type) << " msg: " << pCallbackData->pMessage<< std::endl;
+		}
+		
+		return vk::False;
+	}
+	
+	
 // Cross-platform file reading function
         
 
@@ -3127,7 +3115,7 @@ std::vector<char> readFile(const std::string &filename)
 		AAsset_close(asset);
 		
 #else
-	    // Desktop version or Android fallback to filesystem
+	    // Desktop file loading
             std::ifstream file(  filename
                                , std::ios::ate | std::ios::binary);
 
@@ -3145,8 +3133,18 @@ std::vector<char> readFile(const std::string &filename)
 #endif
             return buffer;
         }
+};
 
-// Desktop main entry point
+#if PLATFORM_ANDROID
+void android_main(android_app *app)
+{
+	app_dummy();
+	
+	VulkanApplication vulkanApp;
+	
+	vulkanApp.run(app);
+}
+#else
 
 //******************************************************************************************
 // 
@@ -3163,12 +3161,12 @@ int main()
 {
     try
     {
-        HelloTriangleApplication app;
+        VulkanApplication app;
         app.run();
     }
     catch (const std::exception &e)
     {
-        std::cerr << e.what() << std::endl;
+        LOGE("%s", e.what());
         return EXIT_FAILURE;
     }
 
