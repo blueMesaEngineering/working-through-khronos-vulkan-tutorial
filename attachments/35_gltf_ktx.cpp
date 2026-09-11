@@ -315,9 +315,22 @@ class VulkanApplication
 				break;
 			default:
 				break;
-				}
 		}
-		
+	}
+	
+
+//******************************************************************************************
+// 
+//  Name:           handleInputEvent
+//  Arguments:      android_app *app
+//		            AInputEvent *event
+//  Returns:        int32_t
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+	
 		static int32_t handleInputEvent(
 			android_app *app
 			, AInputEvent *event
@@ -2443,69 +2456,70 @@ class VulkanApplication
 		, vk::ImageAspectFlagBits::eDepth
 	);
 	
-            vk::ClearValue clearValues[]
-            {
-                vk::ClearValue
-                {
-                    vk::ClearColorValue(  
+            vk::ClearValue clearColor		= vk::ClearColorValue(  
                           0.0f
                         , 0.0f
                         , 0.0f
                         , 1.0f
-                    )
-                }
-                , vk::ClearValue 
-                {
-                    vk::ClearDepthStencilValue(1.0f, 0)
-                }
-            };
+                    );
 
-            vk::RenderPassBeginInfo		renderPassInfo
-            {
-                  .renderPass			                    = *renderPass
-                , .framebuffer			                    = *swapChainFramebuffers[imageIndex]
-                , .renderArea			                    = 
-                    {
-                          .offset					        = {0,0}
-                        , .extent					        = swapChainExtent
-                    }
-                , .clearValueCount		                    = 2
-                , .pClearValues			                    = clearValues
-            };
-            
-            commandBuffer.beginRenderPass(
-                  renderPassInfo
-                , vk::SubpassContents::eInline
-            );
+                vk::RenderingAttachmentInfo		attachmentInfo		=
+		{
+			  .imageView						= *swapChainImageViews[imageIndex]
+			, .imageLayout						= vk::ImageLayout::eColorAttachmentOptimal
+			, .loadOp						= vk::AttachmentLoadOp::eClear
+			, .storeOp						= vk::AttachmentStoreOp::eStore
+			, .clearValue						= clearColor
+		};
+		
+		vk::ClearValue				clearDepth		= vk::ClearDepthStencilValue{1.0f, 0};
+		
+		vk::RenderingAttachmentInfo		depthAttachmentInfo
+		{
+			  .imageView						= *depthImageView
+			, .imageLayout						= vk::ImageLayout::eDepthStencilAttachmentOptimal
+			, .loadOp						= vk::AttachmentLoadOp::eClear
+			, .storeOp						= vk::AttachmentStoreOp::eDontCare
+			, .clearValue						= clearDepth
+		};
+		
+		vk::RenderingInfo			renderingInfo		=
+		{
+			  .renderArea						= {.offset = {0, 0}, .extent = swapChainExtent}
+			, .layerCount						= 1
+			, .colorAttachmentCount					= 1
+			, .pColorAttachments					= &attachmentInfo
+			, .pDepthAttachment					= &depthAttachmentInfo
+		};
+		
+		commandBuffer.beginRendering(renderingInfo);
 
-            commandBuffer.bindPipeline(  
+            commandBuffer.bindPipeline(
                   vk::PipelineBindPoint::eGraphics
                 , *graphicsPipeline
             );
 
-            vk::Viewport 		        viewport
-            {
-                  .x			                            = 0.0f
-                , .y			                            = 0.0f
-                , .width		                            = static_cast<float>(swapChainExtent.width)
-                , .height		                            = static_cast<float>(swapChainExtent.height)
-                , .minDepth		                            = 0.0f
-                , .maxDepth		                            = 1.0f
-            };
+            commandBuffer.setViewport(
+		0
+		, vk::Viewport(
+		      0.0f
+                    , 0.0f
+                    , static_cast<float>(swapChainExtent.width)
+                    , static_cast<float>(swapChainExtent.height)
+                    , 0.0f
+                    , 1.0f
+		)
+	    );
             
-            commandBuffer.setViewport(0, viewport);
-            
-            vk::Rect2D scissor
-            {
-                  .offset		                            = {0, 0}
-                , .extent	                                = swapChainExtent
-            };
-
-            commandBuffer.setScissor(0, scissor);
+            commandBuffer.setScissor(
+		  0
+		, vk::Rect2D(vk::Offset2D(0, 0)
+                , swapChainExtent
+            );
 
             commandBuffer.bindVertexBuffers(  
                   0
-                , {*vertexBuffer}
+                , *vertexBuffer
                 , {0}
             );
 
@@ -2524,17 +2538,82 @@ class VulkanApplication
             );
 
             commandBuffer.drawIndexed(
-                  static_cast<uint32_t>(indices.size())
+                  indices.size()
                 , 1
                 , 0
                 , 0
                 , 0
             );
 
-	        commandBuffer.endRenderPass();
+	        commandBuffer.endRendering();
+		// After rendering, transition the swapchain image to PRESENT_SRC
+		transition_image_layout(
+			swapChainImages[imageIndex]
+			, vk::ImageLayout::eColorAttachmentOptimal
+			, vk::ImageLayout::ePresentSrcKHR
+			, vk::AccessFlagBits2::eColorAttachmentWrite		// srcAccessMask
+			, {}							// dstAccessMask
+			, vk::PipelineStageFlagBits2::eColorAttachmentOutput	// srcStage
+			, vk::PipelineStageFlagBits2::eBottomOfPipe		// dstStage
+			, vk::ImageAspectFlagBits::eColor
+		);
 	    
             commandBuffer.end();
         }
+
+
+//******************************************************************************************
+// 
+//  Name:           transition_image_layout
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	void transition_image_layout(
+		vk::Image			image
+		, vk::ImageLayout		old_layout
+		, vk::ImageLayout		new_layout
+		, vk::AccessFlags2		src_access_mask
+		, vk::AccessFlags2		dst_access_mask
+		, vk::PipelineStageFlags2	src_stage_mask
+		, vk::PipelineStageFlags2	dst_stage_mask
+		, vk::ImageAspectFlags		image_aspect_flags
+	)
+	{
+		vk::ImageMemoryBarrier2 	barrier				=
+		{
+			  .srcStageMask						= src_stage_mask
+			, .srcAccessMask					= src_access_mask
+			, .dstStageMask						= dst_stage_mask
+			, .dstAccessMask					= dst_access_mask
+			, .oldLayout						= old_layout
+			, .newLayout						= new_layout
+			, .srcQueueFamilyIndex					= VK_QUEUE_FAMILY_IGNORED
+			, .dstQueueFamilyIndex					= VK_QUEUE_FAMILY_IGNORED
+			, .image						= image
+			, .subresourceRange					=
+			{
+				  .aspectMask					= image_aspect_flags
+				, .baseMipLevel					= 0
+				, .levelCount					= 1
+				, .baseArrayLayer				= 0
+				, .layerCount					= 1
+			}
+		};
+		
+		vk::DependencyInfo		dependency_info			=
+		{
+			  .dependencyFlags					= {}
+			, .imageMemoryBarrierCount				= 1
+			, .pImageMemoryBarriers					= &barrier
+		};
+		
+		commandBuffers[frameIndex].pipelineBarrier2(dependency_info);
+	}
 
 
 //******************************************************************************************
@@ -2550,26 +2629,28 @@ class VulkanApplication
 
         void createSyncObjects()
         {
-            imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
-            renderFinishedSemaphores.reserve(swapChainImages.size());
-            inFlightFences.reserve(MAX_FRAMES_IN_FLIGHT);
-            
-            vk::SemaphoreCreateInfo		    semaphoreInfo{};
-            vk::FenceCreateInfo		        fenceInfo
-                                            {
-                                                .flags		= vk::FenceCreateFlagBits::eSignaled
-                                            };
-		
-            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-		        imageAvailableSemaphores.push_back(device.createSemaphore(semaphoreInfo));
-                inFlightFences.push_back(device.createFence(fenceInfo));
-            }
+		assert(
+			presentCompleteSemaphores.empty()
+			&& renderFinishedSemaphores.empty()
+			&& inFlightFences.empty()
+		);
 
             for (size_t i = 0; i < swapChainImages.size(); i++)
             {
-                renderFinishedSemaphores.push_back(device.createSemaphore(semaphoreInfo));
+                renderFinishedSemaphores.emplace_back(device, vk::SemaphoreCreateInfo());
             }
+	    
+	    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	    {
+		presentCompleteSemaphores.emplace_back(device, vk::SemaphoreCreateInfo());
+		inFlightFences.emplace_back(
+			device
+			, vk::FenceCreateInfo
+			{
+				.flags						= vk::FenceCreateFlagBits::eSignaled
+			}
+		);
+	    }
         }
         
 
@@ -2584,22 +2665,30 @@ class VulkanApplication
 // 
 //******************************************************************************************
 
-        void updateUniformBuffer(uint32_t currentImage)
+        void updateUniformBuffer(uint32_t currentImage) const
         {
             static auto             startTime               = std::chrono::high_resolution_clock::now();
 
             auto                    currentTime             = std::chrono::high_resolution_clock::now();
-            float                   time                    = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+            float                   time                    = std::chrono::duration<float>(currentTime - startTime).count();
 
             UniformBufferObject     ubo{};
-
-            ubo.model                                       = glm::rotate(
+	    
+	    glm::mat4			initialRotation		= glm::rotate(
+                                                                          glm::mat4(1.0f)
+                                                                        , glm::radians(-90.0f)
+                                                                        , glm::vec3(1.0f, 0.0f, 0.0f)
+                                                                        );
+									
+	    glm::mat4			continuousRotation	= glm::rotate(
                                                                           glm::mat4(1.0f)
                                                                         , time * glm::radians(90.0f)
                                                                         , glm::vec3(0.0f, 0.0f, 1.0f)
                                                                         );
+
+            ubo.model                                       = continuousRotation * initialRotation;
             
-            ubo.view                                        = glm::lookAt(
+            ubo.view                                        = lookAt(
                                                                           glm::vec3(2.0f, 2.0f, 2.0f)
                                                                         , glm::vec3(0.0f, 0.0f, 0.0f)
                                                                         , glm::vec3(0.0f, 0.0f, 1.0f)
@@ -2607,51 +2696,19 @@ class VulkanApplication
 
             ubo.proj                                        = glm::perspective(
                                                                           glm::radians(45.0f)
-                                                                        , swapChainExtent.width / (float) swapChainExtent.height
+                                                                        , static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height)
                                                                         , 0.1f
                                                                         , 10.0f
                                                                         );
 
             ubo.proj[1][1] *= -1;
 
-		    void *data;
-		    data						                    = uniformBuffersMemory[currentImage].mapMemory(0, sizeof(ubo));
-
             memcpy(
-			      data
+		  uniformBuffersMapped[currentImage]
                 , &ubo
                 , sizeof(ubo)
             );
-		
-		    uniformBuffersMemory[currentImage].unmapMemory();
         }
-	
-#if PLATFORM_ANDROID
-	// Handle app commands
-	static void handleAppCommand(
-          android_app *app
-        , int32_t cmd
-	)
-	{
-		auto 		                    *vulkanApp			= static_cast<HelloTriangleApplication *>(app->userData);
-		switch (cmd)
-		{
-			case APP_CMD_INIT_WINDOW:
-				// Window created, initialize Vulkan
-				if (app->window != nullptr)
-				{
-					vulkanApp->initVulkan();
-				}
-				break;
-			case APP_CMD_TERM_WINDOW:
-				// Window destroyed, clean up Vulkan
-				vulkanApp->cleanup();
-				break;
-			default:
-				break;
-		}
-	}
-	
 	
 
 //******************************************************************************************
@@ -2667,11 +2724,17 @@ class VulkanApplication
 
         void drawFrame()
         {
-            static_cast<void>(device.waitForFences(
-                  {*inFlightFences[frameIndex]}
-                , VK_TRUE
-                , UINT64_MAX)
-			);
+		// Note: inFlightFences, presentCompleteSemaphores, and commandBuffers are indexed by frameIndex,
+		// 	 while renderFinishedSemaphores is indexed by imageIndex
+		auto 			fenceResult				= device.waitForFences(
+												*inFlightFences[frameIndex]
+												, vk::True
+												, UINT64_MAX
+												);
+		if (fenceResult != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to wait for fence!");
+		}
 
             auto [
                   result
@@ -2702,24 +2765,20 @@ class VulkanApplication
                 throw std::runtime_error("Failed to acquire swap chain image!");
             }
 
-		    // Update uniform buffer with current transformation
             updateUniformBuffer(frameIndex);
 
             // Only reset the fence if we are submitting work                    
             device.resetFences(*inFlightFences[frameIndex]);
 
             commandBuffers[frameIndex].reset();
-            recordCommandBuffer(
-                  commandBuffers[frameIndex]
-                , imageIndex
-            );
+            recordCommandBuffer(imageIndex);
 
             vk::PipelineStageFlags  waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
 
             const vk::SubmitInfo        submitInfo
             {
                   .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*imageAvailableSemaphores[frameIndex]
+                , .pWaitSemaphores                          = &*presentCompleteSemaphores[frameIndex]
                 , .pWaitDstStageMask                        = &waitDestinationStageMask
                 , .commandBufferCount                       = 1
                 , .pCommandBuffers                          = &*commandBuffers[frameIndex]
@@ -2761,6 +2820,32 @@ class VulkanApplication
 
             frameIndex                                      = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
         }
+
+
+//******************************************************************************************
+// 
+//  Name:           createShaderModule
+//  Arguments:      N/A
+//  Returns:        [[nodiscard]] vk::raii::ShaderModule
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	[[nodiscard]] vk::raii::ShaderModule createShaderModule(const std::vector<char> &code) const
+	{
+		vk::ShaderModuleCreateInfo	createInfo
+		{
+			  .codeSize						= code.size()
+			, .pCode							= reinterpret_cast<const uint32_t *>(code.data())
+		};
+		
+		vk::raii::ShaderModule		shaderModule{device, createInfo};
+		
+		return shaderModule;
+	}
+	
 	
 //******************************************************************************************
 // 
@@ -2796,11 +2881,11 @@ class VulkanApplication
 // 
 //******************************************************************************************
 
-        vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats)
+        static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats)
         {
             assert(!availableFormats.empty());
             const auto formatIt                             = std::ranges::find_if(  
-                                                                              av<ailableFormats
+                                                                              availableFormats
                                                                             , [](const auto &format) 
                                                                             {
                                                                                     return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
@@ -2821,11 +2906,10 @@ class VulkanApplication
 // 
 //******************************************************************************************
 
-	    // Choose swap present mode
         static vk::PresentModeKHR chooseSwapPresentMode(std::vector<vk::PresentModeKHR> const &availablePresentModes)
         {
             assert(std::ranges::any_of(
-					                     availablePresentModes
+					 availablePresentModes
                                        , [](auto presentMode)
                                     {
                                         return presentMode == vk::PresentModeKHR::eFifo;
@@ -2834,7 +2918,7 @@ class VulkanApplication
 			);
 
             return std::ranges::any_of(
-					                     availablePresentModes
+					 availablePresentModes
                                        , [](const vk::PresentModeKHR value)
                                     {
                                         return vk::PresentModeKHR::eMailbox == value;
@@ -2845,7 +2929,6 @@ class VulkanApplication
         }
         
         
-
 //******************************************************************************************
 // 
 //  Name:           chooseSwapExtent
@@ -2976,37 +3059,6 @@ class VulkanApplication
             return details;
         }
 
-//******************************************************************************************
-// 
-//  Name:           handleInputEvent
-//  Arguments:      android_app *app
-//		            AInputEvent *event
-//  Returns:        int32_t
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-	
-	static int32_t handleInputEvent(
-		  android_app *app
-		, AInputEvent *event
-	)
-	{
-		auto *vulkanApp					= static_cast<HelloTriangleApplication *>(app->userData);
-		if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION)
-		{
-			// Handle touch events
-			float x					= AMotionEvent_getX(event, 0);
-			float y					= AMotionEvent_getY(event, 0);
-			
-			// Process touch coordinates
-			LOGI("Touch at: %f, %f", x, y);
-			
-			return 1;
-		}
-		return 0;
-	}
 #endif
 };
         
