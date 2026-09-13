@@ -1593,8 +1593,8 @@ class VulkanApplication
 
         void createTextureSampler()
         {
-		vk::PhysicalDeviceProperties 	properties	= physicalDevice.getProperties();
-            vk::SamplerCreateInfo               samplerInfo
+		vk::PhysicalDeviceProperties 	properties	        = physicalDevice.getProperties();
+            vk::SamplerCreateInfo       samplerInfo
             {
                   .magFilter                                = vk::Filter::eLinear
                 , .minFilter                                = vk::Filter::eLinear
@@ -1602,7 +1602,7 @@ class VulkanApplication
                 , .addressModeU                             = vk::SamplerAddressMode::eRepeat
                 , .addressModeV                             = vk::SamplerAddressMode::eRepeat
                 , .addressModeW                             = vk::SamplerAddressMode::eRepeat
-		, .mipLodBias				    = 0.0f
+		        , .mipLodBias				                = 0.0f
                 , .anisotropyEnable                         = vk::True
                 , .maxAnisotropy                            = properties.limits.maxSamplerAnisotropy
                 , .compareEnable                            = vk::False
@@ -1712,7 +1712,7 @@ class VulkanApplication
 // 
 //  Name:           transitionImageLayout
 //  Arguments:      N/A
-//  Returns:        
+//  Returns:        void
 //  Calls:          
 //  Called by:      
 //  Description:    
@@ -1720,21 +1720,21 @@ class VulkanApplication
 //******************************************************************************************
 
         void transitionImageLayout(
-              const vk::raii::Image         		&image
+              const vk::raii::Image         &image
             , vk::ImageLayout               oldLayout
             , vk::ImageLayout               newLayout
         )
         {
-		auto commandBuffer			= beginSingleTimeCommands();
+		    auto                    commandBuffer			= beginSingleTimeCommands();
 
-            vk::ImageMemoryBarrier          barrier         
+            vk::ImageMemoryBarrier  barrier         
             {
                   .oldLayout                                = oldLayout
                 , .newLayout                                = newLayout
                 , .image                                    = *image
                 , .subresourceRange                         = 
                 {
-			vk::ImageAspectFlagBits::eColor
+			          vk::ImageAspectFlagBits::eColor
                     , 0
                     , 1
                     , 0
@@ -1776,7 +1776,8 @@ class VulkanApplication
                 , nullptr
                 , barrier
             );
-	    endSingleTimeCommands(*commandBuffer);
+	    
+            endSingleTimeCommands(*commandBuffer);
         }
 
 
@@ -1840,17 +1841,17 @@ class VulkanApplication
         void loadModel()
         {
             // Use tinygltf to load the model instead of tinyobjloader
-            tinygltf::Model			model;
-            tinygltf::TinyGLTF		loader;
-            std::string			err;
-            std::string			warn;
+            tinygltf::Model			    model;
+            tinygltf::TinyGLTF		    loader;
+            std::string			        err;
+            std::string			        warn;
             
-            bool 				ret			= loader.LoadBinaryFromFile(
-                                                &model
-                                                , &err
-                                                , &warn
-                                                , MODEL_PATH
-            );
+            bool 				        ret			= loader.LoadBinaryFromFile(
+                                                                        &model
+                                                                        , &err
+                                                                        , &warn
+                                                                        , MODEL_PATH
+                                                                    );
             
             if (!warn.empty())
             {
@@ -1883,41 +1884,41 @@ class VulkanApplication
                     // Get vertex positions
                     const tinygltf::Accessor		&posAccessor		= model.accessors[primitive.attributes.at("POSITION")];
                     const tinygltf::BufferView		&posBufferView		= model.bufferViews[posAccessor.bufferView];
-                    const tinygltf::Buffer			&posBuffer		= model.buffers[posBufferView.buffer];
+                    const tinygltf::Buffer			&posBuffer		    = model.buffers[posBufferView.buffer];
                     
                     // Get texture coordinates if available
-                    bool 					hasTexCoords		= primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end();
-                    const tinygltf::Accessor		*texCoordAccessor		= nullptr;
+                    bool 					        hasTexCoords		= primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end();
+                    const tinygltf::Accessor		*texCoordAccessor	= nullptr;
                     const tinygltf::BufferView		*texCoordBufferView	= nullptr;
                     const tinygltf::Buffer			*texCoordBuffer		= nullptr;
                     
                     if (hasTexCoords)
                     {
-                        texCoordAccessor					= &model.accessors[primitive.attributes.at("TEXCOORD_0")];
-                        texCoordBufferView					= &model.bufferViews[texCoordAccessor->bufferView];
-                        texCoordBuffer						= &model.buffers[texCoordBufferView->buffer];
+                        texCoordAccessor					            = &model.accessors[primitive.attributes.at("TEXCOORD_0")];
+                        texCoordBufferView					            = &model.bufferViews[texCoordAccessor->bufferView];
+                        texCoordBuffer						            = &model.buffers[texCoordBufferView->buffer];
                     }
                     
-                    uint32_t baseVertex						= static_cast<uint32_t>(vertices.size());
+                    uint32_t                        baseVertex			= static_cast<uint32_t>(vertices.size());
                     
                     for (size_t i = 0; i < posAccessor.count; i++)
                     {
                         Vertex vertex{};
                         
-                        const float *pos					= reinterpret_cast<const float *>(&posBuffer.data[posBufferView.byteOffset + posAccessor.byteOffset + i * 12]);
+                        const float                 *pos				= reinterpret_cast<const float *>(&posBuffer.data[posBufferView.byteOffset + posAccessor.byteOffset + i * 12]);
                         // glTF uses a right-handed coordinate system with Y-up
                         // Vulkan uses a right-handed coordinate system with Y-down
                         // We need to flip the Y coordinate
-                        vertex.pos						= {pos[0], -pos[1], pos[2]};
+                        vertex.pos						                = {pos[0], -pos[1], pos[2]};
                         
                         if (hasTexCoords)
                         {
-                            const float *texCoord				= reinterpret_cast<const float *>(&texCoordBuffer->data[texCoordBufferView->byteOffset + texCoordAccessor->byteOffset + i * 8]);
-                            vertex.texCoord					= {texCoord[0], texCoord[1]};
+                            const float             *texCoord			= reinterpret_cast<const float *>(&texCoordBuffer->data[texCoordBufferView->byteOffset + texCoordAccessor->byteOffset + i * 8]);
+                            vertex.texCoord					            = {texCoord[0], texCoord[1]};
                         }
                         else
                         {
-                            vertex.texCoord					= {0.0f, 0.0f};
+                            vertex.texCoord					            = {0.0f, 0.0f};
                         }
                         
                         vertex.color = {1.0f, 1.0f, 1.0f};
@@ -1925,22 +1926,22 @@ class VulkanApplication
                         vertices.push_back(vertex);
                     }
                     
-                    const unsigned char *indexData					= &indexBuffer.data[indexBufferView.byteOffset + indexAccessor.byteOffset];
-                    size_t				indexCount			= indexAccessor.count;
-                    size_t				indexStride			= 0;
+                    const unsigned char             *indexData			= &indexBuffer.data[indexBufferView.byteOffset + indexAccessor.byteOffset];
+                    size_t				            indexCount			= indexAccessor.count;
+                    size_t				            indexStride			= 0;
                     
                     // Determine index stride based on component type
                     if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
                     {
-                        indexStride						= sizeof(uint16_t);
+                        indexStride						                = sizeof(uint16_t);
                     }
                     else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
                     {
-                        indexStride						= sizeof(uint32_t);
+                        indexStride						                = sizeof(uint32_t);
                     }
                     else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
                     {
-                        indexStride						= sizeof(uint8_t);
+                        indexStride						                = sizeof(uint8_t);
                     }
                     else
                     {
@@ -1951,19 +1952,19 @@ class VulkanApplication
                     
                     for (size_t i = 0; i < indexCount; i++)
                     {
-                        uint32_t		index				= 0;
+                        uint32_t		            index				= 0;
                         
                         if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
                         {
-                            index						= *reinterpret_cast<const uint16_t *>(indexData + i * indexStride);
+                            index						                = *reinterpret_cast<const uint16_t *>(indexData + i * indexStride);
                         }
                         else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
                         {
-                            index						= *reinterpret_cast<const uint32_t *>(indexData + i * indexStride);
+                            index						                = *reinterpret_cast<const uint32_t *>(indexData + i * indexStride);
                         }
                         else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
                         {
-                            index						= *reinterpret_cast<const uint8_t *>(indexData + i * indexStride);
+                            index						                = *reinterpret_cast<const uint8_t *>(indexData + i * indexStride);
                         }
                         
                         indices.push_back(baseVertex + index);
@@ -2000,7 +2001,7 @@ class VulkanApplication
                 , stagingBufferMemory
             );
 
-            void *dataStaging						= stagingBufferMemory.mapMemory(0, bufferSize);
+            void                    *dataStaging			= stagingBufferMemory.mapMemory(0, bufferSize);
 
             memcpy(
                   dataStaging
@@ -2054,7 +2055,7 @@ class VulkanApplication
                 , stagingBufferMemory
             );
 
-            void                    *data 		= stagingBufferMemory.mapMemory(0, bufferSize);
+            void                    *data 		            = stagingBufferMemory.mapMemory(0, bufferSize);
 
             memcpy(
                   data
@@ -2100,21 +2101,24 @@ class VulkanApplication
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-		vk::DeviceSize              bufferSize          = sizeof(UniformBufferObject);
-		vk::raii::Buffer		buffer({});
-		vk::raii::DeviceMemory		bufferMem({});
+                vk::DeviceSize              bufferSize          = sizeof(UniformBufferObject);
+                vk::raii::Buffer		    buffer({});
+                vk::raii::DeviceMemory		bufferMem({});
 	
                 createBuffer(
                       bufferSize
                     , vk::BufferUsageFlagBits::eUniformBuffer
                     , vk::MemoryPropertyFlagBits::eHostVisible
                     | vk::MemoryPropertyFlagBits::eHostCoherent
-		    , buffer
+		            , buffer
                     , bufferMem
                 );
-		uniformBuffers.emplace_back(std::move(buffer));
-		uniformBuffersMemory.emplace_back(std::move(bufferMem));
-		uniformBuffersMapped.emplace_back(uniformBuffersMemory[i].mapMemory(0, bufferSize));
+
+                uniformBuffers.emplace_back(std::move(buffer));
+                uniformBuffersMemory.emplace_back(std::move(bufferMem));
+                uniformBuffersMapped.emplace_back(
+                                    uniformBuffersMemory[i].mapMemory(0, bufferSize)
+                                );
             }
         }
 
@@ -2136,9 +2140,9 @@ class VulkanApplication
             {
                 vk::DescriptorPoolSize
                 (
-			vk::DescriptorType::eUniformBuffer
-			, MAX_FRAMES_IN_FLIGHT
-		)
+                    vk::DescriptorType::eUniformBuffer
+                    , MAX_FRAMES_IN_FLIGHT
+                )
                 , vk::DescriptorPoolSize
                 (
                       vk::DescriptorType::eCombinedImageSampler
@@ -2148,8 +2152,8 @@ class VulkanApplication
 
             vk::DescriptorPoolCreateInfo    poolInfo
             {
-		  .flags				    = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
-		, .maxSets                                  = MAX_FRAMES_IN_FLIGHT
+                  .flags				                    = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
+                , .maxSets                                  = MAX_FRAMES_IN_FLIGHT
                 , .poolSizeCount                            = static_cast<uint32_t>(poolSize.size())
                 , .pPoolSizes                               = poolSize.data()
             };
@@ -2180,19 +2184,19 @@ class VulkanApplication
                 , .pSetLayouts                              = layouts.data()
             };
 
-	    descriptorSets.clear();
+	        descriptorSets.clear();
             descriptorSets                                  = device.allocateDescriptorSets(allocInfo);
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-                vk::DescriptorBufferInfo        bufferInfo
+                vk::DescriptorBufferInfo            bufferInfo
                 {
                       .buffer                               = *uniformBuffers[i]
                     , .offset                               = 0
                     , .range                                = sizeof(UniformBufferObject)
                 };
 
-                vk::DescriptorImageInfo         imageInfo
+                vk::DescriptorImageInfo             imageInfo
                 {
                       .sampler                              = *textureSampler
                     , .imageView                            = *textureImageView
@@ -2286,18 +2290,19 @@ class VulkanApplication
 
 	std::unique_ptr<vk::raii::CommandBuffer> beginSingleTimeCommands()
 	{
-		vk::CommandBufferAllocateInfo			allocInfo
+		vk::CommandBufferAllocateInfo	allocInfo
 		{
-			.commandPool						= *commandPool
-			, .level						= vk::CommandBufferLevel::ePrimary
-			, .commandBufferCount					= 1
+			  .commandPool						            = *commandPool
+			, .level						                = vk::CommandBufferLevel::ePrimary
+			, .commandBufferCount					        = 1
 		};
 		
-		std::unique_ptr<vk::raii::CommandBuffer>	commandBuffer	= std::make_unique<vk::raii::CommandBuffer>(std::move(vk::raii::CommandBuffers(device, allocInfo).front()));
+		std::unique_ptr<vk::raii::CommandBuffer>    
+                                        commandBuffer	    = std::make_unique<vk::raii::CommandBuffer>(std::move(vk::raii::CommandBuffers(device, allocInfo).front()));
 		
-		vk::CommandBufferBeginInfo			beginInfo
+		vk::CommandBufferBeginInfo		beginInfo
 		{
-			.flags							= vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+			.flags							                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
 		};
 		
 		commandBuffer->begin(beginInfo);
@@ -2323,7 +2328,7 @@ class VulkanApplication
 		
 		vk::SubmitInfo submitInfo
 		{
-			.commandBufferCount					= 1
+			  .commandBufferCount				= 1
 			, .pCommandBuffers					= &*commandBuffer
 		};
 		
@@ -2359,26 +2364,27 @@ class VulkanApplication
             vk::raii::CommandBuffer		    commandCopyBuffer	= std::move(device.allocateCommandBuffers(allocInfo).front());
             
             commandCopyBuffer.begin(vk::CommandBufferBeginInfo
-		{
-			.flags						                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-		}
-	    );
-	
-            commandCopyBuffer.copyBuffer(
-                  *srcBuffer
-                , *dstBuffer
-                , vk::BufferCopy{.size = size}
+            {
+                .flags						                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+            }
+            );
+        
+                commandCopyBuffer.copyBuffer(
+                      *srcBuffer
+                    , *dstBuffer
+                    , vk::BufferCopy{.size = size}
+                );
+
+                commandCopyBuffer.end();
+                
+                queue.submit(vk::SubmitInfo
+                {
+                      .commandBufferCount		            = 1
+                    , .pCommandBuffers		                = &*commandCopyBuffer
+                }
+                , nullptr
             );
 
-            commandCopyBuffer.end();
-            
-            queue.submit(vk::SubmitInfo
-            {
-                  .commandBufferCount		                = 1
-                , .pCommandBuffers		                    = &*commandCopyBuffer
-            }
-            , nullptr
-	    );
             queue.waitIdle();
         }
         
