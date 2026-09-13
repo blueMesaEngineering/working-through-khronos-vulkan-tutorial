@@ -1378,14 +1378,14 @@ class VulkanApplication
 //******************************************************************************************
 
         vk::Format findSupportedFormat(
-              const std::vector<vk::Format>  &candidates
-            , vk::ImageTiling                tiling
-            , vk::FormatFeatureFlags         features
+              const std::vector<vk::Format>     &candidates
+            , vk::ImageTiling                   tiling
+            , vk::FormatFeatureFlags            features
         ) const
         {
             for (const auto format : candidates)
             {
-                vk::FormatProperties        props           = physicalDevice.getFormatProperties(format);
+                vk::FormatProperties            props           = physicalDevice.getFormatProperties(format);
 
                 if (   tiling == vk::ImageTiling::eLinear
                     && (props.linearTilingFeatures & features) == features)
@@ -1441,7 +1441,8 @@ class VulkanApplication
         
         static bool hasStencilComponent(vk::Format format)
         {
-            return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
+            return     format == vk::Format::eD32SfloatS8Uint 
+                    || format == vk::Format::eD24UnormS8Uint;
         }
         
 
@@ -1461,10 +1462,10 @@ class VulkanApplication
             // Load KTX2 texture instead of using stb_image
             ktxTexture	*kTexture;
             KTX_error_code	result		= 	ktxTexture_CreateFromNamedFile(
-                                        TEXTURE_PATH.c_str()
-                                        , KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT
-                                        , &kTexture
-                                );
+                                                    TEXTURE_PATH.c_str()
+                                                    , KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT
+                                                    , &kTexture
+                                            );
 
             if (result != KTX_SUCCESS)
             {
@@ -1573,10 +1574,10 @@ class VulkanApplication
         void createTextureImageView()
         {
             textureImageView                                = createImageView(  
-                                                                                textureImage
-                                                                              , textureImageFormat
-                                                                              , vk::ImageAspectFlagBits::eColor
-                                                                             );
+                                                                        textureImage
+                                                                        , textureImageFormat
+                                                                        , vk::ImageAspectFlagBits::eColor
+                                                                );
         }
         
 
@@ -1593,23 +1594,23 @@ class VulkanApplication
 
         void createTextureSampler()
         {
-		vk::PhysicalDeviceProperties 	properties	        = physicalDevice.getProperties();
-            vk::SamplerCreateInfo       samplerInfo
+		vk::PhysicalDeviceProperties 	    properties	        = physicalDevice.getProperties();
+            vk::SamplerCreateInfo           samplerInfo
             {
-                  .magFilter                                = vk::Filter::eLinear
-                , .minFilter                                = vk::Filter::eLinear
-                , .mipmapMode                               = vk::SamplerMipmapMode::eLinear
-                , .addressModeU                             = vk::SamplerAddressMode::eRepeat
-                , .addressModeV                             = vk::SamplerAddressMode::eRepeat
-                , .addressModeW                             = vk::SamplerAddressMode::eRepeat
-		        , .mipLodBias				                = 0.0f
-                , .anisotropyEnable                         = vk::True
-                , .maxAnisotropy                            = properties.limits.maxSamplerAnisotropy
-                , .compareEnable                            = vk::False
-                , .compareOp                                = vk::CompareOp::eAlways
+                  .magFilter                                    = vk::Filter::eLinear
+                , .minFilter                                    = vk::Filter::eLinear
+                , .mipmapMode                                   = vk::SamplerMipmapMode::eLinear
+                , .addressModeU                                 = vk::SamplerAddressMode::eRepeat
+                , .addressModeV                                 = vk::SamplerAddressMode::eRepeat
+                , .addressModeW                                 = vk::SamplerAddressMode::eRepeat
+		        , .mipLodBias				                    = 0.0f
+                , .anisotropyEnable                             = vk::True
+                , .maxAnisotropy                                = properties.limits.maxSamplerAnisotropy
+                , .compareEnable                                = vk::False
+                , .compareOp                                    = vk::CompareOp::eAlways
             };
 
-            textureSampler                                  = vk::raii::Sampler(device, samplerInfo);
+            textureSampler                                      = vk::raii::Sampler(device, samplerInfo);
         }
 	
 
@@ -1630,12 +1631,12 @@ class VulkanApplication
             , vk::ImageAspectFlags aspectFlags
         )
         {
-            vk::ImageViewCreateInfo         viewInfo
+            vk::ImageViewCreateInfo             viewInfo
             {
-                  .image                                    = *image
-                , .viewType                                 = vk::ImageViewType::e2D
-                , .format                                   = format
-                , .subresourceRange                         = 
+                  .image                                        = *image
+                , .viewType                                     = vk::ImageViewType::e2D
+                , .format                                       = format
+                , .subresourceRange                             = 
                 {
                       aspectFlags
                     , 0
@@ -1661,49 +1662,49 @@ class VulkanApplication
 //******************************************************************************************
 
         void createImage(
-              uint32_t                  width
-            , uint32_t                  height
-            , vk::Format                format
-            , vk::ImageTiling           tiling
-            , vk::ImageUsageFlags       usage
-            , vk::MemoryPropertyFlags   properties
-            , vk::raii::Image           &image
-            , vk::raii::DeviceMemory    &imageMemory
+              uint32_t                      width
+            , uint32_t                      height
+            , vk::Format                    format
+            , vk::ImageTiling               tiling
+            , vk::ImageUsageFlags           usage
+            , vk::MemoryPropertyFlags       properties
+            , vk::raii::Image               &image
+            , vk::raii::DeviceMemory        &imageMemory
         )
         {
             vk::ImageCreateInfo             imageInfo
             {
-                  .imageType                                = vk::ImageType::e2D
-                , .format                                   = format
-                , .extent                                   = 
+                  .imageType                                    = vk::ImageType::e2D
+                , .format                                       = format
+                , .extent                                       = 
                 { 
                       width
                     , height
                     , 1 
                 }
-                , .mipLevels                                = 1
-                , .arrayLayers                              = 1
-                , .samples                                  = vk::SampleCountFlagBits::e1
-                , .tiling                                   = tiling
-                , .usage                                    = usage
-                , .sharingMode                              = vk::SharingMode::eExclusive
-                , .initialLayout                            = vk::ImageLayout::eUndefined
+                , .mipLevels                                    = 1
+                , .arrayLayers                                  = 1
+                , .samples                                      = vk::SampleCountFlagBits::e1
+                , .tiling                                       = tiling
+                , .usage                                        = usage
+                , .sharingMode                                  = vk::SharingMode::eExclusive
+                , .initialLayout                                = vk::ImageLayout::eUndefined
             };
 
-            image                                           = vk::raii::Image(device, imageInfo);
+            image                                               = vk::raii::Image(device, imageInfo);
             
-            vk::MemoryRequirements          memRequirements = image.getMemoryRequirements();
+            vk::MemoryRequirements          memRequirements     = image.getMemoryRequirements();
 	    
             vk::MemoryAllocateInfo          allocInfo
             {
-                  .allocationSize                           = memRequirements.size
-                , .memoryTypeIndex                          = findMemoryType(
-                                                                               memRequirements.memoryTypeBits
-                                                                             , properties
+                  .allocationSize                               = memRequirements.size
+                    , .memoryTypeIndex                          = findMemoryType(
+                                                                                memRequirements.memoryTypeBits
+                                                                                , properties
                                                                             )
             };
 	    
-            imageMemory                                     = vk::raii::DeviceMemory(device, allocInfo);
+        imageMemory                                             = vk::raii::DeviceMemory(device, allocInfo);
             image.bindMemory(*imageMemory, 0);
         }
         
@@ -1725,14 +1726,14 @@ class VulkanApplication
             , vk::ImageLayout               newLayout
         )
         {
-		    auto                    commandBuffer			= beginSingleTimeCommands();
+		    auto                            commandBuffer		= beginSingleTimeCommands();
 
             vk::ImageMemoryBarrier  barrier         
             {
-                  .oldLayout                                = oldLayout
-                , .newLayout                                = newLayout
-                , .image                                    = *image
-                , .subresourceRange                         = 
+                  .oldLayout                                    = oldLayout
+                , .newLayout                                    = newLayout
+                , .image                                        = *image
+                , .subresourceRange                             = 
                 {
 			          vk::ImageAspectFlagBits::eColor
                     , 0
@@ -1748,20 +1749,20 @@ class VulkanApplication
             if (   oldLayout == vk::ImageLayout::eUndefined 
                 && newLayout == vk::ImageLayout::eTransferDstOptimal)
             {
-                barrier.srcAccessMask                       = {};
-                barrier.dstAccessMask                       = vk::AccessFlagBits::eTransferWrite;
+                barrier.srcAccessMask                           = {};
+                barrier.dstAccessMask                           = vk::AccessFlagBits::eTransferWrite;
 
-                sourceStage                                 = vk::PipelineStageFlagBits::eTopOfPipe;
-                destinationStage                            = vk::PipelineStageFlagBits::eTransfer;
+                sourceStage                                     = vk::PipelineStageFlagBits::eTopOfPipe;
+                destinationStage                                = vk::PipelineStageFlagBits::eTransfer;
             }
             else if (   oldLayout == vk::ImageLayout::eTransferDstOptimal
                      && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
             {
-                barrier.srcAccessMask                       = vk::AccessFlagBits::eTransferWrite;
-                barrier.dstAccessMask                       = vk::AccessFlagBits::eShaderRead;
+                barrier.srcAccessMask                           = vk::AccessFlagBits::eTransferWrite;
+                barrier.dstAccessMask                           = vk::AccessFlagBits::eShaderRead;
 
-                sourceStage                                 = vk::PipelineStageFlagBits::eTransfer;
-                destinationStage                            = vk::PipelineStageFlagBits::eFragmentShader;
+                sourceStage                                     = vk::PipelineStageFlagBits::eTransfer;
+                destinationStage                                = vk::PipelineStageFlagBits::eFragmentShader;
             }
             else
             {
@@ -1802,18 +1803,18 @@ class VulkanApplication
 	    std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = beginSingleTimeCommands();
             vk::BufferImageCopy             region
             {
-                  .bufferOffset                             = 0
-                , .bufferRowLength                          = 0
-                , .bufferImageHeight                        = 0
-                , .imageSubresource                         =
+                  .bufferOffset                                     = 0
+                , .bufferRowLength                                  = 0
+                , .bufferImageHeight                                = 0
+                , .imageSubresource                                 =
                 {
-                    vk::ImageAspectFlagBits::eColor
+                      vk::ImageAspectFlagBits::eColor
                     , 0
                     , 0
                     , 1
                 }
-                , .imageOffset                              = { 0, 0, 0 }
-                , .imageExtent                              = { width, height, 1}
+                , .imageOffset                                      = { 0, 0, 0 }
+                , .imageExtent                                      = { width, height, 1}
             };
 
             commandBuffer->copyBufferToImage(
@@ -1841,17 +1842,17 @@ class VulkanApplication
         void loadModel()
         {
             // Use tinygltf to load the model instead of tinyobjloader
-            tinygltf::Model			    model;
-            tinygltf::TinyGLTF		    loader;
-            std::string			        err;
-            std::string			        warn;
+            tinygltf::Model			        model;
+            tinygltf::TinyGLTF		        loader;
+            std::string			            err;
+            std::string			            warn;
             
-            bool 				        ret			= loader.LoadBinaryFromFile(
-                                                                        &model
-                                                                        , &err
-                                                                        , &warn
-                                                                        , MODEL_PATH
-                                                                    );
+            bool 				            ret			            = loader.LoadBinaryFromFile(
+                                                                                  &model
+                                                                                , &err
+                                                                                , &warn
+                                                                                , MODEL_PATH
+                                                                            );
             
             if (!warn.empty())
             {
@@ -1987,10 +1988,10 @@ class VulkanApplication
 
         void createVertexBuffer()
         {
-            vk::DeviceSize          bufferSize              = sizeof(vertices[0]) * vertices.size();
+            vk::DeviceSize                  bufferSize              = sizeof(vertices[0]) * vertices.size();
             
-            vk::raii::Buffer        stagingBuffer({});
-            vk::raii::DeviceMemory  stagingBufferMemory({});
+            vk::raii::Buffer                stagingBuffer({});
+            vk::raii::DeviceMemory          stagingBufferMemory({});
 
             createBuffer(
                   bufferSize
@@ -2001,7 +2002,7 @@ class VulkanApplication
                 , stagingBufferMemory
             );
 
-            void                    *dataStaging			= stagingBufferMemory.mapMemory(0, bufferSize);
+            void                            *dataStaging			= stagingBufferMemory.mapMemory(0, bufferSize);
 
             memcpy(
                   dataStaging
@@ -2041,10 +2042,10 @@ class VulkanApplication
 
         void createIndexBuffer()
         {
-            vk::DeviceSize          bufferSize              = sizeof(indices[0]) * indices.size();
+            vk::DeviceSize                  bufferSize              = sizeof(indices[0]) * indices.size();
 
-            vk::raii::Buffer        stagingBuffer({});
-            vk::raii::DeviceMemory  stagingBufferMemory({});
+            vk::raii::Buffer                stagingBuffer({});
+            vk::raii::DeviceMemory          stagingBufferMemory({});
 
             createBuffer(
                   bufferSize
@@ -2055,7 +2056,7 @@ class VulkanApplication
                 , stagingBufferMemory
             );
 
-            void                    *data 		            = stagingBufferMemory.mapMemory(0, bufferSize);
+            void                            *data 		            = stagingBufferMemory.mapMemory(0, bufferSize);
 
             memcpy(
                   data
@@ -2101,7 +2102,7 @@ class VulkanApplication
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-                vk::DeviceSize              bufferSize          = sizeof(UniformBufferObject);
+                vk::DeviceSize              bufferSize              = sizeof(UniformBufferObject);
                 vk::raii::Buffer		    buffer({});
                 vk::raii::DeviceMemory		bufferMem({});
 	
@@ -2328,8 +2329,8 @@ class VulkanApplication
 		
 		vk::SubmitInfo submitInfo
 		{
-			  .commandBufferCount				= 1
-			, .pCommandBuffers					= &*commandBuffer
+			  .commandBufferCount				                    = 1
+			, .pCommandBuffers					                    = &*commandBuffer
 		};
 		
 		queue.submit(submitInfo, nullptr);
@@ -2356,17 +2357,17 @@ class VulkanApplication
         {
             vk::CommandBufferAllocateInfo   allocInfo
             {
-                  .commandPool					            = *commandPool
-                , .level					                = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount				        = 1
+                  .commandPool					                    = *commandPool
+                , .level					                        = vk::CommandBufferLevel::ePrimary
+                , .commandBufferCount				                = 1
             };
             
-            vk::raii::CommandBuffer		    commandCopyBuffer	= std::move(device.allocateCommandBuffers(allocInfo).front());
+            vk::raii::CommandBuffer		    commandCopyBuffer	    = std::move(device.allocateCommandBuffers(allocInfo).front());
             
             commandCopyBuffer.begin(vk::CommandBufferBeginInfo
-            {
-                .flags						                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-            }
+                {
+                    .flags						                    = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+                }
             );
         
                 commandCopyBuffer.copyBuffer(
@@ -2375,12 +2376,12 @@ class VulkanApplication
                     , vk::BufferCopy{.size = size}
                 );
 
-                commandCopyBuffer.end();
+            commandCopyBuffer.end();
                 
-                queue.submit(vk::SubmitInfo
+            queue.submit(vk::SubmitInfo
                 {
-                      .commandBufferCount		            = 1
-                    , .pCommandBuffers		                = &*commandCopyBuffer
+                      .commandBufferCount		                    = 1
+                    , .pCommandBuffers		                        = &*commandCopyBuffer
                 }
                 , nullptr
             );
@@ -2405,11 +2406,12 @@ class VulkanApplication
             , vk::MemoryPropertyFlags properties
         )
         {
-            vk::PhysicalDeviceMemoryProperties              memProperties = physicalDevice.getMemoryProperties();
+            vk::PhysicalDeviceMemoryProperties      memProperties   = physicalDevice.getMemoryProperties();
 
             for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
             {
-                if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                if (    (typeFilter & (1 << i)) 
+                    &&  (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
                 {
                     return i;
                 }
@@ -2460,71 +2462,71 @@ class VulkanApplication
             uint32_t imageIndex
         )
         {
-	    auto &commandBuffer			= commandBuffers[frameIndex];
+	        auto                    &commandBuffer			= commandBuffers[frameIndex];
             commandBuffer.begin({});
 	    
-	    transition_image_layout(
-		swapChainImages[imageIndex]
-		, vk::ImageLayout::eUndefined
-		, vk::ImageLayout::eColorAttachmentOptimal
-		, {}							// srcAccessMask (no need to wait for previous operations)
-		, vk::AccessFlagBits2::eColorAttachmentWrite		// dstAccessMask
-		, vk::PipelineStageFlagBits2::eColorAttachmentOutput	//srcStage
-		, vk::PipelineStageFlagBits2::eColorAttachmentOutput	// dstStage
-		, vk::ImageAspectFlagBits::eColor
-	);
+            transition_image_layout(
+                swapChainImages[imageIndex]
+                , vk::ImageLayout::eUndefined
+                , vk::ImageLayout::eColorAttachmentOptimal
+                , {}							                        // srcAccessMask (no need to wait for previous operations)
+                , vk::AccessFlagBits2::eColorAttachmentWrite		    // dstAccessMask
+                , vk::PipelineStageFlagBits2::eColorAttachmentOutput	//srcStage
+                , vk::PipelineStageFlagBits2::eColorAttachmentOutput	// dstStage
+                , vk::ImageAspectFlagBits::eColor
+            );
 	
-	// Transition depth image to depth attachment optimal layout
-	transition_image_layout(
-		*depthImage
-		, vk::ImageLayout::eUndefined
-		, vk::ImageLayout::eDepthAttachmentOptimal
-		, vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-		, vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-		, vk::PipelineStageFlagBits2::eEarlyFragmentTests
-		| vk::PipelineStageFlagBits2::eLateFragmentTests
-		, vk::PipelineStageFlagBits2::eEarlyFragmentTests
-		| vk::PipelineStageFlagBits2::eLateFragmentTests
-		, vk::ImageAspectFlagBits::eDepth
-	);
+            // Transition depth image to depth attachment optimal layout
+            transition_image_layout(
+                *depthImage
+                , vk::ImageLayout::eUndefined
+                , vk::ImageLayout::eDepthAttachmentOptimal
+                , vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+                , vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+                , vk::PipelineStageFlagBits2::eEarlyFragmentTests
+                | vk::PipelineStageFlagBits2::eLateFragmentTests
+                , vk::PipelineStageFlagBits2::eEarlyFragmentTests
+                | vk::PipelineStageFlagBits2::eLateFragmentTests
+                , vk::ImageAspectFlagBits::eDepth
+            );
 	
-            vk::ClearValue clearColor		= vk::ClearColorValue(  
+            vk::ClearValue clearColor		                    = vk::ClearColorValue(  
                           0.0f
                         , 0.0f
                         , 0.0f
                         , 1.0f
                     );
 
-                vk::RenderingAttachmentInfo		attachmentInfo		=
-		{
-			  .imageView						= *swapChainImageViews[imageIndex]
-			, .imageLayout						= vk::ImageLayout::eColorAttachmentOptimal
-			, .loadOp						= vk::AttachmentLoadOp::eClear
-			, .storeOp						= vk::AttachmentStoreOp::eStore
-			, .clearValue						= clearColor
-		};
+            vk::RenderingAttachmentInfo		attachmentInfo		=
+            {
+                  .imageView						            = *swapChainImageViews[imageIndex]
+                , .imageLayout						            = vk::ImageLayout::eColorAttachmentOptimal
+                , .loadOp						                = vk::AttachmentLoadOp::eClear
+                , .storeOp						                = vk::AttachmentStoreOp::eStore
+                , .clearValue						            = clearColor
+            };
 		
-		vk::ClearValue				clearDepth		= vk::ClearDepthStencilValue{1.0f, 0};
+            vk::ClearValue				    clearDepth		    = vk::ClearDepthStencilValue{1.0f, 0};
+            
+            vk::RenderingAttachmentInfo		depthAttachmentInfo
+            {
+                  .imageView						            = *depthImageView
+                , .imageLayout						            = vk::ImageLayout::eDepthStencilAttachmentOptimal
+                , .loadOp						                = vk::AttachmentLoadOp::eClear
+                , .storeOp						                = vk::AttachmentStoreOp::eDontCare
+                , .clearValue						            = clearDepth
+            };
+            
+            vk::RenderingInfo			    renderingInfo		=
+            {
+                  .renderArea						            = {.offset = {0, 0}, .extent = swapChainExtent}
+                , .layerCount						            = 1
+                , .colorAttachmentCount					        = 1
+                , .pColorAttachments					        = &attachmentInfo
+                , .pDepthAttachment					            = &depthAttachmentInfo
+            };
 		
-		vk::RenderingAttachmentInfo		depthAttachmentInfo
-		{
-			  .imageView						= *depthImageView
-			, .imageLayout						= vk::ImageLayout::eDepthStencilAttachmentOptimal
-			, .loadOp						= vk::AttachmentLoadOp::eClear
-			, .storeOp						= vk::AttachmentStoreOp::eDontCare
-			, .clearValue						= clearDepth
-		};
-		
-		vk::RenderingInfo			renderingInfo		=
-		{
-			  .renderArea						= {.offset = {0, 0}, .extent = swapChainExtent}
-			, .layerCount						= 1
-			, .colorAttachmentCount					= 1
-			, .pColorAttachments					= &attachmentInfo
-			, .pDepthAttachment					= &depthAttachmentInfo
-		};
-		
-		commandBuffer.beginRendering(renderingInfo);
+		    commandBuffer.beginRendering(renderingInfo);
 
             commandBuffer.bindPipeline(
                   vk::PipelineBindPoint::eGraphics
@@ -2532,22 +2534,23 @@ class VulkanApplication
             );
 
             commandBuffer.setViewport(
-		0
-		, vk::Viewport(
-		      0.0f
+                  0
+                , vk::Viewport(
+                      0.0f
                     , 0.0f
                     , static_cast<float>(swapChainExtent.width)
                     , static_cast<float>(swapChainExtent.height)
                     , 0.0f
                     , 1.0f
-		)
-	    );
+                )
+            );
             
             commandBuffer.setScissor(
-		  0
-		, vk::Rect2D(vk::Offset2D(0, 0)
-                , swapChainExtent
-                )
+                  0
+                , vk::Rect2D(
+                          vk::Offset2D(0, 0)
+                        , swapChainExtent
+                    )
             );
 
             commandBuffer.bindVertexBuffers(  
@@ -2579,17 +2582,18 @@ class VulkanApplication
             );
 
 	        commandBuffer.endRendering();
-		// After rendering, transition the swapchain image to PRESENT_SRC
-		transition_image_layout(
-			swapChainImages[imageIndex]
-			, vk::ImageLayout::eColorAttachmentOptimal
-			, vk::ImageLayout::ePresentSrcKHR
-			, vk::AccessFlagBits2::eColorAttachmentWrite		// srcAccessMask
-			, {}							// dstAccessMask
-			, vk::PipelineStageFlagBits2::eColorAttachmentOutput	// srcStage
-			, vk::PipelineStageFlagBits2::eBottomOfPipe		// dstStage
-			, vk::ImageAspectFlagBits::eColor
-		);
+
+            // After rendering, transition the swapchain image to PRESENT_SRC
+            transition_image_layout(
+                swapChainImages[imageIndex]
+                , vk::ImageLayout::eColorAttachmentOptimal
+                , vk::ImageLayout::ePresentSrcKHR
+                , vk::AccessFlagBits2::eColorAttachmentWrite		    // srcAccessMask
+                , {}							                        // dstAccessMask
+                , vk::PipelineStageFlagBits2::eColorAttachmentOutput	// srcStage
+                , vk::PipelineStageFlagBits2::eBottomOfPipe		        // dstStage
+                , vk::ImageAspectFlagBits::eColor
+            );
 	    
             commandBuffer.end();
         }
@@ -2606,47 +2610,47 @@ class VulkanApplication
 // 
 //******************************************************************************************
 
-	void transition_image_layout(
-		vk::Image			image
-		, vk::ImageLayout		old_layout
-		, vk::ImageLayout		new_layout
-		, vk::AccessFlags2		src_access_mask
-		, vk::AccessFlags2		dst_access_mask
-		, vk::PipelineStageFlags2	src_stage_mask
-		, vk::PipelineStageFlags2	dst_stage_mask
-		, vk::ImageAspectFlags		image_aspect_flags
-	)
-	{
-		vk::ImageMemoryBarrier2 	barrier				=
-		{
-			  .srcStageMask						= src_stage_mask
-			, .srcAccessMask					= src_access_mask
-			, .dstStageMask						= dst_stage_mask
-			, .dstAccessMask					= dst_access_mask
-			, .oldLayout						= old_layout
-			, .newLayout						= new_layout
-			, .srcQueueFamilyIndex					= VK_QUEUE_FAMILY_IGNORED
-			, .dstQueueFamilyIndex					= VK_QUEUE_FAMILY_IGNORED
-			, .image						= image
-			, .subresourceRange					=
-			{
-				  .aspectMask					= image_aspect_flags
-				, .baseMipLevel					= 0
-				, .levelCount					= 1
-				, .baseArrayLayer				= 0
-				, .layerCount					= 1
-			}
-		};
-		
-		vk::DependencyInfo		dependency_info			=
-		{
-			  .dependencyFlags					= {}
-			, .imageMemoryBarrierCount				= 1
-			, .pImageMemoryBarriers					= &barrier
-		};
-		
-		commandBuffers[frameIndex].pipelineBarrier2(dependency_info);
-	}
+        void transition_image_layout(
+            vk::Image			            image
+            , vk::ImageLayout		        old_layout
+            , vk::ImageLayout		        new_layout
+            , vk::AccessFlags2		        src_access_mask
+            , vk::AccessFlags2		        dst_access_mask
+            , vk::PipelineStageFlags2	    src_stage_mask
+            , vk::PipelineStageFlags2	    dst_stage_mask
+            , vk::ImageAspectFlags		    image_aspect_flags
+        )
+        {
+            vk::ImageMemoryBarrier2 	    barrier				    =
+            {
+                  .srcStageMask						                = src_stage_mask
+                , .srcAccessMask					                = src_access_mask
+                , .dstStageMask						                = dst_stage_mask
+                , .dstAccessMask					                = dst_access_mask
+                , .oldLayout						                = old_layout
+                , .newLayout						                = new_layout
+                , .srcQueueFamilyIndex					            = VK_QUEUE_FAMILY_IGNORED
+                , .dstQueueFamilyIndex					            = VK_QUEUE_FAMILY_IGNORED
+                , .image						                    = image
+                , .subresourceRange					                =
+                {
+                      .aspectMask					                = image_aspect_flags
+                    , .baseMipLevel					                = 0
+                    , .levelCount					                = 1
+                    , .baseArrayLayer				                = 0
+                    , .layerCount					                = 1
+                }
+            };
+            
+            vk::DependencyInfo		        dependency_info			=
+            {
+                  .dependencyFlags					                = {}
+                , .imageMemoryBarrierCount				            = 1
+                , .pImageMemoryBarriers					            = &barrier
+            };
+            
+            commandBuffers[frameIndex].pipelineBarrier2(dependency_info);
+        }
 
 
 //******************************************************************************************
@@ -2662,28 +2666,28 @@ class VulkanApplication
 
         void createSyncObjects()
         {
-		assert(
-			presentCompleteSemaphores.empty()
-			&& renderFinishedSemaphores.empty()
-			&& inFlightFences.empty()
-		);
+            assert(
+                presentCompleteSemaphores.empty()
+                && renderFinishedSemaphores.empty()
+                && inFlightFences.empty()
+            );
 
             for (size_t i = 0; i < swapChainImages.size(); i++)
             {
                 renderFinishedSemaphores.emplace_back(device, vk::SemaphoreCreateInfo());
             }
 	    
-	    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-	    {
-		presentCompleteSemaphores.emplace_back(device, vk::SemaphoreCreateInfo());
-		inFlightFences.emplace_back(
-			device
-			, vk::FenceCreateInfo
-			{
-				.flags						= vk::FenceCreateFlagBits::eSignaled
-			}
-		);
-	    }
+            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+                presentCompleteSemaphores.emplace_back(device, vk::SemaphoreCreateInfo());
+                inFlightFences.emplace_back(
+                      device
+                    , vk::FenceCreateInfo
+                    {
+                        .flags						        = vk::FenceCreateFlagBits::eSignaled
+                    }
+                );
+            }
         }
         
 
@@ -2707,37 +2711,37 @@ class VulkanApplication
 
             UniformBufferObject     ubo{};
 	    
-	    glm::mat4			initialRotation		= glm::rotate(
-                                                                          glm::mat4(1.0f)
-                                                                        , glm::radians(-90.0f)
-                                                                        , glm::vec3(1.0f, 0.0f, 0.0f)
-                                                                        );
+	        glm::mat4			initialRotation		        = glm::rotate(
+                                                                      glm::mat4(1.0f)
+                                                                    , glm::radians(-90.0f)
+                                                                    , glm::vec3(1.0f, 0.0f, 0.0f)
+                                                                );
 									
-	    glm::mat4			continuousRotation	= glm::rotate(
-                                                                          glm::mat4(1.0f)
-                                                                        , time * glm::radians(90.0f)
-                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
-                                                                        );
+	        glm::mat4			continuousRotation	        = glm::rotate(
+                                                                      glm::mat4(1.0f)
+                                                                    , time * glm::radians(90.0f)
+                                                                    , glm::vec3(0.0f, 0.0f, 1.0f)
+                                                                );
 
             ubo.model                                       = continuousRotation * initialRotation;
             
             ubo.view                                        = lookAt(
-                                                                          glm::vec3(2.0f, 2.0f, 2.0f)
-                                                                        , glm::vec3(0.0f, 0.0f, 0.0f)
-                                                                        , glm::vec3(0.0f, 0.0f, 1.0f)
-                                                                        );
+                                                                      glm::vec3(2.0f, 2.0f, 2.0f)
+                                                                    , glm::vec3(0.0f, 0.0f, 0.0f)
+                                                                    , glm::vec3(0.0f, 0.0f, 1.0f)
+                                                                );
 
             ubo.proj                                        = glm::perspective(
-                                                                          glm::radians(45.0f)
-                                                                        , static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height)
-                                                                        , 0.1f
-                                                                        , 10.0f
-                                                                        );
+                                                                      glm::radians(45.0f)
+                                                                    , static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height)
+                                                                    , 0.1f
+                                                                    , 10.0f
+                                                                );
 
             ubo.proj[1][1] *= -1;
 
             memcpy(
-		  uniformBuffersMapped[currentImage]
+		          uniformBuffersMapped[currentImage]
                 , &ubo
                 , sizeof(ubo)
             );
@@ -2757,17 +2761,17 @@ class VulkanApplication
 
         void drawFrame()
         {
-		// Note: inFlightFences, presentCompleteSemaphores, and commandBuffers are indexed by frameIndex,
-		// 	 while renderFinishedSemaphores is indexed by imageIndex
-		auto 			fenceResult				= device.waitForFences(
-												*inFlightFences[frameIndex]
-												, vk::True
-												, UINT64_MAX
-												);
-		if (fenceResult != vk::Result::eSuccess)
-		{
-			throw std::runtime_error("Failed to wait for fence!");
-		}
+            // Note: inFlightFences, presentCompleteSemaphores, and commandBuffers are indexed by frameIndex,
+            // 	 while renderFinishedSemaphores is indexed by imageIndex
+            auto 			fenceResult				= device.waitForFences(
+                                                    *inFlightFences[frameIndex]
+                                                    , vk::True
+                                                    , UINT64_MAX
+                                                    );
+            if (fenceResult != vk::Result::eSuccess)
+            {
+                throw std::runtime_error("Failed to wait for fence!");
+            }
 
             auto [
                   result
@@ -2870,8 +2874,8 @@ class VulkanApplication
 	{
 		vk::ShaderModuleCreateInfo	createInfo
 		{
-			  .codeSize						= code.size()
-			, .pCode							= reinterpret_cast<const uint32_t *>(code.data())
+			  .codeSize						                = code.size()
+			, .pCode							            = reinterpret_cast<const uint32_t *>(code.data())
 		};
 		
 		vk::raii::ShaderModule		shaderModule{device, createInfo};
@@ -2895,7 +2899,8 @@ class VulkanApplication
         {
             auto minImageCount = std::max(  3u
                                           , surfaceCapabilities.minImageCount);
-            if ((0 < surfaceCapabilities.maxImageCount) && (surfaceCapabilities.maxImageCount < minImageCount))
+            if (    (0 < surfaceCapabilities.maxImageCount) 
+                 && (surfaceCapabilities.maxImageCount < minImageCount))
             {
                 minImageCount = surfaceCapabilities.maxImageCount;
             }
@@ -2923,7 +2928,7 @@ class VulkanApplication
                                                                             {
                                                                                     return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
                                                                             }
-                                                                            );
+                                                                        );
             return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
         }
         
@@ -2942,7 +2947,7 @@ class VulkanApplication
         static vk::PresentModeKHR chooseSwapPresentMode(std::vector<vk::PresentModeKHR> const &availablePresentModes)
         {
             assert(std::ranges::any_of(
-					 availablePresentModes
+					                     availablePresentModes
                                        , [](auto presentMode)
                                     {
                                         return presentMode == vk::PresentModeKHR::eFifo;
@@ -2956,7 +2961,7 @@ class VulkanApplication
                                     {
                                         return vk::PresentModeKHR::eMailbox == value;
                                     }
-				) ?
+				        ) ?
                                     vk::PresentModeKHR::eMailbox :
                                     vk::PresentModeKHR::eFifo;
         }
@@ -2988,25 +2993,25 @@ class VulkanApplication
                     , &height
                 );
 #else
-		ANativeWindow		*window					= androidAppState.nativeWindow;
-		int			width					= ANativeWindow_getWidth(window);
-		in			height					= ANativeWindow_getHeight(window);
+                ANativeWindow		*window					= androidAppState.nativeWindow;
+                int			        width					= ANativeWindow_getWidth(window);
+                in			        height					= ANativeWindow_getHeight(window);
 #endif
 
 
-		return
-		{
-			std::clamp<uint32_t>(  
-										width
-                                                                         , capabilities.minImageExtent.width
-                                                                         , capabilities.maxImageExtent.width
-									 )
-			, std::clamp<uint32_t>(  
-										height
-                                                                         , capabilities.minImageExtent.height
-                                                                         , capabilities.maxImageExtent.height
-									 )
-		    };
+            return
+            {
+                std::clamp<uint32_t>(  
+                                width
+                                , capabilities.minImageExtent.width
+                                , capabilities.maxImageExtent.width
+                            )
+                , std::clamp<uint32_t>(  
+                                height
+                                , capabilities.minImageExtent.height
+                                , capabilities.maxImageExtent.height
+                            )
+            };
         }
         
 
@@ -3023,30 +3028,30 @@ class VulkanApplication
         
         [[nodiscard]] std::vector<const char *> getRequiredInstanceExtensions() const
         {
-		std::vector<const char *> extensions;
+		    std::vector<const char *> extensions;
 		
 #if PLATFORM_DESKTOP
-		// Get GLFW extensions
-		uint32_t 		glfwExtensionCount			= 0;
-		auto			glfwExtensions				= glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-		extensions.assign(
-			glfwExtensions
-			, glfwExtensions + glfwExtensionCount
-		);
+            // Get GLFW extensions
+            uint32_t 		            glfwExtensionCount		= 0;
+            auto			            glfwExtensions			= glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+            extensions.assign(
+                glfwExtensions
+                , glfwExtensions + glfwExtensionCount
+            );
 #else
-		// Android extensions
-		extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-		extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
+            // Android extensions
+            extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+            extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
 #endif
 
-		// Add debug extensions if validation layers are enabled
-		if (enableValidationLayers)
-		{
-			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-		}
-		
-		return extensions;
-	}
+            // Add debug extensions if validation layers are enabled
+            if (enableValidationLayers)
+            {
+                extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            }
+            
+            return extensions;
+        }
 	
 
 //******************************************************************************************
