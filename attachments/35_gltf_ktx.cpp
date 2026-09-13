@@ -115,7 +115,7 @@ struct VpProfileProperties
 
 struct AppInfo
 {
-	bool			profileSupported		= false;
+	bool			    profileSupported		    = false;
 	VpProfileProperties	profile;
 };
 
@@ -124,9 +124,9 @@ void android_main(android_app *app);
 
 struct AndroidAppState
 {
-	ANativeWindow 		*nativeWindow			= nullptr;
-	bool			initialized			= false;
-	android_app		*app				= nullptr;
+	ANativeWindow 		*nativeWindow			    = nullptr;
+	bool			    initialized			        = false;
+	android_app		    *app				        = nullptr;
 };
 #endif
 
@@ -226,9 +226,9 @@ class VulkanApplication
 	void run(android_app *app)
 	{
 		androidAppState.nativeWindow		= app->window;
-		androidAppState.app			= app;
-		app->userData				= &androidAppState;
-		app->onAppCmd				= handleAppCommand;
+		androidAppState.app			        = app;
+		app->userData				        = &androidAppState;
+		app->onAppCmd				        = handleAppCommand;
 		// Note: onInputEvent is no longer a member of android_app in the current NDK version
 		// Input events are now handled differently
 		
@@ -283,7 +283,7 @@ class VulkanApplication
             initVulkan();
             mainLoop();
             cleanup();
-            }
+        }
 #endif
 
     private:
@@ -355,9 +355,9 @@ class VulkanApplication
 #endif
 	
         // Application info
-        AppInfo 				appInfo;
+        AppInfo 				                appInfo;
 	
-	// Vulkan objects
+	    // Vulkan objects
         vk::raii::Context                       context;
         vk::raii::Instance                      instance                    = nullptr;
         vk::raii::DebugUtilsMessengerEXT        debugMessenger              = nullptr;
@@ -388,13 +388,13 @@ class VulkanApplication
         vk::raii::DeviceMemory                  textureImageMemory          = nullptr;
         vk::raii::ImageView                     textureImageView            = nullptr;
         vk::raii::Sampler                       textureSampler              = nullptr;
-	vk::Format				textureImageFormat	    = vk::Format::eUndefined;
+	    vk::Format				                textureImageFormat	        = vk::Format::eUndefined;
 	
-	// Model data
+	    // Model data
         std::vector<Vertex>                     vertices;
         std::vector<uint32_t>                   indices;
 	
-	// Command pool - maybe???
+	    // Command pool - maybe???
         vk::raii::Buffer                        vertexBuffer                = nullptr;
         vk::raii::DeviceMemory                  vertexBufferMemory          = nullptr;
         vk::raii::Buffer                        indexBuffer                 = nullptr;
@@ -403,7 +403,7 @@ class VulkanApplication
         // Uniform buffers
         std::vector<vk::raii::Buffer>           uniformBuffers;
         std::vector<vk::raii::DeviceMemory>     uniformBuffersMemory;
-	std::vector<void *>			uniformBuffersMapped;
+	    std::vector<void *>			            uniformBuffersMapped;
 
         // Descriptor pool
         vk::raii::DescriptorPool                descriptorPool              = nullptr;
@@ -414,14 +414,14 @@ class VulkanApplication
         std::vector<vk::raii::CommandBuffer>    commandBuffers;
 	
         // Synchronization objects - Semaphores and fences
-	std::vector<vk::raii::Semaphore>	    presentCompleteSemaphores;
+	    std::vector<vk::raii::Semaphore>	    presentCompleteSemaphores;
         std::vector<vk::raii::Semaphore>        renderFinishedSemaphores;
         std::vector<vk::raii::Fence>            inFlightFences;
         uint32_t                                frameIndex                  = 0;
 	
         bool 					                framebufferResized          = false;
 
-        std::vector<const char *>         requiredDeviceExtension    =
+        std::vector<const char *>               requiredDeviceExtension     =
 	{
 		vk::KHRSwapchainExtensionName,
 		vk::KHRCreateRenderpass2ExtensionName
@@ -529,7 +529,7 @@ class VulkanApplication
         void initVulkan()
         {
             createInstance();
-	    setupDebugMessenger();
+	        setupDebugMessenger();
             createSurface();
             pickPhysicalDevice();
             createLogicalDevice();
@@ -538,7 +538,7 @@ class VulkanApplication
             createDescriptorSetLayout();
             createGraphicsPipeline();
             createCommandPool();
-	    createDepthResources();
+	        createDepthResources();
             createTextureImage();
             createTextureImageView();
             createTextureSampler();
@@ -614,8 +614,8 @@ class VulkanApplication
 
         void cleanup() const
         {
-		glfwDestroyWindow(window);
-		glfwTerminate();
+            glfwDestroyWindow(window);
+            glfwTerminate();
         }
 #endif
 	
@@ -634,7 +634,7 @@ class VulkanApplication
         void recreateSwapChain()
         {
 #if PLATFORM_DESKTOP
-	    // On desktop, wait until the framebuffer has a non-zero size (e.g., when window is minimized)
+	        // On desktop, wait until the framebuffer has a non-zero size (e.g., when window is minimized)
             int   width         = 0
                 , height        = 0;
             
@@ -654,16 +654,16 @@ class VulkanApplication
                     glfwWaitEvents();
                 }
 #endif
-	    // Wait for device to finishe operations
+	        // Wait for device to finishe operations
             device.waitIdle();
 
-	    // Clean up old swap chain
+	        // Clean up old swap chain
             cleanupSwapChain();
 	
-	    // Create new swap chain and dependent resources
+	        // Create new swap chain and dependent resources
             createSwapChain();
             createImageViews();
-	    createDepthResources();
+	        createDepthResources();
         }
         
 
@@ -692,7 +692,7 @@ class VulkanApplication
             };
 	    
             // Get required extensions.
-            auto       extensions      = getRequiredInstanceExtensions();
+            auto                    extensions              = getRequiredInstanceExtensions();
             
 	        // Create Instance
             vk::InstanceCreateInfo createInfo
@@ -703,7 +703,7 @@ class VulkanApplication
             };
             
             instance = vk::raii::Instance(context, createInfo);
-	    LOGI("Vulkan instance created");
+	        LOGI("Vulkan instance created");
         }
 
 
@@ -749,7 +749,7 @@ class VulkanApplication
             // Create desktop surface using GLFW
 
             if (glfwCreateWindowSurface(  
-                *instance
+                  *instance
                 , window
                 , nullptr
                 , &_surface
@@ -771,12 +771,12 @@ class VulkanApplication
             };
 
             if (vkCreateAndroidSurfaceKHR(
-                                                                                *instance
-                                                                                , &createInfo
-                                                                                , nullptr
-                                                                                , &_surface
-                                                                                ) != VK_SUCCESS
-									)
+                    *instance
+                    , &createInfo
+                    , nullptr
+                    , &_surface
+                ) != VK_SUCCESS
+			)
             {
                 throw std::runtime_error("Failed to create Android surface");
             }
@@ -811,33 +811,41 @@ class VulkanApplication
 
             // Check if any of the queue families support graphics operations
             auto                        queueFamilies       = physicalDevice.getQueueFamilyProperties();
-            bool                        supportsGraphics    = std::ranges::any_of(  queueFamilies
+            bool                        supportsGraphics    = std::ranges::any_of(  
+                                                                                queueFamilies
                                                                                 , [](auto const &qfp)
                                                                                 {
                                                                                     return !!(qfp.queueFlags & vk::QueueFlagBits::eGraphics);
-                                                                                });
+                                                                                }
+                                                                            );
 
             // Check if all required physicalDevice extensions are available
             auto            availableDeviceExtensions       = physicalDevice.enumerateDeviceExtensionProperties();
             bool            supportsAllRequiredExtensions   = 
-                                            std::ranges::all_of(  requiredDeviceExtension
+                                            std::ranges::all_of(
+                                                                  requiredDeviceExtension
                                                                 , [&availableDeviceExtensions](auto const &requiredDeviceExtension)
                                                                 {
-                                                                    return std::ranges::any_of(  availableDeviceExtensions
+                                                                    return std::ranges::any_of(
+                                                                                              availableDeviceExtensions
                                                                                             , [requiredDeviceExtension](auto const &availableDeviceExtension)
                                                                                                 {
-                                                                                                    return strcmp(  availableDeviceExtension.extensionName
-                                                                                                                , requiredDeviceExtension) == 0;
+                                                                                                    return strcmp(
+                                                                                                              availableDeviceExtension.extensionName
+                                                                                                            , requiredDeviceExtension) == 0;
                                                                                                 }
                                                                                             );
                                                                 });
 
             // Check if the physicalDevice supports the required features
 	    
-	    auto 			features			= physicalDevice
-		.template getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
-	    bool 			supportsRequiredFeatures	= features.template get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering &&
-									  features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
+            auto 			            features			        = physicalDevice.template getFeatures2<
+                                                                            vk::PhysicalDeviceFeatures2
+                                                                            , vk::PhysicalDeviceVulkan13Features
+                                                                            , vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
+                                                                        >();
+            bool 			            supportsRequiredFeatures	= features.template get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering &&
+									                                  features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
 
             // Return true if the physicalDevice meets all the criteria
             return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions && supportsRequiredFeatures;
@@ -871,56 +879,61 @@ class VulkanApplication
             }
             physicalDevice                                          = *devIter;
 	    
-	    // Check for Vulkan profile support
-	    VpProfileProperties			profileProperties;
+            // Check for Vulkan profile support
+            VpProfileProperties			profileProperties;
+
 #if PLATFORM_ANDROID
-	    strcpy(profileProperties.name
-			, VP_KHR_ROADMAP_2022_NAME);
+            strcpy(
+                  profileProperties.name
+                , VP_KHR_ROADMAP_2022_NAME
+            );
 #else	    
-	    strcpy(profileProperties.profileName
-			, VP_KHR_ROADMAP_2022_NAME);
+            strcpy(
+                  profileProperties.profileName
+                , VP_KHR_ROADMAP_2022_NAME
+            );
 #endif
-	    profileProperties.specVersion			= VP_KHR_ROADMAP_2022_SPEC_VERSION;
-	
-	    VkBool32	            supported	            = VK_FALSE;
-	    bool		    result			= false;
+            profileProperties.specVersion			                = VP_KHR_ROADMAP_2022_SPEC_VERSION;
+        
+            VkBool32	                supported	                = VK_FALSE;
+            bool		                result			            = false;
 			
 #if PLATFORM_ANDROID
 			// Create a vp::ProfileDesc from our VpProfileProperties
-			vp::ProfileDesc			profileDesc		        = 
+			vp::ProfileDesc			    profileDesc		            = 
 			{
 				  profileProperties.name
 				, profileProperties.specVersion
 			};
 			
 			// Use vp::GetProfileSupport for Android
-			result			        = vp::GetProfileSupport(
+			result			                                        = vp::GetProfileSupport(
 				  *physicalDevice			// Pass the physical device directly
 				, &profileDesc			    // Pass the profile description
 				, &supported			    // Output parameter for support status
 			);
 #else
 			// Use vpGetPhysicalDeviceProfileSupport for Desktop
-			VkResult	            vk_result		  	    = vpGetPhysicalDeviceProfileSupport(
-                                                                                              *instance
-                                                                                            , *physicalDevice
-                                                                                            , &profileProperties
-                                                                                            , &supported
-                                                                                            );
+			VkResult	                vk_result		  	        = vpGetPhysicalDeviceProfileSupport(
+                                                                                          *instance
+                                                                                        , *physicalDevice
+                                                                                        , &profileProperties
+                                                                                        , &supported
+                                                                                    );
 											    
-			result				    = vk_result == static_cast<int>(vk::Result::eSuccess);
+			result				                                    = vk_result == static_cast<int>(vk::Result::eSuccess);
 #endif
-			const char *name 	= nullptr;
+			const char                  *name 	                    = nullptr;
 #ifdef PLATFORM_ANDROID
-			name			= profileProperties.name;
+			name			                                        = profileProperties.name;
 #else
-			name			= profileProperties.profileName;
+			name			                                        = profileProperties.profileName;
 #endif
 
 			if (result && supported == VK_TRUE)
 			{
-				appInfo.profileSupported	                = true;
-				appInfo.profile					= profileProperties;
+				appInfo.profileSupported	                        = true;
+				appInfo.profile					                    = profileProperties;
 				LOGI("Device supports Vulkan profile: %s", name);
 			}
 			else
@@ -972,17 +985,17 @@ class VulkanApplication
                 throw std::runtime_error("Could not find a queue for graphics and present -> terminating...");
             }
 
-		// Query for Vulkan 1.3 features
-		auto							features 		= physicalDevice.getFeatures2();
-		vk::PhysicalDeviceVulkan13Features			vulkan13Features;
-		vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT	extendedDynamicStateFeatures;
-		vulkan13Features.dynamicRendering						= vk::True;
-		vulkan13Features.synchronization2						= vk::True;
-		extendedDynamicStateFeatures.extendedDynamicState 				= vk::True;
-		vulkan13Features.pNext								= &extendedDynamicStateFeatures;
-		features.pNext									= &vulkan13Features;
-		
-		// Create a Device
+            // Query for Vulkan 1.3 features
+            auto							                    features 		= physicalDevice.getFeatures2();
+            vk::PhysicalDeviceVulkan13Features			        vulkan13Features;
+            vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT	extendedDynamicStateFeatures;
+            vulkan13Features.dynamicRendering						            = vk::True;
+            vulkan13Features.synchronization2						            = vk::True;
+            extendedDynamicStateFeatures.extendedDynamicState 				    = vk::True;
+            vulkan13Features.pNext								                = &extendedDynamicStateFeatures;
+            features.pNext									                    = &vulkan13Features;
+            
+            // Create a Device
 		
             float                       queuePriority       = 0.5f;
             vk::DeviceQueueCreateInfo   deviceQueueCreateInfo 
@@ -1022,7 +1035,7 @@ class VulkanApplication
 
         void createSwapChain()
         {
-            vk::SurfaceCapabilitiesKHR surfaceCapabilities          = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
+            vk::SurfaceCapabilitiesKHR      surfaceCapabilities     = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
             swapChainExtent                                         = chooseSwapExtent(surfaceCapabilities);
             uint32_t minImageCount                                  = chooseSwapMinImageCount(surfaceCapabilities);
 
@@ -1075,7 +1088,7 @@ class VulkanApplication
                     , .format				                = swapChainSurfaceFormat.format
                     , .subresourceRange			            = 
                     {
-                        vk::ImageAspectFlagBits::eColor
+                          vk::ImageAspectFlagBits::eColor
                         , 0
                         , 1
                         , 0
@@ -1084,10 +1097,10 @@ class VulkanApplication
                 };
                 
             for (auto &image : swapChainImages)
-	    {
-		imageViewCreateInfo.image		= image;
-		swapChainImageViews.emplace_back(device, imageViewCreateInfo);
-	    }
+            {
+                imageViewCreateInfo.image		= image;
+                swapChainImageViews.emplace_back(device, imageViewCreateInfo);
+            }
         }
         
 
@@ -1104,24 +1117,24 @@ class VulkanApplication
 
         void createDescriptorSetLayout()
         {
-	    std::array bindings			= 
-	    {
-		vk::DescriptorSetLayoutBinding
-		(
-			0
-			, vk::DescriptorType::eUniformBuffer
-			, 1
-			, vk::ShaderStageFlagBits::eVertex
-			, nullptr
-		)
-		, vk::DescriptorSetLayoutBinding
-		(
-			1
-			, vk::DescriptorType::eCombinedImageSampler
-			, 1
-			, vk::ShaderStageFlagBits::eFragment
-			, nullptr
-		)
+            std::array bindings			                    = 
+            {
+                vk::DescriptorSetLayoutBinding
+                (
+                      0
+                    , vk::DescriptorType::eUniformBuffer
+                    , 1
+                    , vk::ShaderStageFlagBits::eVertex
+                    , nullptr
+                )
+                , vk::DescriptorSetLayoutBinding
+                (
+                      1
+                    , vk::DescriptorType::eCombinedImageSampler
+                    , 1
+                    , vk::ShaderStageFlagBits::eFragment
+                    , nullptr
+                )
             };
 	    
             vk::DescriptorSetLayoutCreateInfo   layoutInfo
@@ -1147,27 +1160,27 @@ class VulkanApplication
 
         void createGraphicsPipeline()
         {
-		vk::raii::ShaderModule		shaderModule		= createShaderModule(this->readFile("shaders/slang.spv"));
-		
-		vk::PipelineShaderStageCreateInfo		vertShaderStageInfo
-		{
-			.stage						= vk::ShaderStageFlagBits::eVertex
-			, .module					= *shaderModule
-			, .pName					= "vertMain"
-		};
-		
-		vk::PipelineShaderStageCreateInfo	fragShaderStageInfo
-		{
-			.stage						= vk::ShaderStageFlagBits::eFragment
-			, .module					= *shaderModule
-			, .pName					= "fragMain"
-		};
+            vk::raii::ShaderModule		    shaderModule		    = createShaderModule(this->readFile("shaders/slang.spv"));
+            
+            vk::PipelineShaderStageCreateInfo   vertShaderStageInfo
+            {
+                  .stage						                    = vk::ShaderStageFlagBits::eVertex
+                , .module					                        = *shaderModule
+                , .pName					                        = "vertMain"
+            };
+            
+            vk::PipelineShaderStageCreateInfo	fragShaderStageInfo
+            {
+                  .stage						                    = vk::ShaderStageFlagBits::eFragment
+                , .module					                        = *shaderModule
+                , .pName					                        = "fragMain"
+            };
 
             // Create shader stages
-            vk::PipelineShaderStageCreateInfo                       shaderStages[] = 
+            vk::PipelineShaderStageCreateInfo   shaderStages[]      = 
             {
-		vertShaderStageInfo
-		, fragShaderStageInfo
+                  vertShaderStageInfo
+                , fragShaderStageInfo
             };
 
             // Vertex input
@@ -1221,8 +1234,8 @@ class VulkanApplication
                   .depthTestEnable                                  = vk::True
                 , .depthWriteEnable                                 = vk::True
                 , .depthCompareOp                                   = vk::CompareOp::eLess
-		, .depthBoundsTestEnable			    = vk::False
-		, .stencilTestEnable				    = vk::False
+                , .depthBoundsTestEnable			                = vk::False
+                , .stencilTestEnable				                = vk::False
             };
 
 		    // Color blending
@@ -1261,24 +1274,24 @@ class VulkanApplication
             {
                   .setLayoutCount                                   = 1
                 , .pSetLayouts                                      = &*descriptorSetLayout
-		, .pushConstantRangeCount			    = 0
+		        , .pushConstantRangeCount			                = 0
             };
 
             pipelineLayout                                          = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
 
-	    vk::Format			depthFormat		    = findDepthFormat();
-	    vk::PipelineRenderingCreateInfo	pipelineRenderingCreateInfo
-	    {
-		.colorAttachmentCount				    = 1
-		, .pColorAttachmentFormats			    = &swapChainSurfaceFormat.format
-		, .depthAttachmentFormat			    = depthFormat
-	    };
+            vk::Format			                depthFormat		    = findDepthFormat();
+            vk::PipelineRenderingCreateInfo	pipelineRenderingCreateInfo
+            {
+                  .colorAttachmentCount				                = 1
+                , .pColorAttachmentFormats			                = &swapChainSurfaceFormat.format
+                , .depthAttachmentFormat			                = depthFormat
+            };
 	    
             // Create the graphics pipeline
             vk::GraphicsPipelineCreateInfo		pipelineInfo
             {
-		  .pNext					    = &pipelineRenderingCreateInfo
-		, .stageCount                                       = 2
+                  .pNext					                        = &pipelineRenderingCreateInfo
+                , .stageCount                                       = 2
                 , .pStages                                          = shaderStages
                 , .pVertexInputState                                = &vertexInputInfo
                 , .pInputAssemblyState                              = &inputAssembly
@@ -1332,7 +1345,7 @@ class VulkanApplication
 
         void createDepthResources()
         {
-            vk::Format 			depthFormat                                     = findDepthFormat();
+            vk::Format 			depthFormat                 = findDepthFormat();
 
             createImage(
                   swapChainExtent.width
@@ -1401,22 +1414,34 @@ class VulkanApplication
 // 
 //******************************************************************************************
 
-	[[nodiscard]] vk::Format findDepthFormat() const
-	{
-		return findSupportedFormat(
-			{
-				vk::Format::eD32Sfloat
-				, vk::Format::eD32SfloatS8Uint
-				, vk::Format::eD24UnormS8Uint
-			}
-			, vk::ImageTiling::eOptimal
-			, vk::FormatFeatureFlagBits::eDepthStencilAttachment
-		);
-	}
-	
-	static bool hasStencilComponent(vk::Format format)
-	{
-		return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
+        [[nodiscard]] vk::Format findDepthFormat() const
+        {
+            return findSupportedFormat(
+                {
+                    vk::Format::eD32Sfloat
+                    , vk::Format::eD32SfloatS8Uint
+                    , vk::Format::eD24UnormS8Uint
+                }
+                , vk::ImageTiling::eOptimal
+                , vk::FormatFeatureFlagBits::eDepthStencilAttachment
+            );
+        }
+
+
+//******************************************************************************************
+// 
+//  Name:           hasStencilComponent
+//  Arguments:      N/A
+//  Returns:        bool
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+        
+        static bool hasStencilComponent(vk::Format format)
+        {
+            return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
         }
         
 
@@ -1433,24 +1458,24 @@ class VulkanApplication
 
         void createTextureImage()
         {
-		// Load KTX2 texture instead of using stb_image
-		ktxTexture	*kTexture;
-		KTX_error_code	result		= 	ktxTexture_CreateFromNamedFile(
-									TEXTURE_PATH.c_str()
-									, KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT
-									, &kTexture
-							);
+            // Load KTX2 texture instead of using stb_image
+            ktxTexture	*kTexture;
+            KTX_error_code	result		= 	ktxTexture_CreateFromNamedFile(
+                                        TEXTURE_PATH.c_str()
+                                        , KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT
+                                        , &kTexture
+                                );
 
             if (result != KTX_SUCCESS)
             {
                 throw std::runtime_error("Failed to load ktx texture image!");
             }
 
-	    // Get texture dimensions and data
-	    uint32_t			texWidth			= kTexture->baseWidth;
-	    uint32_t			texHeight			= kTexture->baseHeight;
-	    ktx_size_t			imageSize			= ktxTexture_GetImageSize(kTexture, 0);
-	    ktx_uint8_t			*ktxTextureData			= ktxTexture_GetData(kTexture);
+            // Get texture dimensions and data
+            uint32_t			        texWidth			= kTexture->baseWidth;
+            uint32_t			        texHeight			= kTexture->baseHeight;
+            ktx_size_t			        imageSize			= ktxTexture_GetImageSize(kTexture, 0);
+            ktx_uint8_t			        *ktxTextureData	    = ktxTexture_GetData(kTexture);
 	    
 
 		    // Create staging buffer
@@ -1466,7 +1491,7 @@ class VulkanApplication
                 , stagingBufferMemory
             );
 
-            void                        *data = stagingBufferMemory.mapMemory(0, imageSize);
+            void                        *data               = stagingBufferMemory.mapMemory(0, imageSize);
 
             memcpy(  
                   data
@@ -1477,26 +1502,26 @@ class VulkanApplication
             stagingBufferMemory.unmapMemory();
 
             // Determine the Vulkan format from KTX format
-	    vk::Format		textureFormat;
+	        vk::Format		textureFormat;
 	    
             if (kTexture->classId == ktxTexture2_c)
             {
-		// For KTX2 files, we can get the format directly
-		auto *ktx2						= reinterpret_cast<ktxTexture2 *>(kTexture);
-		textureFormat						= static_cast<vk::Format>(ktx2->vkFormat);
-		if (textureFormat == vk::Format::eUndefined)
-		{
-			// If the format is undefined, fall backto a reasonable default
-			textureFormat					= vk::Format::eR8G8B8A8Unorm;
-		}
+                // For KTX2 files, we can get the format directly
+                auto *ktx2						            = reinterpret_cast<ktxTexture2 *>(kTexture);
+                textureFormat						        = static_cast<vk::Format>(ktx2->vkFormat);
+                if (textureFormat == vk::Format::eUndefined)
+                {
+                    // If the format is undefined, fall backto a reasonable default
+                    textureFormat					        = vk::Format::eR8G8B8A8Unorm;
+                }
             }
-	    else
-	    {
-		// For KTX1 files or if we can't determine the format, use a reasonable default
-		textureFormat						= vk::Format::eR8G8B8A8Unorm;
-	    }
+            else
+            {
+                // For KTX1 files or if we can't determine the format, use a reasonable default
+                textureFormat						        = vk::Format::eR8G8B8A8Unorm;
+            }
 	    
-	    textureImageFormat						= textureFormat;
+	        textureImageFormat						        = textureFormat;
 	    
             // Create image
             createImage(  
@@ -1530,7 +1555,7 @@ class VulkanApplication
                 , vk::ImageLayout::eShaderReadOnlyOptimal
             );
 	    
-	    ktxTexture_Destroy(kTexture);
+	        ktxTexture_Destroy(kTexture);
         }
         
 
