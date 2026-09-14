@@ -1257,7 +1257,7 @@ class VulkanApplication
             };
 
 		    // Dynamic states
-            std::vector   dynamicStates           = 
+            std::vector                     dynamicStates           = 
             {
                   vk::DynamicState::eViewport
                 , vk::DynamicState::eScissor
@@ -1279,7 +1279,7 @@ class VulkanApplication
 
             pipelineLayout                                          = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
 
-            vk::Format			                depthFormat		    = findDepthFormat();
+            vk::Format			            depthFormat		        = findDepthFormat();
             vk::PipelineRenderingCreateInfo	pipelineRenderingCreateInfo
             {
                   .colorAttachmentCount				                = 1
@@ -1288,7 +1288,7 @@ class VulkanApplication
             };
 	    
             // Create the graphics pipeline
-            vk::GraphicsPipelineCreateInfo		pipelineInfo
+            vk::GraphicsPipelineCreateInfo	pipelineInfo
             {
                   .pNext					                        = &pipelineRenderingCreateInfo
                 , .stageCount                                       = 2
@@ -1323,7 +1323,7 @@ class VulkanApplication
 
         void createCommandPool()
         {
-            vk::CommandPoolCreateInfo   poolInfo
+            vk::CommandPoolCreateInfo       poolInfo
             {
                   .flags                                    = vk::CommandPoolCreateFlagBits::eResetCommandBuffer
                 , .queueFamilyIndex                         = queueIndex
@@ -1345,7 +1345,7 @@ class VulkanApplication
 
         void createDepthResources()
         {
-            vk::Format 			depthFormat                 = findDepthFormat();
+            vk::Format 			            depthFormat     = findDepthFormat();
 
             createImage(
                   swapChainExtent.width
@@ -1418,7 +1418,7 @@ class VulkanApplication
         {
             return findSupportedFormat(
                 {
-                    vk::Format::eD32Sfloat
+                      vk::Format::eD32Sfloat
                     , vk::Format::eD32SfloatS8Uint
                     , vk::Format::eD24UnormS8Uint
                 }
@@ -1450,7 +1450,7 @@ class VulkanApplication
 // 
 //  Name:           createTextureImage
 //  Arguments:      N/A
-//  Returns:        
+//  Returns:        void
 //  Calls:          
 //  Called by:      
 //  Description:    
@@ -1461,11 +1461,11 @@ class VulkanApplication
         {
             // Load KTX2 texture instead of using stb_image
             ktxTexture	*kTexture;
-            KTX_error_code	result		= 	ktxTexture_CreateFromNamedFile(
-                                                    TEXTURE_PATH.c_str()
-                                                    , KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT
-                                                    , &kTexture
-                                            );
+            KTX_error_code	            result		        = 	ktxTexture_CreateFromNamedFile(
+                                                                            TEXTURE_PATH.c_str()
+                                                                            , KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT
+                                                                            , &kTexture
+                                                                    );
 
             if (result != KTX_SUCCESS)
             {
@@ -1503,12 +1503,12 @@ class VulkanApplication
             stagingBufferMemory.unmapMemory();
 
             // Determine the Vulkan format from KTX format
-	        vk::Format		textureFormat;
+	        vk::Format		            textureFormat;
 	    
             if (kTexture->classId == ktxTexture2_c)
             {
                 // For KTX2 files, we can get the format directly
-                auto *ktx2						            = reinterpret_cast<ktxTexture2 *>(kTexture);
+                auto                    *ktx2				= reinterpret_cast<ktxTexture2 *>(kTexture);
                 textureFormat						        = static_cast<vk::Format>(ktx2->vkFormat);
                 if (textureFormat == vk::Format::eUndefined)
                 {
@@ -1574,7 +1574,7 @@ class VulkanApplication
         void createTextureImageView()
         {
             textureImageView                                = createImageView(  
-                                                                        textureImage
+                                                                          textureImage
                                                                         , textureImageFormat
                                                                         , vk::ImageAspectFlagBits::eColor
                                                                 );
@@ -1594,7 +1594,7 @@ class VulkanApplication
 
         void createTextureSampler()
         {
-		vk::PhysicalDeviceProperties 	    properties	        = physicalDevice.getProperties();
+		    vk::PhysicalDeviceProperties 	properties	        = physicalDevice.getProperties();
             vk::SamplerCreateInfo           samplerInfo
             {
                   .magFilter                                    = vk::Filter::eLinear
@@ -1697,14 +1697,14 @@ class VulkanApplication
 	    
             vk::MemoryAllocateInfo          allocInfo
             {
-                  .allocationSize                               = memRequirements.size
+                      .allocationSize                           = memRequirements.size
                     , .memoryTypeIndex                          = findMemoryType(
-                                                                                memRequirements.memoryTypeBits
+                                                                                  memRequirements.memoryTypeBits
                                                                                 , properties
                                                                             )
             };
 	    
-        imageMemory                                             = vk::raii::DeviceMemory(device, allocInfo);
+            imageMemory                                         = vk::raii::DeviceMemory(device, allocInfo);
             image.bindMemory(*imageMemory, 0);
         }
         
@@ -1794,13 +1794,13 @@ class VulkanApplication
 //******************************************************************************************
 
         void copyBufferToImage(
-		const vk::raii::Buffer    	        &buffer
+		      const vk::raii::Buffer    	&buffer
             , vk::raii::Image     	        &image
             , uint32_t      		        width
             , uint32_t      		        height
         )
         {
-	    std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = beginSingleTimeCommands();
+	        std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = beginSingleTimeCommands();
             vk::BufferImageCopy             region
             {
                   .bufferOffset                                     = 0
@@ -1824,7 +1824,7 @@ class VulkanApplication
                 , {region}
             );
 	    
-	    endSingleTimeCommands(*commandBuffer);
+	        endSingleTimeCommands(*commandBuffer);
         }
 
 
@@ -2098,7 +2098,7 @@ class VulkanApplication
         {
             uniformBuffers.clear();
             uniformBuffersMemory.clear();
-	    uniformBuffersMapped.clear();
+	        uniformBuffersMapped.clear();
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
@@ -2141,7 +2141,7 @@ class VulkanApplication
             {
                 vk::DescriptorPoolSize
                 (
-                    vk::DescriptorType::eUniformBuffer
+                      vk::DescriptorType::eUniformBuffer
                     , MAX_FRAMES_IN_FLIGHT
                 )
                 , vk::DescriptorPoolSize
@@ -2261,9 +2261,9 @@ class VulkanApplication
 
             buffer                                          = vk::raii::Buffer(device, bufferInfo);
 
-            vk::MemoryRequirements  memRequirements         = buffer.getMemoryRequirements();
+            vk::MemoryRequirements      memRequirements     = buffer.getMemoryRequirements();
 
-            vk::MemoryAllocateInfo  allocInfo
+            vk::MemoryAllocateInfo      allocInfo
             {
                   .allocationSize                           = memRequirements.size
                 , .memoryTypeIndex                          = findMemoryType(
@@ -2402,8 +2402,8 @@ class VulkanApplication
 //******************************************************************************************
 
         uint32_t findMemoryType(
-              uint32_t typeFilter
-            , vk::MemoryPropertyFlags properties
+              uint32_t                      typeFilter
+            , vk::MemoryPropertyFlags       properties
         )
         {
             vk::PhysicalDeviceMemoryProperties      memProperties   = physicalDevice.getMemoryProperties();
@@ -2462,11 +2462,11 @@ class VulkanApplication
             uint32_t imageIndex
         )
         {
-	        auto                    &commandBuffer			= commandBuffers[frameIndex];
+	        auto                    &commandBuffer			    = commandBuffers[frameIndex];
             commandBuffer.begin({});
 	    
             transition_image_layout(
-                swapChainImages[imageIndex]
+                  swapChainImages[imageIndex]
                 , vk::ImageLayout::eUndefined
                 , vk::ImageLayout::eColorAttachmentOptimal
                 , {}							                        // srcAccessMask (no need to wait for previous operations)
@@ -2478,7 +2478,7 @@ class VulkanApplication
 	
             // Transition depth image to depth attachment optimal layout
             transition_image_layout(
-                *depthImage
+                  *depthImage
                 , vk::ImageLayout::eUndefined
                 , vk::ImageLayout::eDepthAttachmentOptimal
                 , vk::AccessFlagBits2::eDepthStencilAttachmentWrite
@@ -2490,7 +2490,7 @@ class VulkanApplication
                 , vk::ImageAspectFlagBits::eDepth
             );
 	
-            vk::ClearValue clearColor		                    = vk::ClearColorValue(  
+            vk::ClearValue                  clearColor		   = vk::ClearColorValue(  
                           0.0f
                         , 0.0f
                         , 0.0f
@@ -2585,7 +2585,7 @@ class VulkanApplication
 
             // After rendering, transition the swapchain image to PRESENT_SRC
             transition_image_layout(
-                swapChainImages[imageIndex]
+                  swapChainImages[imageIndex]
                 , vk::ImageLayout::eColorAttachmentOptimal
                 , vk::ImageLayout::ePresentSrcKHR
                 , vk::AccessFlagBits2::eColorAttachmentWrite		    // srcAccessMask
@@ -2611,7 +2611,7 @@ class VulkanApplication
 //******************************************************************************************
 
         void transition_image_layout(
-            vk::Image			            image
+              vk::Image			            image
             , vk::ImageLayout		        old_layout
             , vk::ImageLayout		        new_layout
             , vk::AccessFlags2		        src_access_mask
@@ -2711,13 +2711,13 @@ class VulkanApplication
 
             UniformBufferObject     ubo{};
 	    
-	        glm::mat4			initialRotation		        = glm::rotate(
+	        glm::mat4			    initialRotation		    = glm::rotate(
                                                                       glm::mat4(1.0f)
                                                                     , glm::radians(-90.0f)
                                                                     , glm::vec3(1.0f, 0.0f, 0.0f)
                                                                 );
 									
-	        glm::mat4			continuousRotation	        = glm::rotate(
+	        glm::mat4			    continuousRotation	    = glm::rotate(
                                                                       glm::mat4(1.0f)
                                                                     , time * glm::radians(90.0f)
                                                                     , glm::vec3(0.0f, 0.0f, 1.0f)
@@ -2763,11 +2763,11 @@ class VulkanApplication
         {
             // Note: inFlightFences, presentCompleteSemaphores, and commandBuffers are indexed by frameIndex,
             // 	 while renderFinishedSemaphores is indexed by imageIndex
-            auto 			fenceResult				= device.waitForFences(
-                                                    *inFlightFences[frameIndex]
-                                                    , vk::True
-                                                    , UINT64_MAX
-                                                    );
+            auto 			        fenceResult				= device.waitForFences(
+                                                                    *inFlightFences[frameIndex]
+                                                                    , vk::True
+                                                                    , UINT64_MAX
+                                                                );
             if (fenceResult != vk::Result::eSuccess)
             {
                 throw std::runtime_error("Failed to wait for fence!");
@@ -2780,7 +2780,7 @@ class VulkanApplication
 			                                          UINT64_MAX
                                                     , *presentCompleteSemaphores[frameIndex]
                                                     , nullptr
-                                                    );
+                                                );
 
             // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
             // here and does not need to be caught by an exception.
@@ -2810,7 +2810,7 @@ class VulkanApplication
             commandBuffers[frameIndex].reset();
             recordCommandBuffer(imageIndex);
 
-            vk::PipelineStageFlags  waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
+            vk::PipelineStageFlags      waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
 
             const vk::SubmitInfo        submitInfo
             {
@@ -2998,16 +2998,15 @@ class VulkanApplication
                 in			        height					= ANativeWindow_getHeight(window);
 #endif
 
-
             return
             {
                 std::clamp<uint32_t>(  
-                                width
+                                  width
                                 , capabilities.minImageExtent.width
                                 , capabilities.maxImageExtent.width
                             )
                 , std::clamp<uint32_t>(  
-                                height
+                                  height
                                 , capabilities.minImageExtent.height
                                 , capabilities.maxImageExtent.height
                             )
@@ -3028,14 +3027,14 @@ class VulkanApplication
         
         [[nodiscard]] std::vector<const char *> getRequiredInstanceExtensions() const
         {
-		    std::vector<const char *> extensions;
+		    std::vector<const char *>   extensions;
 		
 #if PLATFORM_DESKTOP
             // Get GLFW extensions
             uint32_t 		            glfwExtensionCount		= 0;
             auto			            glfwExtensions			= glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
             extensions.assign(
-                glfwExtensions
+                  glfwExtensions
                 , glfwExtensions + glfwExtensionCount
             );
 #else
@@ -3084,7 +3083,10 @@ class VulkanApplication
 //******************************************************************************************
 // 
 //  Name:           checkValidationLayerSupport
-//  Arguments:      
+//  Arguments:      vk::DebugUtilsMessageSeverityFlagBitsEXT severity
+//                  , vk::DebugUtilsMessageTypeFlagsEXT type
+//                  , const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData
+//                  , void *
 //  Returns:        bool
 //  Calls:          
 //  Called by:      
@@ -3099,7 +3101,7 @@ class VulkanApplication
 		, void *
 	)
 	{
-		if (	   severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
+		if (   severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
 			|| severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning)
 		{
 			std::cerr << "Validation layer: type " << to_string(type) << " msg: " << pCallbackData->pMessage<< std::endl;
@@ -3107,9 +3109,6 @@ class VulkanApplication
 		
 		return vk::False;
 	}
-	
-	
-// Cross-platform file reading function
         
 
 //******************************************************************************************
@@ -3126,34 +3125,34 @@ class VulkanApplication
     std::vector<char> readFile(const std::string &filename)
     {
 #if PLATFORM_ANDROID
-	// Android asset loading
-	if (androidAppState.app == nullptr)
-	{
-		LOGE("Android app not initialized");
-		throw std::runtime_error("Android app not initialized");
-	}
-	AAsset *asset 			                            = AAssetManager_open(
-                                                                      androidAppState.app->activity->assetManager
-                                                                    , filename.c_str()
-                                                                    , AASSET_MODE_BUFFER
+        // Android asset loading
+        if (androidAppState.app == nullptr)
+        {
+            LOGE("Android app not initialized");
+            throw std::runtime_error("Android app not initialized");
+        }
+        AAsset *asset 			                            = AAssetManager_open(
+                                                                          androidAppState.app->activity->assetManager
+                                                                        , filename.c_str()
+                                                                        , AASSET_MODE_BUFFER
                                                                     );
-	if (!asset)
-	{
-		throw std::runtime_error("Failed to open file: " + filename);
-	}
+        if (!asset)
+        {
+            throw std::runtime_error("Failed to open file: " + filename);
+        }
 
-		size_t			size		= AAsset_getLength(asset);
-		std::vector<char>	buffer(size);
-		
-		AAsset_read(  
-			asset
-			, buffer.data()
-			, size
-		);
-		AAsset_close(asset);
-		
+            size_t			            size		        = AAsset_getLength(asset);
+            std::vector<char>	        buffer(size);
+            
+            AAsset_read(  
+                  asset
+                , buffer.data()
+                , size
+            );
+            AAsset_close(asset);
+
 #else
-	    // Desktop file loading
+	        // Desktop file loading
             std::ifstream file(  filename
                                , std::ios::ate | std::ios::binary);
 
@@ -3161,10 +3160,11 @@ class VulkanApplication
             {
                 throw std::runtime_error("Failed to open file:" + filename);
             }
-	    
-	    size_t	fileSize		= static_cast<size_t>(file.tellg());
+
+	        size_t	                    fileSize		    = static_cast<size_t>(file.tellg());
+
             std::vector<char> buffer(fileSize);
-	    
+
             file.seekg(0);
             file.read(buffer.data(), fileSize);
             file.close();
