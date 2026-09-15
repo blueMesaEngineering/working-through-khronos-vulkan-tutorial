@@ -578,6 +578,7 @@ class VulkanApplication
 //                  loadModel();
 //                  createVertexBuffer();
 //                  createIndexBuffer();
+//		    setupGameObjects();
 //                  createUniformBuffers();
 //                  createDescriptorPool();
 //                  createDescriptorSets();
@@ -608,6 +609,7 @@ class VulkanApplication
             loadModel();
             createVertexBuffer();
             createIndexBuffer();
+	    setupGameObjects();
             createUniformBuffers();
             createDescriptorPool();
             createDescriptorSets();
@@ -661,7 +663,6 @@ class VulkanApplication
             swapChain = nullptr;
         }
         
-#if PLATFORM_DESKTOP
 
 //******************************************************************************************
 // 
@@ -675,8 +676,29 @@ class VulkanApplication
 // 
 //******************************************************************************************
 
-        void cleanup() const
+#if PLATFORM_DESKTOP
+        void cleanup()
         {
+		// Clean up resources in each GameObject
+		for (auto &gameObject : gameObjects)
+		{
+			// Unmap memory
+			for (size_t i = 0; i < gameObject.uniformBuffersMemory.size(); i ++)
+			{
+				if (gameObject.uniformBuffersMapped[i] != nullptr)
+				{
+					gameObject.uniformBuffersMemory[i].unmapMemory();
+				}
+			}
+			
+			// Clear vectors to release resources
+			gameObject.uniformBuffers.clear();
+			gameObject.uniformBuffersMemory.clear();
+			gameObject.uniformBuffersMapped.clear();
+			gameObject.descriptorSets.clear();
+		}
+
+	    // Clean up GLFW resources
             glfwDestroyWindow(window);
             glfwTerminate();
         }
@@ -790,6 +812,7 @@ class VulkanApplication
 
 		LOGI("Debug messenger setup skipped for compatibility");
 	}
+	
 
 //******************************************************************************************
 // 
@@ -839,7 +862,7 @@ class VulkanApplication
                     , nullptr
                     , &_surface
                 ) != VK_SUCCESS
-			)
+	    )
             {
                 throw std::runtime_error("Failed to create Android surface");
             }
@@ -902,7 +925,8 @@ class VulkanApplication
 
             // Check if the physicalDevice supports the required features
 	    
-            auto 			            features			        = physicalDevice.template getFeatures2<
+            auto 			            features			        = physicalDevice
+									.template getFeatures2<
                                                                             vk::PhysicalDeviceFeatures2
                                                                             , vk::PhysicalDeviceVulkan13Features
                                                                             , vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
@@ -1279,7 +1303,7 @@ class VulkanApplication
                 , .rasterizerDiscardEnable                          = vk::False
                 , .polygonMode                                      = vk::PolygonMode::eFill
                 , .cullMode                                         = vk::CullModeFlagBits::eBack	// Re-enabled culling for better performance
-                , .frontFace                                        = vk::FrontFace::eClockwise		// Keeping Clockwise for glTF
+                , .frontFace                                        = vk::FrontFace::eCounterClockwise		// Keeping Clockwise for glTF
                 , .depthBiasEnable                                  = vk::False
                 , .lineWidth                                        = 1.0f
             };
@@ -1343,33 +1367,40 @@ class VulkanApplication
             pipelineLayout                                          = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
 
             vk::Format			            depthFormat		        = findDepthFormat();
-            vk::PipelineRenderingCreateInfo	pipelineRenderingCreateInfo
-            {
-                  .colorAttachmentCount				                = 1
-                , .pColorAttachmentFormats			                = &swapChainSurfaceFormat.format
-                , .depthAttachmentFormat			                = depthFormat
-            };
-	    
+
             // Create the graphics pipeline
-            vk::GraphicsPipelineCreateInfo	pipelineInfo
+	    vk::StructureChain<
+		  vk::GraphicsPipelineCreateInfo
+		, vk::PipelineRenderingCreateInfo
+	    >						pipelineCreateInfoChain		= 
             {
-                  .pNext					                        = &pipelineRenderingCreateInfo
-                , .stageCount                                       = 2
-                , .pStages                                          = shaderStages
-                , .pVertexInputState                                = &vertexInputInfo
-                , .pInputAssemblyState                              = &inputAssembly
-                , .pViewportState                                   = &viewportState
-                , .pRasterizationState                              = &rasterizer
-                , .pMultisampleState                                = &multisampling
-                , .pDepthStencilState                               = &depthStencil
-                , .pColorBlendState                                 = &colorBlending
-                , .pDynamicState                                    = &dynamicState
-                , .layout                                           = *pipelineLayout
-                , .renderPass                                       = nullptr
+		{
+	                , .stageCount                                       = 2
+	                , .pStages                                          = shaderStages
+	                , .pVertexInputState                                = &vertexInputInfo
+	                , .pInputAssemblyState                              = &inputAssembly
+	                , .pViewportState                                   = &viewportState
+	                , .pRasterizationState                              = &rasterizer
+	                , .pMultisampleState                                = &multisampling
+	                , .pDepthStencilState                               = &depthStencil
+	                , .pColorBlendState                                 = &colorBlending
+	                , .pDynamicState                                    = &dynamicState
+	                , .layout                                           = *pipelineLayout
+	                , .renderPass                                       = nullptr
+	            }
+		    ,
+		    {
+	                  .colorAttachmentCount				                = 1
+	                , .pColorAttachmentFormats			                = &swapChainSurfaceFormat.format
+	                , .depthAttachmentFormat			                = depthFormat
+		}
             };
-            
-	        // Create the pipeline
-            graphicsPipeline = vk::raii::Pipeline(device, nullptr, pipelineInfo);
+
+            graphicsPipeline = vk::raii::Pipeline(
+			device
+			, nullptr
+			, pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>()
+		);
         }
 
 
@@ -1394,6 +1425,7 @@ class VulkanApplication
 
             commandPool = vk::raii::CommandPool(device, poolInfo);
         }
+	
 
 //******************************************************************************************
 // 
@@ -1666,7 +1698,7 @@ class VulkanApplication
                 , .addressModeU                                 = vk::SamplerAddressMode::eRepeat
                 , .addressModeV                                 = vk::SamplerAddressMode::eRepeat
                 , .addressModeW                                 = vk::SamplerAddressMode::eRepeat
-		        , .mipLodBias				                    = 0.0f
+		, .mipLodBias				                    = 0.0f
                 , .anisotropyEnable                             = vk::True
                 , .maxAnisotropy                                = properties.limits.maxSamplerAnisotropy
                 , .compareEnable                                = vk::False
@@ -1973,7 +2005,7 @@ class VulkanApplication
                         // glTF uses a right-handed coordinate system with Y-up
                         // Vulkan uses a right-handed coordinate system with Y-down
                         // We need to flip the Y coordinate
-                        vertex.pos						                = {pos[0], -pos[1], pos[2]};
+                        vertex.pos						                = {pos[0], pos[1], pos[2]};
                         
                         if (hasTexCoords)
                         {
@@ -2148,6 +2180,37 @@ class VulkanApplication
 
 //******************************************************************************************
 // 
+//  Name:           setupGameObjects
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+		// Initialize the game objects with different positions, rotations, and scales
+		void setupGameObjects()
+		{
+			// Object 1 - Center
+			gameObjects[0].position					= {0.0f, 0.0f, 0.0f};
+			gameObjects[0].rotation					= {0.0f, glm::radians(-90.0f), 0.0f};
+			gameObjects[0].scale					= {1.0f, 1.0f, 1.0f};
+			
+			// Object 2 - Left
+			gameObjects[1].position					= {-2.0f, 0.0f, -1.0f};
+			gameObjects[1].rotation					= {0.0f, glm::radians(-45.0f), 0.0f};
+			gameObjects[1].scale					= {0.75f, 0.75f, 0.75f};
+			
+			// Object 3 - Right
+			gameObjects[2].position					= {2.0f, 0.0f, -1.0f};
+			gameObjects[2].rotation					= {0.0f, glm::radians(45.0f), 0.0f};
+			gameObjects[2].scale					= {0.75f, 0.75f, 0.75f};
+		}
+
+
+//******************************************************************************************
+// 
 //  Name:           createUniformBuffers
 //  Arguments:      N/A
 //  Returns:        void
@@ -2157,6 +2220,7 @@ class VulkanApplication
 // 
 //******************************************************************************************
 
+	// Create uniform buffers for each object
         void createUniformBuffers()
         {
             uniformBuffers.clear();
