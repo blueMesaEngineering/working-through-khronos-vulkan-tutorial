@@ -2223,31 +2223,36 @@ class VulkanApplication
 	// Create uniform buffers for each object
         void createUniformBuffers()
         {
-            uniformBuffers.clear();
-            uniformBuffersMemory.clear();
-	        uniformBuffersMapped.clear();
+		// For each game object
+		for (auto &gameObject : gameObjects)
+		{
+	            gameObject.uniformBuffers.clear();
+	            gameObject.uniformBuffersMemory.clear();
+		        gameObject.uniformBuffersMapped.clear();
 
-            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                vk::DeviceSize              bufferSize              = sizeof(UniformBufferObject);
-                vk::raii::Buffer		    buffer({});
-                vk::raii::DeviceMemory		bufferMem({});
+		// Create uniform buffers for each frame in flight
+	            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	            {
+	                vk::DeviceSize              bufferSize              = sizeof(UniformBufferObject);
+	                vk::raii::Buffer		    buffer({});
+	                vk::raii::DeviceMemory		bufferMem({});
 	
-                createBuffer(
-                      bufferSize
-                    , vk::BufferUsageFlagBits::eUniformBuffer
-                    , vk::MemoryPropertyFlagBits::eHostVisible
-                    | vk::MemoryPropertyFlagBits::eHostCoherent
+	                createBuffer(
+	                      bufferSize
+	                    , vk::BufferUsageFlagBits::eUniformBuffer
+	                    , vk::MemoryPropertyFlagBits::eHostVisible
+	                    | vk::MemoryPropertyFlagBits::eHostCoherent
 		            , buffer
-                    , bufferMem
-                );
+	                    , bufferMem
+	                );
 
-                uniformBuffers.emplace_back(std::move(buffer));
-                uniformBuffersMemory.emplace_back(std::move(bufferMem));
-                uniformBuffersMapped.emplace_back(
-                                    uniformBuffersMemory[i].mapMemory(0, bufferSize)
-                                );
-            }
+	                gameObject.uniformBuffers.emplace_back(std::move(buffer));
+	                gameObject.uniformBuffersMemory.emplace_back(std::move(bufferMem));
+	                gameObject.uniformBuffersMapped.emplace_back(
+	                                    gameObject.uniformBuffersMemory[i].mapMemory(0, bufferSize)
+	                                );
+			}
+	            }
         }
 
 
@@ -2264,24 +2269,25 @@ class VulkanApplication
 
         void createDescriptorPool()
         {
+		// We need MAX_OBJECTS * MAX_FRAMES_IN_FLIGHT descriptor sets
             std::array poolSize
             {
                 vk::DescriptorPoolSize
                 (
                       vk::DescriptorType::eUniformBuffer
-                    , MAX_FRAMES_IN_FLIGHT
+                    , MAX_OBJECTS * MAX_FRAMES_IN_FLIGHT
                 )
                 , vk::DescriptorPoolSize
                 (
                       vk::DescriptorType::eCombinedImageSampler
-                    , MAX_FRAMES_IN_FLIGHT
+                    , MAX_OBJECTS * MAX_FRAMES_IN_FLIGHT
                 )
             };
 
             vk::DescriptorPoolCreateInfo    poolInfo
             {
                   .flags				                    = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
-                , .maxSets                                  = MAX_FRAMES_IN_FLIGHT
+                , .maxSets                                  = MAX_OBJECTS * MAX_FRAMES_IN_FLIGHT
                 , .poolSizeCount                            = static_cast<uint32_t>(poolSize.size())
                 , .pPoolSizes                               = poolSize.data()
             };
@@ -2303,8 +2309,13 @@ class VulkanApplication
 
         void createDescriptorSets()
         {
+		// For each game object
+		for (auto &gameObject : gameObjects)
+		{
+			// Create descriptor sets for each frame in flight
             std::vector<vk::DescriptorSetLayout>    layouts(  MAX_FRAMES_IN_FLIGHT
                                                             , *descriptorSetLayout);
+
             vk::DescriptorSetAllocateInfo           allocInfo
             {
                   .descriptorPool                           = *descriptorPool
@@ -2312,14 +2323,14 @@ class VulkanApplication
                 , .pSetLayouts                              = layouts.data()
             };
 
-	        descriptorSets.clear();
-            descriptorSets                                  = device.allocateDescriptorSets(allocInfo);
+	        gameObject.descriptorSets.clear();
+                gameObject.descriptorSets                                  = device.allocateDescriptorSets(allocInfo);
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
                 vk::DescriptorBufferInfo            bufferInfo
                 {
-                      .buffer                               = *uniformBuffers[i]
+                      .buffer                               = *gameObject.uniformBuffers[i]
                     , .offset                               = 0
                     , .range                                = sizeof(UniformBufferObject)
                 };
@@ -2335,7 +2346,7 @@ class VulkanApplication
                 {
                     vk::WriteDescriptorSet
                     {
-                          .dstSet                           = *descriptorSets[i]
+                          .dstSet                           = *gameObject.descriptorSets[i]
                         , .dstBinding                       = 0
                         , .dstArrayElement                  = 0
                         , .descriptorCount                  = 1
@@ -2345,7 +2356,7 @@ class VulkanApplication
 		    
                     , vk::WriteDescriptorSet
                     {
-                          .dstSet                           = *descriptorSets[i]
+                          .dstSet                           = *gameObject.descriptorSets[i]
                         , .dstBinding                       = 1
                         , .dstArrayElement                  = 0
                         , .descriptorCount                  = 1
@@ -2356,6 +2367,7 @@ class VulkanApplication
 
                 device.updateDescriptorSets(  descriptorWrites
                                             , {});
+		}
             }
         }
         
@@ -2592,6 +2604,7 @@ class VulkanApplication
 	        auto                    &commandBuffer			    = commandBuffers[frameIndex];
             commandBuffer.begin({});
 	    
+	    // Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
             transition_image_layout(
                   swapChainImages[imageIndex]
                 , vk::ImageLayout::eUndefined
@@ -2692,14 +2705,19 @@ class VulkanApplication
                 , vk::IndexType::eUint32
             );
 
+	    // Draw each object with its own descriptor set
+	    for (const auto &gameObject : gameObjects)
+	    {
+		// Bind the descriptor set for this object
             commandBuffer.bindDescriptorSets(
                   vk::PipelineBindPoint::eGraphics
                 , *pipelineLayout
                 , 0
-                , *descriptorSets[frameIndex]
+                , *gameObject.descriptorSets[frameIndex]
                 , nullptr
             );
 
+		// Draw the object
             commandBuffer.drawIndexed(
                   indices.size()
                 , 1
@@ -2707,6 +2725,7 @@ class VulkanApplication
                 , 0
                 , 0
             );
+	    }
 
 	        commandBuffer.endRendering();
 
@@ -2820,7 +2839,7 @@ class VulkanApplication
 
 //******************************************************************************************
 // 
-//  Name:           updateUniformBuffer
+//  Name:           updateUniformBuffers
 //  Arguments:      N/A
 //  Returns:        void
 //  Calls:          
@@ -2829,12 +2848,16 @@ class VulkanApplication
 // 
 //******************************************************************************************
 
-        void updateUniformBuffer(uint32_t currentImage) const
+        void updateUniformBuffers()
         {
             static auto             startTime               = std::chrono::high_resolution_clock::now();
+	    static auto 		lastFrameTime		= startTime;
 
             auto                    currentTime             = std::chrono::high_resolution_clock::now();
             float                   time                    = std::chrono::duration<float>(currentTime - startTime).count();
+	    
+	    float 			deltaTime		= std::chrono::duration<float>(currentTime - lastFrameTime).count();
+	    lastFrameTime					= currentTime;
 
             UniformBufferObject     ubo{};
 	    
@@ -2872,6 +2895,7 @@ class VulkanApplication
                 , &ubo
                 , sizeof(ubo)
             );
+	    }
         }
 	
 
