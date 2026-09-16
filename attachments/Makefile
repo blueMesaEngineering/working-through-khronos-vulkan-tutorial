@@ -1235,6 +1235,45 @@ depend:
 .PHONY : 35_gltf_ktx_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 36_multipleObjects
+
+# Build rule for target.
+36_multipleObjects: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 36_multipleObjects
+.PHONY : 36_multipleObjects
+
+# fast build rule for target.
+36_multipleObjects/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/36_multipleObjects.dir/build.make CMakeFiles/36_multipleObjects.dir/build
+.PHONY : 36_multipleObjects/fast
+
+#=============================================================================
+# Target rules for targets named 36_multipleObjects_shader
+
+# Build rule for target.
+36_multipleObjects_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 36_multipleObjects_shader
+.PHONY : 36_multipleObjects_shader
+
+# fast build rule for target.
+36_multipleObjects_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/36_multipleObjects_shader.dir/build.make CMakeFiles/36_multipleObjects_shader.dir/build
+.PHONY : 36_multipleObjects_shader/fast
+
+#=============================================================================
+# Target rules for targets named 36_multipleObjects_slang_shader
+
+# Build rule for target.
+36_multipleObjects_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 36_multipleObjects_slang_shader
+.PHONY : 36_multipleObjects_slang_shader
+
+# fast build rule for target.
+36_multipleObjects_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/36_multipleObjects_slang_shader.dir/build.make CMakeFiles/36_multipleObjects_slang_shader.dir/build
+.PHONY : 36_multipleObjects_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -2507,6 +2546,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/35_gltf_ktx.dir/build.make CMakeFiles/35_gltf_ktx.dir/35_gltf_ktx.cpp.s
 .PHONY : 35_gltf_ktx.cpp.s
 
+36_multipleObjects.o: 36_multipleObjects.cpp.o
+.PHONY : 36_multipleObjects.o
+
+# target to build an object file
+36_multipleObjects.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/36_multipleObjects.dir/build.make CMakeFiles/36_multipleObjects.dir/36_multipleObjects.cpp.o
+.PHONY : 36_multipleObjects.cpp.o
+
+36_multipleObjects.i: 36_multipleObjects.cpp.i
+.PHONY : 36_multipleObjects.i
+
+# target to preprocess a source file
+36_multipleObjects.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/36_multipleObjects.dir/build.make CMakeFiles/36_multipleObjects.dir/36_multipleObjects.cpp.i
+.PHONY : 36_multipleObjects.cpp.i
+
+36_multipleObjects.s: 36_multipleObjects.cpp.s
+.PHONY : 36_multipleObjects.s
+
+# target to generate assembly for a file
+36_multipleObjects.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/36_multipleObjects.dir/build.make CMakeFiles/36_multipleObjects.dir/36_multipleObjects.cpp.s
+.PHONY : 36_multipleObjects.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -2569,6 +2632,8 @@ help:
 	@echo "... 34_android_slang_shader"
 	@echo "... 35_gltf_ktx_shader"
 	@echo "... 35_gltf_ktx_slang_shader"
+	@echo "... 36_multipleObjects_shader"
+	@echo "... 36_multipleObjects_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -2632,6 +2697,7 @@ help:
 	@echo "... 33_vulkanProfiles"
 	@echo "... 34_android"
 	@echo "... 35_gltf_ktx"
+	@echo "... 36_multipleObjects"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -2738,6 +2804,9 @@ help:
 	@echo "... 35_gltf_ktx.o"
 	@echo "... 35_gltf_ktx.i"
 	@echo "... 35_gltf_ktx.s"
+	@echo "... 36_multipleObjects.o"
+	@echo "... 36_multipleObjects.i"
+	@echo "... 36_multipleObjects.s"
 .PHONY : help
 
 

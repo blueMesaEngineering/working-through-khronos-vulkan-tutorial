@@ -1375,7 +1375,7 @@ class VulkanApplication
 	    >						pipelineCreateInfoChain		= 
             {
 		{
-	                , .stageCount                                       = 2
+	                  .stageCount                                       = 2
 	                , .pStages                                          = shaderStages
 	                , .pVertexInputState                                = &vertexInputInfo
 	                , .pInputAssemblyState                              = &inputAssembly
