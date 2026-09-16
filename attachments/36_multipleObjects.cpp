@@ -2693,6 +2693,7 @@ class VulkanApplication
                     )
             );
 
+		// Bind vertex and index buffers (shared by all objects)
             commandBuffer.bindVertexBuffers(  
                   0
                 , *vertexBuffer
@@ -2859,42 +2860,46 @@ class VulkanApplication
 	    float 			deltaTime		= std::chrono::duration<float>(currentTime - lastFrameTime).count();
 	    lastFrameTime					= currentTime;
 
-            UniformBufferObject     ubo{};
-	    
-	        glm::mat4			    initialRotation		    = glm::rotate(
-                                                                      glm::mat4(1.0f)
-                                                                    , glm::radians(-90.0f)
-                                                                    , glm::vec3(1.0f, 0.0f, 0.0f)
-                                                                );
-									
-	        glm::mat4			    continuousRotation	    = glm::rotate(
-                                                                      glm::mat4(1.0f)
-                                                                    , time * glm::radians(90.0f)
-                                                                    , glm::vec3(0.0f, 0.0f, 1.0f)
-                                                                );
-
-            ubo.model                                       = continuousRotation * initialRotation;
-            
-            ubo.view                                        = lookAt(
-                                                                      glm::vec3(2.0f, 2.0f, 2.0f)
+	    // Camera and projection matrices (shared by all objects)
+            glm::mat4			view                = glm::lookAt(
+                                                                      glm::vec3(2.0f, 2.0f, 6.0f)
                                                                     , glm::vec3(0.0f, 0.0f, 0.0f)
-                                                                    , glm::vec3(0.0f, 0.0f, 1.0f)
+                                                                    , glm::vec3(0.0f, 1.0f, 0.0f)
                                                                 );
 
-            ubo.proj                                        = glm::perspective(
+            glm::mat4			proj                = glm::perspective(
                                                                       glm::radians(45.0f)
                                                                     , static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height)
                                                                     , 0.1f
-                                                                    , 10.0f
+                                                                    , 20.0f
                                                                 );
 
-            ubo.proj[1][1] *= -1;
+            proj[1][1] *= -1;
 
-            memcpy(
-		          uniformBuffersMapped[currentImage]
-                , &ubo
-                , sizeof(ubo)
-            );
+		// Update uniform buffers for each object
+		for (auto &gameObject : gameObjects)
+		{
+			// Apply continuous rotation to the object based on frame time
+			const float 			rotationSpeed		= 0.5f;				// Rotation speed in radians per second
+			gameObject.rotation.y					+= rotationSpeed * deltaTime;	// Slow rotation around Y axis scaled by frame time
+			
+			// Get the model matrix for this object
+			glm::mat4			model			= gameObject.getModelMatrix();
+			
+			// Create and update the UBO
+			UniformBufferObject ubo
+			{
+				  .model					= model
+				, .view						= view
+				, .proj						= proj
+			};
+			
+		// Copy the UBO data to the mapped memory
+		memcpy(
+			  gameObject.uniformBuffersMapped[frameIndex]
+			, &ubo
+			, sizeof(ubo)
+		);
 	    }
         }
 	
@@ -2953,7 +2958,8 @@ class VulkanApplication
                 throw std::runtime_error("Failed to acquire swap chain image!");
             }
 
-            updateUniformBuffer(frameIndex);
+		// Update uniform buffers for all objects
+            updateUniformBuffers();
 
             // Only reset the fence if we are submitting work                    
             device.resetFences(*inFlightFences[frameIndex]);
@@ -3049,7 +3055,9 @@ class VulkanApplication
         static uint32_t chooseSwapMinImageCount(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities)
         {
             auto minImageCount = std::max(  3u
-                                          , surfaceCapabilities.minImageCount);
+                                          , surfaceCapabilities.minImageCount
+	    );
+	    
             if (    (0 < surfaceCapabilities.maxImageCount) 
                  && (surfaceCapabilities.maxImageCount < minImageCount))
             {
@@ -3146,7 +3154,7 @@ class VulkanApplication
 #else
                 ANativeWindow		*window					= androidAppState.nativeWindow;
                 int			        width					= ANativeWindow_getWidth(window);
-                in			        height					= ANativeWindow_getHeight(window);
+                int			        height					= ANativeWindow_getHeight(window);
 #endif
 
             return
@@ -3305,7 +3313,8 @@ class VulkanApplication
 #else
 	        // Desktop file loading
             std::ifstream file(  filename
-                               , std::ios::ate | std::ios::binary);
+                               , std::ios::ate | std::ios::binary
+			);
 
             if (!file.is_open())
             {
@@ -3335,6 +3344,7 @@ void android_main(android_app *app)
 	vulkanApp.run(app);
 }
 #else
+
 
 //******************************************************************************************
 // 
