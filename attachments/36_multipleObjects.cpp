@@ -465,8 +465,8 @@ class VulkanApplication
         vk::raii::Buffer                        indexBuffer                 = nullptr;
         vk::raii::DeviceMemory                  indexBufferMemory           = nullptr;
 
-	// Array of game objects to render
-	std::array<GameObject, MAX_OBJECTS> gameObjects;
+	    // Array of game objects to render
+	    std::array<GameObject, MAX_OBJECTS> gameObjects;
 	
         // Descriptor pool
         vk::raii::DescriptorPool                descriptorPool              = nullptr;
@@ -520,7 +520,8 @@ class VulkanApplication
                                       , HEIGHT
                                       , "Vulkan"
                                       , nullptr
-                                      , nullptr);
+                                      , nullptr
+                                    );
 
             glfwSetWindowUserPointer(  window
                                      , this);
@@ -578,7 +579,7 @@ class VulkanApplication
 //                  loadModel();
 //                  createVertexBuffer();
 //                  createIndexBuffer();
-//		    setupGameObjects();
+//		            setupGameObjects();
 //                  createUniformBuffers();
 //                  createDescriptorPool();
 //                  createDescriptorSets();
@@ -609,7 +610,7 @@ class VulkanApplication
             loadModel();
             createVertexBuffer();
             createIndexBuffer();
-	    setupGameObjects();
+	        setupGameObjects();
             createUniformBuffers();
             createDescriptorPool();
             createDescriptorSets();
@@ -862,7 +863,7 @@ class VulkanApplication
                     , nullptr
                     , &_surface
                 ) != VK_SUCCESS
-	    )
+	        )
             {
                 throw std::runtime_error("Failed to create Android surface");
             }
@@ -926,7 +927,7 @@ class VulkanApplication
             // Check if the physicalDevice supports the required features
 	    
             auto 			            features			        = physicalDevice
-									.template getFeatures2<
+									                                    .template getFeatures2<
                                                                             vk::PhysicalDeviceFeatures2
                                                                             , vk::PhysicalDeviceVulkan13Features
                                                                             , vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
