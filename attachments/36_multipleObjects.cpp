@@ -1369,38 +1369,38 @@ class VulkanApplication
             vk::Format			            depthFormat		        = findDepthFormat();
 
             // Create the graphics pipeline
-	    vk::StructureChain<
-		  vk::GraphicsPipelineCreateInfo
-		, vk::PipelineRenderingCreateInfo
-	    >						pipelineCreateInfoChain		= 
+            vk::StructureChain<
+                  vk::GraphicsPipelineCreateInfo
+                , vk::PipelineRenderingCreateInfo
+            >						        pipelineCreateInfoChain	= 
             {
-		{
-	                  .stageCount                                       = 2
-	                , .pStages                                          = shaderStages
-	                , .pVertexInputState                                = &vertexInputInfo
-	                , .pInputAssemblyState                              = &inputAssembly
-	                , .pViewportState                                   = &viewportState
-	                , .pRasterizationState                              = &rasterizer
-	                , .pMultisampleState                                = &multisampling
-	                , .pDepthStencilState                               = &depthStencil
-	                , .pColorBlendState                                 = &colorBlending
-	                , .pDynamicState                                    = &dynamicState
-	                , .layout                                           = *pipelineLayout
-	                , .renderPass                                       = nullptr
-	            }
-		    ,
-		    {
-	                  .colorAttachmentCount				                = 1
-	                , .pColorAttachmentFormats			                = &swapChainSurfaceFormat.format
-	                , .depthAttachmentFormat			                = depthFormat
-		}
+                {
+                      .stageCount                                   = 2
+                    , .pStages                                      = shaderStages
+                    , .pVertexInputState                            = &vertexInputInfo
+                    , .pInputAssemblyState                          = &inputAssembly
+                    , .pViewportState                               = &viewportState
+                    , .pRasterizationState                          = &rasterizer
+                    , .pMultisampleState                            = &multisampling
+                    , .pDepthStencilState                           = &depthStencil
+                    , .pColorBlendState                             = &colorBlending
+                    , .pDynamicState                                = &dynamicState
+                    , .layout                                       = *pipelineLayout
+                    , .renderPass                                   = nullptr
+                }
+                ,
+                {
+                      .colorAttachmentCount				            = 1
+                    , .pColorAttachmentFormats			            = &swapChainSurfaceFormat.format
+                    , .depthAttachmentFormat			            = depthFormat
+                }
             };
 
             graphicsPipeline = vk::raii::Pipeline(
-			device
-			, nullptr
-			, pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>()
-		);
+                  device
+                , nullptr
+                , pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>()
+		    );
         }
 
 
