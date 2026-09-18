@@ -64,26 +64,22 @@ struct Particle
             (    
                    0
                 ,  0
-                , vk::Format::eR32G32B32Sfloat
-                , offsetof(  Vertex
-                           , pos)
+                , vk::Format::eR32G32Sfloat
+                , offsetof(  
+			     Particle
+                           , position
+			   )
             )
             , vk::VertexInputAttributeDescription
             (
                   1
                 , 0
-                , vk::Format::eR32G32B32Sfloat
-                , offsetof(  Vertex
-                           , color)
-            )
-            , vk::VertexInputAttributeDescription
-            (
-                  2
-                , 0
-                , vk::Format::eR32G32Sfloat
-                , offsetof(  Vertex
-                           , texCoord)
-            )
+                , vk::Format::eR32G32B32A32Sfloat
+                , offsetof(  
+			     Particle
+                           , color
+			   )
+            ),
         };
     }
 };
