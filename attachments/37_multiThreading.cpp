@@ -179,10 +179,62 @@ class ThreadSafeResourceManager
 			, uint32_t				buffersPerThread
 		)
 		{
+			std::lock_guard				lock(resourceMutex);
+			
 			commandBuffers.clear();
 			
 			if (commandPools.size() < threadCount)
+			{
+				throw std::runtime_error("Not enough command pools for thread count...");
+			}
+			
+			for (uint32_t i = 0; i < threadCount; i++)
+			{
+				vk::CommandBufferAllocateInfo	allocInfo
+				{
+					.commandPool					= *commandPools[i]
+					, .level					= vk::CommandBufferLevel::ePrimary
+					, .commandBufferCount				= buffersPerThread
+				};
+				try
+				{
+					auto threadBuffers				= device.allocateCommandBuffers(allocInfo);
+					for (auto &buffer : threadBuffers)
+					{
+						commandBuffers.emplace_back(std::move(buffer));
+					}
+				}
+				catch (const std::exception &)
+				{
+					throw;						// Re-throw the exception to be caught by the caller
+				}
+			}
 		}
+	
+
+//******************************************************************************************
+// 
+//  Name:           allocateCommandBuffers
+//  Arguments:      uint32_t index
+//  Returns:        vk::raii::CommandBuffer &
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+	
+	vk::raii::CommandBuffer &getCommandBuffer(
+		uint32_t index
+	)
+	{
+		// No need for mutex here as each thread accesses its own command buffer
+		if (index >= commandBuffers.size())
+		{
+			throw std::runtime_error("Command buffer index out of range: " + std::to_string(index) +
+							" (available: " + std::to_string(commandBuffers.size()) + ")");
+		}
+		return commandBuffers[index];
+	}
 };
 
 
