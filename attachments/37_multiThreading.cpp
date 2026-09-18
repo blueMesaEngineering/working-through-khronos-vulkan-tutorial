@@ -84,75 +84,109 @@ struct Particle
     }
 };
 
-template <>
-struct std::hash<Vertex>
+// Simple logging function
+template <typename... Args>
+void log(Args &&...args)
 {
-    size_t operator()(Vertex const &vertex) const noexcept
-    {
-        return 
-        (
-            (
-                   hash<glm::vec3>()(vertex.pos) 
-                ^ (hash<glm::vec3>()(vertex.color) << 1)
-            ) >> 1
-        ) 
-        ^ 
-        (
-            hash<glm::vec2>()(vertex.texCoord) << 1
-        );
-    }
-};
+	// Only log in debug builds
+#ifdef	_DEBUG
+	(std::cout << ... << std::forward<Args>(args)) << std::endl;
+#endif
+}
 
-// Define a structure to hold per-object data
-struct GameObject
+
+class ThreadSafeResourceManager
 {
-	// Transform properties
-	glm::vec3				position			= {0.0f, 0.0f, 0.0f};
-	glm::vec3				rotation			= {0.0f, 0.0f, 0.0f};
-	glm::vec3				scale				= {1.0f, 1.0f, 1.0f};
-	
-	// Uniform buffer for this object (one per frame in flight)
-	std::vector<vk::raii::Buffer>		uniformBuffers;
-	std::vector<vk::raii::DeviceMemory>	uniformBuffersMemory;
-	std::vector<void *>			uniformBuffersMapped;
-	
-	// Descriptor sets for this object (one per frame in flight)
-	std::vector<vk::raii::DescriptorSet> 	descriptorSets;
-	
-	// Calculate model matrix based on position, rotation, and scale
-	glm::mat4				getModelMatrix() const
-	{
-		glm::mat4 			model				= glm::mat4(1.0f);
-		model								= glm::translate(model, position);
-		model								= glm::rotate(
-											model
-											, rotation.x
-											, glm::vec3(1.0f, 0.0f, 0.0f)
-											);
-		model								= glm::rotate(
-											model
-											, rotation.y
-											, glm::vec3(0.0f, 1.0f, 0.0f)
-											);
-		model								= glm::rotate(
-											model
-											, rotation.z
-											, glm::vec3(0.0f, 0.0f, 1.0f)
-											);
-		model								= glm::scale(model, scale);
+	private:
+		std::mutex					resourceMutex;
+		std::vector<vk::raii::CommandPool>		commandPools;
+		std::vector<vk::raii::CommandBuffer>		commandBuffers;
 		
-		return model;
-	}
+	public:
+	
+
+//******************************************************************************************
+// 
+//  Name:           createThreadCommandPools
+//  Arguments:      vk::raii::Device &device
+//		    uint32_t queueFamilyIndex
+//		    uint32_t threadCount
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+	
+		void createThreadCommandPools(
+			vk::raii::Device 			&device
+			, uint32_t				queueFamilyIndex
+			, uint32_t				threadCount
+		)
+		{
+			std::lock_guard<std::mutex>		lock(resourceMutx);
+			
+			commandBuffers.clear();
+			commandPools.clear();
+			
+			for (uint32_t i = 0; i < threadCount; i++)
+			{
+				vk::CommandPoolCreateInfo	poolInfo
+				{
+					.flags						= vk::CommandPoolCreateFlagBits::eResetCommandBuffer
+					, .queueFamilyIndex				= queueFamilyIndex
+				};
+				try
+				{
+					commandPools.emplace_back(
+								  device
+								, poolInfo
+								);
+				}
+				catch (const std::exception &)
+				{
+					throw;						// Re-throw the exception to be caught by the caller
+				}
+			}
+		}
+		
+		vk::raii::CommandPool &getCommandPool(
+			uint32_t		threadIndex
+		)
+		{
+			std::lock_guard				lock(resourceMutex);
+			return commandPools[threadIndex];
+		}
+		
+	
+
+//******************************************************************************************
+// 
+//  Name:           allocateCommandBuffers
+//  Arguments:      vk::raii::Device &device
+//		    uint32_t threadCount
+//		    uint32_t buffersPerThread
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+	
+		void allocateCommandBuffers(
+			vk::raii::Device 			&device
+			, uint32_t				threadCount
+			, uint32_t				buffersPerThread
+		)
+		{
+			commandBuffers.clear();
+			
+			if (commandPools.size() < threadCount)
+		}
 };
 
-struct UniformBufferObject
-{
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-};
 
-class VulkanApplication
+class MultithreadedApplication
 {
     public:
 
