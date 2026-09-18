@@ -300,31 +300,6 @@ class MultithreadedApplication
 	std::vector<vk::raii::DeviceMemory>	uniformBuffersMemory;
 	std::vector<void *>			uniformBuffersMapped;
 	
-        // Depth management
-        vk::raii::Image                         depthImage                  = nullptr;
-        vk::raii::DeviceMemory                  depthImageMemory            = nullptr;
-        vk::raii::ImageView                     depthImageView              = nullptr;
-	
-        // Mipmapping
-        vk::raii::Image                         textureImage                = nullptr;
-        vk::raii::DeviceMemory                  textureImageMemory          = nullptr;
-        vk::raii::ImageView                     textureImageView            = nullptr;
-        vk::raii::Sampler                       textureSampler              = nullptr;
-	    vk::Format				                textureImageFormat	        = vk::Format::eUndefined;
-	
-	    // Model data
-        std::vector<Vertex>                     vertices;
-        std::vector<uint32_t>                   indices;
-	
-	    // Command pool - maybe???
-        vk::raii::Buffer                        vertexBuffer                = nullptr;
-        vk::raii::DeviceMemory                  vertexBufferMemory          = nullptr;
-        vk::raii::Buffer                        indexBuffer                 = nullptr;
-        vk::raii::DeviceMemory                  indexBufferMemory           = nullptr;
-
-	    // Array of game objects to render
-	    std::array<GameObject, MAX_OBJECTS> gameObjects;
-	
         // Descriptor pool
         vk::raii::DescriptorPool                descriptorPool              = nullptr;
 	std::vector<vk::raii::DescriptorSet> 	computeDescriptorSets;
@@ -409,7 +384,9 @@ class MultithreadedApplication
 // 
 //******************************************************************************************
 
-        static uint32_t chooseSwapMinImageCount(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities)
+        static uint32_t chooseSwapMinImageCount(
+		vk::SurfaceCapabilitiesKHR const &surfaceCapabilities
+	)
         {
             auto minImageCount = std::max(  3u
                                           , surfaceCapabilities.minImageCount
@@ -424,7 +401,179 @@ class MultithreadedApplication
         }
         
 
+//******************************************************************************************
+// 
+//  Name:           chooseSwapSurfaceFormat
+//  Arguments:      N/A
+//  Returns:        static vk::SurfaceFormatKHR
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
 
+        static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
+		const std::vector<vk::SurfaceFormatKHR> &availableFormats
+	)
+        {
+            assert(!availableFormats.empty());
+            const auto formatIt                             = std::ranges::find_if(  
+                                                                              availableFormats
+                                                                            , [](const auto &format) 
+                                                                            {
+                                                                                    return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
+                                                                            }
+                                                                        );
+            return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
+        }
+        
+
+//******************************************************************************************
+// 
+//  Name:           chooseSwapPresentMode
+//  Arguments:      N/A
+//  Returns:        static vk::SurfaceFormatKHR
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        static vk::PresentModeKHR chooseSwapPresentMode(
+		std::vector<vk::PresentModeKHR> const &availablePresentModes
+	)
+        {
+            assert(std::ranges::any_of(
+					                     availablePresentModes
+                                       , [](auto presentMode)
+                                    {
+                                        return presentMode == vk::PresentModeKHR::eFifo;
+                                    }
+				)
+			);
+
+            return std::ranges::any_of(
+					 availablePresentModes
+                                       , [](const vk::PresentModeKHR value)
+                                    {
+                                        return vk::PresentModeKHR::eMailbox == value;
+                                    }
+				        ) ?
+                                    vk::PresentModeKHR::eMailbox :
+                                    vk::PresentModeKHR::eFifo;
+        }
+        
+        
+//******************************************************************************************
+// 
+//  Name:           chooseSwapExtent
+//  Arguments:      N/A
+//  Returns:        vk::Extent2D
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        vk::Extent2D chooseSwapExtent(vk::SurfaceCapabilitiesKHR const &capabilities)
+        {
+            if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+            {
+                return capabilities.currentExtent;
+            }
+                int width, height;
+
+                glfwGetFramebufferSize(
+                      window
+                    , &width
+                    , &height
+                );
+
+            return
+            {
+                std::clamp<uint32_t>(  
+                                  width
+                                , capabilities.minImageExtent.width
+                                , capabilities.maxImageExtent.width
+                            )
+                , std::clamp<uint32_t>(  
+                                  height
+                                , capabilities.minImageExtent.height
+                                , capabilities.maxImageExtent.height
+                            )
+            };
+        }
+
+
+//******************************************************************************************
+// 
+//  Name:           createShaderModule
+//  Arguments:      N/A
+//  Returns:        [[nodiscard]] vk::raii::ShaderModule
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	[[nodiscard]] vk::raii::ShaderModule createShaderModule(
+		const std::vector<char> &code
+	) const
+	{
+		vk::ShaderModuleCreateInfo	createInfo
+		{
+			  .codeSize						                = code.size()
+			, .pCode							        = reinterpret_cast<const uint32_t *>(code.data())
+		};
+		
+		vk::raii::ShaderModule		shaderModule{device, createInfo};
+		
+		return shaderModule;
+	}
+
+
+//******************************************************************************************
+// 
+//  Name:           readFile
+//  Arguments:      filename
+//  Returns:        static std::vector<char>
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+    static std::vector<char> readFile(
+	const std::string &filename
+    )
+    {
+            std::ifstream file(  
+				filename
+                               , std::ios::ate 
+			       | std::ios::binary
+			);
+
+            if (!file.is_open())
+            {
+                throw std::runtime_error("Failed to open file:" + filename);
+            }
+
+            std::vector<char> buffer(file.tellg());
+
+            file.seekg(
+		0
+		, std::ios::beg
+	    );
+            file.read(
+		buffer.data()
+		, static_cast<std::streamsize>(buffer.size())
+	    );
+            file.close();
+#endif
+            return buffer;
+        }
+
+        
 //******************************************************************************************
 // 
 //  Name:           initWindow
@@ -449,9 +598,10 @@ class MultithreadedApplication
             glfwWindowHint(  GLFW_RESIZABLE
                            , GLFW_TRUE);
 
-            window = glfwCreateWindow(  WIDTH
+            window = glfwCreateWindow(
+					 WIDTH
                                       , HEIGHT
-                                      , "Vulkan"
+                                      , "Vulkan MultiThreading"
                                       , nullptr
                                       , nullptr
                                     );
@@ -461,6 +611,8 @@ class MultithreadedApplication
 
             glfwSetFramebufferSizeCallback(  window
                                            , framebufferResizeCallback);
+					   
+	    lastTime								= glfwGetTime();
         }
 
 
@@ -477,17 +629,18 @@ class MultithreadedApplication
 
         static void framebufferResizeCallback(
               GLFWwindow *window
-            , int width
-            , int height
+            , int
+            , int
         )
         {
-            auto app                                        = static_cast<VulkanApplication *>(glfwGetWindowUserPointer(window));
-            app->framebufferResized                         = true;
+		auto app                                        = reinterpret_cast<MultithreadedApplication *>(glfwGetWindowUserPointer(window));
+
+		if (app)
+		{
+		            app->framebufferResized                         = true;
+		}
         }
-#endif
-
-	public:
-
+	
 
 //******************************************************************************************
 // 
@@ -495,29 +648,22 @@ class MultithreadedApplication
 //  Arguments:      N/A
 //  Returns:        void
 //  Calls:          
-//                  createInstance();
-//                  setupDebugMessenger();
-//                  createSurface();
-//                  pickPhysicalDevice();
-//                  createLogicalDevice();
-//                  createSwapChain();
-//                  createImageViews();
-//                  createDescriptorSetLayout();
-//                  createGraphicsPipeline();
-//                  createCommandPool();
-//                  createDepthResources();
-//                  createTextureImage();
-//                  createTextureImageView();
-//                  createTextureSampler();
-//                  loadModel();
-//                  createVertexBuffer();
-//                  createIndexBuffer();
-//		            setupGameObjects();
-//                  createUniformBuffers();
-//                  createDescriptorPool();
-//                  createDescriptorSets();
-//                  createCommandBuffers();
-//                  createSyncObjects();
+//            	createInstance();
+//            	createSurface();
+//            	pickPhysicalDevice();
+//            	createLogicalDevice();
+//            	createSwapChain();
+//            	createImageViews();
+//            	createComputeDescriptorSetLayout();
+//            	createGraphicsPipeline();
+//	      	createComputePipeline();
+//            	createCommandPool();
+//	      	createShaderStorageBuffers();
+//            	createUniformBuffers();
+//            	createDescriptorPool();
+//            	createComputeDescriptorSets();
+//            	createGraphicsCommandBuffers();
+//            	createSyncObjects();
 //
 //  Called by:      initVulkan
 //  Description:    Control structure for initializing the Vulkan framework.
@@ -527,32 +673,29 @@ class MultithreadedApplication
         void initVulkan()
         {
             createInstance();
-	        setupDebugMessenger();
             createSurface();
             pickPhysicalDevice();
             createLogicalDevice();
             createSwapChain();
             createImageViews();
-            createDescriptorSetLayout();
+            createComputeDescriptorSetLayout();
             createGraphicsPipeline();
+	    createComputePipeline();
             createCommandPool();
-	        createDepthResources();
-            createTextureImage();
-            createTextureImageView();
-            createTextureSampler();
-            loadModel();
-            createVertexBuffer();
-            createIndexBuffer();
-	        setupGameObjects();
+	    createShaderStorageBuffers();
             createUniformBuffers();
             createDescriptorPool();
-            createDescriptorSets();
-            createCommandBuffers();
+            createComputeDescriptorSets();
+            createGraphicsCommandBuffers();
             createSyncObjects();
         }
 
-	private:
-#if PLATFORM_DESKTOP
+
+	void initThreads()
+	{
+		// Increase thread count for better parallelism
+		threadCount							= 8u;
+	}
 	
 //******************************************************************************************
 // 
@@ -2949,176 +3092,7 @@ class MultithreadedApplication
             frameIndex                                      = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
         }
 
-
-//******************************************************************************************
-// 
-//  Name:           createShaderModule
-//  Arguments:      N/A
-//  Returns:        [[nodiscard]] vk::raii::ShaderModule
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-	[[nodiscard]] vk::raii::ShaderModule createShaderModule(const std::vector<char> &code) const
-	{
-		vk::ShaderModuleCreateInfo	createInfo
-		{
-			  .codeSize						                = code.size()
-			, .pCode							            = reinterpret_cast<const uint32_t *>(code.data())
-		};
-		
-		vk::raii::ShaderModule		shaderModule{device, createInfo};
-		
-		return shaderModule;
-	}
-
-//******************************************************************************************
-// 
-//  Name:           chooseSwapSurfaceFormat
-//  Arguments:      N/A
-//  Returns:        static vk::SurfaceFormatKHR
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats)
-        {
-            assert(!availableFormats.empty());
-            const auto formatIt                             = std::ranges::find_if(  
-                                                                              availableFormats
-                                                                            , [](const auto &format) 
-                                                                            {
-                                                                                    return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
-                                                                            }
-                                                                        );
-            return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           chooseSwapPresentMode
-//  Arguments:      N/A
-//  Returns:        static vk::SurfaceFormatKHR
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        static vk::PresentModeKHR chooseSwapPresentMode(std::vector<vk::PresentModeKHR> const &availablePresentModes)
-        {
-            assert(std::ranges::any_of(
-					                     availablePresentModes
-                                       , [](auto presentMode)
-                                    {
-                                        return presentMode == vk::PresentModeKHR::eFifo;
-                                    }
-				)
-			);
-
-            return std::ranges::any_of(
-					 availablePresentModes
-                                       , [](const vk::PresentModeKHR value)
-                                    {
-                                        return vk::PresentModeKHR::eMailbox == value;
-                                    }
-				        ) ?
-                                    vk::PresentModeKHR::eMailbox :
-                                    vk::PresentModeKHR::eFifo;
-        }
-        
-        
-//******************************************************************************************
-// 
-//  Name:           chooseSwapExtent
-//  Arguments:      N/A
-//  Returns:        vk::Extent2D
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        vk::Extent2D chooseSwapExtent(vk::SurfaceCapabilitiesKHR const &capabilities)
-        {
-            if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-            {
-                return capabilities.currentExtent;
-            }
-#if PLATFORM_DESKTOP
-                int width, height;
-
-                glfwGetFramebufferSize(
-                      window
-                    , &width
-                    , &height
-                );
-#else
-                ANativeWindow		*window					= androidAppState.nativeWindow;
-                int			        width					= ANativeWindow_getWidth(window);
-                int			        height					= ANativeWindow_getHeight(window);
-#endif
-
-            return
-            {
-                std::clamp<uint32_t>(  
-                                  width
-                                , capabilities.minImageExtent.width
-                                , capabilities.maxImageExtent.width
-                            )
-                , std::clamp<uint32_t>(  
-                                  height
-                                , capabilities.minImageExtent.height
-                                , capabilities.maxImageExtent.height
-                            )
-            };
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           getRequiredInstanceExtensions
-//  Arguments:      N/A
-//  Returns:        std::vector<const char *>
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-        
-        [[nodiscard]] std::vector<const char *> getRequiredInstanceExtensions() const
-        {
-		    std::vector<const char *>   extensions;
-		
-#if PLATFORM_DESKTOP
-            // Get GLFW extensions
-            uint32_t 		            glfwExtensionCount		= 0;
-            auto			            glfwExtensions			= glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-            extensions.assign(
-                  glfwExtensions
-                , glfwExtensions + glfwExtensionCount
-            );
-#else
-            // Android extensions
-            extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-            extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
-#endif
-
-            // Add debug extensions if validation layers are enabled
-            if (enableValidationLayers)
-            {
-                extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-            }
-            
-            return extensions;
-        }
 	
-
 //******************************************************************************************
 // 
 //  Name:           checkValidationLayerSupport
@@ -3177,80 +3151,8 @@ class MultithreadedApplication
 	}
         
 
-//******************************************************************************************
-// 
-//  Name:           readFile
-//  Arguments:      filename
-//  Returns:        static std::vector<char>
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-    std::vector<char> readFile(const std::string &filename)
-    {
-#if PLATFORM_ANDROID
-        // Android asset loading
-        if (androidAppState.app == nullptr)
-        {
-            LOGE("Android app not initialized");
-            throw std::runtime_error("Android app not initialized");
-        }
-        AAsset *asset 			                            = AAssetManager_open(
-                                                                          androidAppState.app->activity->assetManager
-                                                                        , filename.c_str()
-                                                                        , AASSET_MODE_BUFFER
-                                                                    );
-        if (!asset)
-        {
-            throw std::runtime_error("Failed to open file: " + filename);
-        }
-
-            size_t			            size		        = AAsset_getLength(asset);
-            std::vector<char>	        buffer(size);
-            
-            AAsset_read(  
-                  asset
-                , buffer.data()
-                , size
-            );
-            AAsset_close(asset);
-
-#else
-	        // Desktop file loading
-            std::ifstream file(  filename
-                               , std::ios::ate | std::ios::binary
-			);
-
-            if (!file.is_open())
-            {
-                throw std::runtime_error("Failed to open file:" + filename);
-            }
-
-	        size_t	                    fileSize		    = static_cast<size_t>(file.tellg());
-
-            std::vector<char> buffer(fileSize);
-
-            file.seekg(0);
-            file.read(buffer.data(), fileSize);
-            file.close();
-#endif
-            return buffer;
-        }
 };
 
-
-#if PLATFORM_ANDROID
-void android_main(android_app *app)
-{
-	app_dummy();
-	
-	VulkanApplication vulkanApp;
-	
-	vulkanApp.run(app);
-}
-#else
 
 
 //******************************************************************************************
