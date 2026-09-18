@@ -22,7 +22,7 @@
 #else
 import vulkan_hpp;
 #endif
-// Desktop-specific includes
+
 #	define GLFW_INCLUDE_VULKAN        // REQUIRED only for GLFW CreateWindowSurface.
 #include <GLFW/glfw3.h>
 
@@ -94,7 +94,6 @@ void log(Args &&...args)
 #endif
 }
 
-
 class ThreadSafeResourceManager
 {
 	private:
@@ -157,7 +156,6 @@ class ThreadSafeResourceManager
 			std::lock_guard				lock(resourceMutex);
 			return commandPools[threadIndex];
 		}
-		
 	
 
 //******************************************************************************************
@@ -261,86 +259,19 @@ class MultithreadedApplication
         {
             initWindow();
             initVulkan();
+	    initThreads();
             mainLoop();
             cleanup();
         }
-#endif
 
     private:
 
-#if PLATFORM_ANDROID
-	AndroidAppState 			androidAppState;
-	
-	static void handleAppCommand(
-		android_app *app
-		, int32_t cmd
-	)
-	{
-		auto *appState			= static_cast<AndroidAppState *>(app->userData);
-		
-		switch (cmd)
-		{
-			case APP_CMD_INIT_WINDOW:
-				if (app->window != nullptr)
-				{
-					appState->nativeWindow		= app->window;
-					// We can't cast AndroidAppState to VulkanApplication directly
-					// Instead, we need to access the VulkanApplication instance through a global variable
-					// or another mechanism. For now, we'll just set the initialized flag.
-					appState->initialized		= true;
-				}
-				break;
-			case APP_CMD_TERM_WINDOW:
-				appState->nativeWindow 			= nullptr;
-				break;
-			default:
-				break;
-		}
-	}
-	
-
-//******************************************************************************************
-// 
-//  Name:           handleInputEvent
-//  Arguments:      android_app *app
-//		            AInputEvent *event
-//  Returns:        int32_t
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-	
-		static int32_t handleInputEvent(
-			android_app *app
-			, AInputEvent *event
-		)
-		{
-			if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION)
-			{
-				float x					= AMotionEvent_getX(event, 0);
-				float y					= AMotionEvent_getY(event, 0);
-				
-				LOGI("Touch at: %f, %f", x, y);
-				
-				return 1;
-			}
-		return 0;
-	}
-#else
-
         // Initial set up and swapchain
         GLFWwindow                              *window                     = nullptr;
-
-#endif
-	
-        // Application info
-        AppInfo 				appInfo				= {};
 	
 	    // Vulkan objects
         vk::raii::Context                       context;
         vk::raii::Instance                      instance                    = nullptr;
-        vk::raii::DebugUtilsMessengerEXT        debugMessenger              = nullptr;
         vk::raii::SurfaceKHR                    surface                     = nullptr;
         vk::raii::PhysicalDevice                physicalDevice              = nullptr;
         vk::raii::Device                        device                      = nullptr;
@@ -352,11 +283,22 @@ class MultithreadedApplication
         vk::Extent2D                            swapChainExtent;
         std::vector<vk::raii::ImageView>        swapChainImageViews;
 
-
         // Descriptor sets and pipeline
-        vk::raii::DescriptorSetLayout           descriptorSetLayout         = nullptr;
         vk::raii::PipelineLayout                pipelineLayout              = nullptr;
         vk::raii::Pipeline                      graphicsPipeline            = nullptr;
+	
+	vk::raii::DescriptorSetLayout           computeDescriptorSetLayout  = nullptr;
+	vk::raii::PipelineLayout		computePipelineLayout		= nullptr;
+	vk::raii::Pipeline			computePipeline			= nullptr;
+
+	// Shader Buffers
+	std::vector<vk::raii::Buffer>		shaderStorageBuffers;
+	std::vector<vk::raii::DeviceMemory>	shaderStorageBuffersMemory;
+	
+	// Uniform Buffers
+	std::vector<vk::raii::Buffer>		uniformBuffers;
+	std::vector<vk::raii::DeviceMemory>	uniformBuffersMemory;
+	std::vector<void *>			uniformBuffersMapped;
 	
         // Depth management
         vk::raii::Image                         depthImage                  = nullptr;
@@ -385,26 +327,102 @@ class MultithreadedApplication
 	
         // Descriptor pool
         vk::raii::DescriptorPool                descriptorPool              = nullptr;
+	std::vector<vk::raii::DescriptorSet> 	computeDescriptorSets;
 	
         // Command pool
         vk::raii::CommandPool                   commandPool                 = nullptr;
-        std::vector<vk::raii::CommandBuffer>    commandBuffers;
+        std::vector<vk::raii::CommandBuffer>    graphicsCommandBuffers;
 	
         // Synchronization objects - Semaphores and fences
-	    std::vector<vk::raii::Semaphore>	    presentCompleteSemaphores;
-        std::vector<vk::raii::Semaphore>        renderFinishedSemaphores;
+	vk::raii::Semaphore			timelineSemaphore		= nullptr;
+	uint64_t				timelineValue			= 0;
+        std::vector<vk::raii::Semaphore>        imageAvailableSemaphores;
         std::vector<vk::raii::Fence>            inFlightFences;
         uint32_t                                frameIndex                  = 0;
 	
-        bool 					                framebufferResized          = false;
+	double					lastFrameTime			= 0.0;
+	
+        bool 					framebufferResized          = false;
 
-        std::vector<const char *>               requiredDeviceExtension     =
+	double					lastTime			= 0.0f;
+	
+	uint32_t				threadCount			= 0;
+	std::vector<std::thread>		workerThreads;
+	std::atomic<bool>			shouldExit{false};
+	std::vector<std::atomic<bool>>		threadWorkReady;
+	std::vector<std::atomic<bool>>		threadWorkDone;
+	
+	std::mutex				queueSubmitMutex;
+	std::mutex				workCompleteMutex;
+	std::condition_variable			workCompleteCv;
+	
+	ThreadSafeResourceManager		resourceManager;
+	struct					ParticleGroup
 	{
-		vk::KHRSwapchainExtensionName,
-		vk::KHRCreateRenderpass2ExtensionName
+		uint32_t			startIndex;
+		uint32_t			count;
 	};
+	std::vector<ParticleGroup>		particleGroups;
+	
+	std::vector<const char *> 		requiredDeviceExtension		=
+	{
+		vk::KHRSwapchainExtensionName
+	};
+	
+	// Helper functions
+
+
+//******************************************************************************************
+// 
+//  Name:           getRequiredInstanceExtensions
+//  Arguments:      N/A
+//  Returns:        std::vector<const char *>
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
         
-#if PLATFORM_DESKTOP
+        [[nodiscard]] static std::vector<const char *> getRequiredInstanceExtensions()
+        {
+            // Get GLFW extensions
+            uint32_t 		        glfwExtensionCount		= 0;
+            auto			glfwExtensions			= glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+            std::vector			extensions(
+                  glfwExtensions
+                , glfwExtensions + glfwExtensionCount
+            );
+            
+            return extensions;
+        }	
+        
+	
+	
+//******************************************************************************************
+// 
+//  Name:           chooseSwapMinImageCount
+//  Arguments:      N/A
+//  Returns:        uint32_t
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+        static uint32_t chooseSwapMinImageCount(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities)
+        {
+            auto minImageCount = std::max(  3u
+                                          , surfaceCapabilities.minImageCount
+	    );
+	    
+            if (    (0 < surfaceCapabilities.maxImageCount) 
+                 && (surfaceCapabilities.maxImageCount < minImageCount))
+            {
+                minImageCount = surfaceCapabilities.maxImageCount;
+            }
+            return minImageCount;
+        }
+        
 
 
 //******************************************************************************************
@@ -2955,33 +2973,6 @@ class MultithreadedApplication
 		
 		return shaderModule;
 	}
-	
-	
-//******************************************************************************************
-// 
-//  Name:           chooseSwapMinImageCount
-//  Arguments:      N/A
-//  Returns:        uint32_t
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        static uint32_t chooseSwapMinImageCount(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities)
-        {
-            auto minImageCount = std::max(  3u
-                                          , surfaceCapabilities.minImageCount
-	    );
-	    
-            if (    (0 < surfaceCapabilities.maxImageCount) 
-                 && (surfaceCapabilities.maxImageCount < minImageCount))
-            {
-                minImageCount = surfaceCapabilities.maxImageCount;
-            }
-            return minImageCount;
-        }
-        
 
 //******************************************************************************************
 // 
