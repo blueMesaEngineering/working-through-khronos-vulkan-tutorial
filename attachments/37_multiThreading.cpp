@@ -1,15 +1,20 @@
 #include <algorithm>
 #include <array>
 #include <assert.h>
+#include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <limits>
 #include <memory>
-#include <optional>
+#include <mutex>
+#include <random>
 #include <stdexcept>
+#include <thread>
 #include <vector>
 
 #if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
@@ -27,32 +32,31 @@ import vulkan_hpp;
 
 constexpr uint32_t                  WIDTH                   = 800;
 constexpr uint32_t                  HEIGHT                  = 600;
-// Update paths to use glTF model and KTX2 texture
-const std::string                   MODEL_PATH              = "models/viking_room.glb";
-const std::string                   TEXTURE_PATH            = "textures/viking_room.ktx2";
+constexpr uint32_t			PARTICLE_COUNT		= 8192;
 constexpr int                       MAX_FRAMES_IN_FLIGHT    = 2;
-// Define the number of objects to render
-constexpr int MAX_OBJECTS					= 3;
 
-
-
-struct Vertex
+struct UniformBufferObject
 {
-    glm::vec3 pos;
-    glm::vec3 color;
-    glm::vec2 texCoord;
+	float			deltaTime			= 1.0f;
+};
+
+struct Particle
+{
+    glm::vec2 position;
+    glm::vec2 velocity;
+    glm::vec4 color;
 
     static vk::VertexInputBindingDescription getBindingDescription()
     {
         return 
 	{
               0
-            , sizeof(Vertex)
+            , sizeof(Particle)
             , vk::VertexInputRate::eVertex
         };
     }
 
-    static std::array<vk::VertexInputAttributeDescription, 3> getAttributeDescriptions()
+    static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions()
     {
         return
         {
@@ -81,13 +85,6 @@ struct Vertex
                            , texCoord)
             )
         };
-    }
-
-    bool operator==(const Vertex &other) const
-    {
-        return    pos       == other.pos 
-               && color     == other.color 
-               && texCoord  == other.texCoord;
     }
 };
 
