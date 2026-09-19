@@ -689,12 +689,74 @@ class MultithreadedApplication
             createGraphicsCommandBuffers();
             createSyncObjects();
         }
-
+	
+	
+//******************************************************************************************
+// 
+//  Name:           initThreads
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
 
 	void initThreads()
 	{
 		// Increase thread count for better parallelism
 		threadCount							= 8u;
+		log(
+			"Initializing "
+			, threadCount
+			, " threads for sequential execution"
+		);
+		
+		threadWorkReady							= std::vector<std::atomic<bool>>(threadCount);
+		threadWorkDone							= std::vector<std::atomic<bool>>(threadCount);
+		
+		for (uint32_t i = 0; i < threadCount; i++)
+		{
+			threadWorkReady[i]				 	= false;
+			threadWorkDone[i]					= true;
+		}
+		
+		initThreadResources();
+		
+		const uint32_t			particlesPerThread		= PARTICLE_COUNT / threadCount;
+		particleGroups.resize(threadCount);
+		
+		for (uint32_t i = 0; i < threadCount; i++)
+		{
+			particleGroups[i].startIndex				= i * particlesPerThread;
+			particleGroups[i].count					= (i == threadCount - 1) ?
+											(PARTICLE_COUNT - i * particlesPerThread) :
+											particlesPerThread;
+			log(
+				"Thread "
+				, i
+				, " will process particles "
+				, particleGroups[i].startIndex
+				, " to "
+				, (particleGroups[i].startIndex + particleGroups[i].count - 1)
+				, " (count: "
+				, particleGroups[i].count
+				, ")"
+			);
+		}
+		
+		for (uint32_t i = 0; i < threadCount; i++)
+		{
+			workerThreads.emplace_back(
+				&MultithreadedApplication::workerThreadFunc
+				, this
+				, i
+			);
+			log(
+				"Started worker thread "
+				, i
+			);
+		}
 	}
 	
 //******************************************************************************************
@@ -3152,6 +3214,7 @@ class MultithreadedApplication
         
 
 };
+
 
 
 //******************************************************************************************
