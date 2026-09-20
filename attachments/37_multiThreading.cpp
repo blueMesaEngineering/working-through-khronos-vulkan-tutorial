@@ -902,49 +902,29 @@ class MultithreadedApplication
         void cleanupSwapChain()
         {
             swapChainImageViews.clear();
+	    graphicsPipeline							= nullptr;
+	    pipelineLayout							= nullptr;
+	    computePipeline							= nullptr;
+	    computePipelineLayout						= nullptr;
+	    computeDescriptorSets.clear();
+	    computeDescriptorSetLayout						= nullptr;
+	    descriptorPool							= nullptr;
+	    
+	    // Unmap and clean up uniform buffers
+	    for (size_t i = 0; i < uniformBuffersMapped.size(); i++)
+	    {
+		uniformBuffersMemory[i].unmapMemory();
+	    }
+	    uniformBuffers.clear();
+	    uniformBuffersMemory.clear();
+	    uniformBuffersMapped.clear();
+	    
+	    // Clean up shader storage buffers
+	    shaderStorageBuffers.clear();
+	    shaderStorageBuffersMemory.clear();
+	    
             swapChain = nullptr;
         }
-        
-
-//******************************************************************************************
-// 
-//  Name:           cleanup
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          glfwDestroyWindow
-//                  glfwTerminate
-//  Called by:      run
-//  Description:    
-// 
-//******************************************************************************************
-
-#if PLATFORM_DESKTOP
-        void cleanup()
-        {
-		// Clean up resources in each GameObject
-		for (auto &gameObject : gameObjects)
-		{
-			// Unmap memory
-			for (size_t i = 0; i < gameObject.uniformBuffersMemory.size(); i ++)
-			{
-				if (gameObject.uniformBuffersMapped[i] != nullptr)
-				{
-					gameObject.uniformBuffersMemory[i].unmapMemory();
-				}
-			}
-			
-			// Clear vectors to release resources
-			gameObject.uniformBuffers.clear();
-			gameObject.uniformBuffersMemory.clear();
-			gameObject.uniformBuffersMapped.clear();
-			gameObject.descriptorSets.clear();
-		}
-
-	    // Clean up GLFW resources
-            glfwDestroyWindow(window);
-            glfwTerminate();
-        }
-#endif
 	
 
 //******************************************************************************************
@@ -960,8 +940,6 @@ class MultithreadedApplication
 
         void recreateSwapChain()
         {
-#if PLATFORM_DESKTOP
-	        // On desktop, wait until the framebuffer has a non-zero size (e.g., when window is minimized)
             int   width         = 0
                 , height        = 0;
             
@@ -980,7 +958,6 @@ class MultithreadedApplication
                     );
                     glfwWaitEvents();
                 }
-#endif
 	        // Wait for device to finishe operations
             device.waitIdle();
 
@@ -990,7 +967,109 @@ class MultithreadedApplication
 	        // Create new swap chain and dependent resources
             createSwapChain();
             createImageViews();
-	        createDepthResources();
+	        createComputeDescriptorSetLayout();
+		createGraphicsPipeline();
+		createComputePipeline();
+		createShaderStorageBuffers();
+		createUniformBuffers();
+		createDescriptorPool();
+		createComputeDescriptorSets();
+	}
+	
+
+//******************************************************************************************
+// 
+//  Name:           stopThreads
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	void stopThreads()
+	{
+		shouldExit.store(
+			true
+			, std::memory_order_release
+		);
+		
+		for (uint32_t i = 0; i < threadCount; i++)
+		{
+			threadWorkDone[i].store(
+				true
+				, std::memory_order_release
+			);
+			threadWorkReady[i].store(
+				false
+				, std::memory_order_release
+			);
+		}
+		
+		// Notify all threads in case they're waiting on the condition variable
+		{
+			std::lock_guard<std::mutex> lock(workCompleteMutex);
+			workCompleteCv.notify_all();
+		}
+		
+		for (auto &thread : workerThreads)
+		{
+			if (thread.joinable())
+			{
+				thread.join();
+			}
+		}
+		
+		workerThreads.clear();
+	}
+	
+
+//******************************************************************************************
+// 
+//  Name:           initThreadResources
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	void initThreadResources()
+	{
+		resourceManager.createThreadCommandPools(
+			device
+			, queueIndex
+			, threadCount
+		);
+		resourceManager.allocateCommandBuffers(
+			device
+			, threadCount
+			, 1
+		);
+	}
+	
+	
+//******************************************************************************************
+// 
+//  Name:           cleanup
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          glfwDestroyWindow
+//                  glfwTerminate
+//  Called by:      run
+//  Description:    
+// 
+//******************************************************************************************
+
+        void cleanup()
+        {
+		stopThreads();
+		
+            glfwDestroyWindow(window);
+            glfwTerminate();
+        }
         }
         
 
