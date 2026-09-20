@@ -759,6 +759,94 @@ class MultithreadedApplication
 		}
 	}
 	
+	
+//******************************************************************************************
+// 
+//  Name:           workerThreadFunc
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	void workerThreadFunc(
+		uint32_t		threadIndex
+	)
+	{
+		while (!shouldExit)
+		{
+			// Wait for work using condition variable
+			{
+				std::unique_lock<std::mutex> 	lock(workCompleteMutex);
+				workCompleteCv.wait(
+					lock
+					, [this
+					, threadIndex]()
+					{
+						return shouldExit || threadWorkReady[threadIndex].load(std::memory_order_acquire);
+					}
+				);
+				
+				if (shouldExit)
+				{
+					break;
+				}
+				
+				if (!threadWorkReady[threadIndex].load(std::memory_order_acquire))
+				{
+					continue;
+				}
+			}
+			
+			const ParticleGroup 		&group			= particleGroups[threadIndex];
+			bool				workCompleted		= false;
+			
+			try
+			{
+				// Get command buffer and record commands
+				vk::raii::CommandBuffer *cmdBuffer 		= &resourceManager.getCommandBuffer(threadIndex);
+				recordComputeCommandBuffer(
+					*cmdBuffer
+					, group.startIndex
+					, group.count
+				);
+				workCompleted					= true;
+			}
+			catch (const std::exception &)
+			{
+				workCompleted					= false;
+			}
+			
+			// Mark work as done
+			threadWorkDone[threadIndex].store(
+				true
+				, std::memory_order_release
+			);
+			threadWorkReady[threadIndex].store(
+				false
+				, std::memory_order_release
+			);
+			
+			// If this is not the last thread, signal the next thread to start
+			if (threadIndex < threadCount - 1)
+			{
+				threadWorkReady[threadIndex + 1].store(
+					true
+					, std::memory_order_release
+				);
+			}
+			
+			// Notify main thread and other threads
+			{
+				std::lock_guard<std::mutex> lock(workCompleteMutex);
+				workCompleteCv.notify_all();
+			}
+		}
+	}
+
+
 //******************************************************************************************
 // 
 //  Name:           mainLoop
@@ -3211,8 +3299,6 @@ class MultithreadedApplication
 		
 		return vk::False;
 	}
-        
-
 };
 
 
