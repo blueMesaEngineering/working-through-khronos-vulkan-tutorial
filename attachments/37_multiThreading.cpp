@@ -1090,11 +1090,11 @@ class MultithreadedApplication
         {
             constexpr vk::ApplicationInfo appInfo
             {
-                  .pApplicationName                         = "Hello Triangle"
+                  .pApplicationName                         = "Vulkan Multithreading"
                 , .applicationVersion                       = VK_MAKE_VERSION(1, 0, 0)
                 , .pEngineName                              = "No Engine"
                 , .engineVersion                            = VK_MAKE_VERSION(1, 0, 0)
-                , .apiVersion                               = VK_API_VERSION_1_3
+                , .apiVersion                               = vk::ApiVersion14
             };
 	    
             // Get required extensions.
@@ -1104,12 +1104,13 @@ class MultithreadedApplication
             vk::InstanceCreateInfo createInfo
             {
                   .pApplicationInfo                         = &appInfo
+		, .enabledLayerCount				= 0
+		, .ppEnabledLayerNames				= nullptr
                 , .enabledExtensionCount                    = static_cast<uint32_t>(extensions.size())
                 , .ppEnabledExtensionNames                  = extensions.data()
             };
             
             instance = vk::raii::Instance(context, createInfo);
-	        LOGI("Vulkan instance created");
         }
 
 
