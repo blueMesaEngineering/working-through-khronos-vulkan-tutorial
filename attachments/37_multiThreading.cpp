@@ -1484,14 +1484,14 @@ class MultithreadedApplication
             vk::PipelineShaderStageCreateInfo   vertShaderStageInfo
             {
                   .stage						                    = vk::ShaderStageFlagBits::eVertex
-                , .module					                        = *shaderModule
+                , .module					                        = shaderModule
                 , .pName					                        = "vertMain"
             };
             
             vk::PipelineShaderStageCreateInfo	fragShaderStageInfo
             {
                   .stage						                    = vk::ShaderStageFlagBits::eFragment
-                , .module					                        = *shaderModule
+                , .module					                        = shaderModule
                 , .pName					                        = "fragMain"
             };
 
@@ -1503,8 +1503,8 @@ class MultithreadedApplication
             };
 
             // Vertex input
-            auto                            bindingDescription      = Vertex::getBindingDescription();
-            auto                            attributeDescriptions   = Vertex::getAttributeDescriptions();
+            auto                            bindingDescription      = Particle::getBindingDescription();
+            auto                            attributeDescriptions   = Particle::getAttributeDescriptions();
 
             vk::PipelineVertexInputStateCreateInfo                  vertexInputInfo
             {
@@ -1517,7 +1517,7 @@ class MultithreadedApplication
 		    // Input assembly
             vk::PipelineInputAssemblyStateCreateInfo                inputAssembly
             {
-                  .topology                                         = vk::PrimitiveTopology::eTriangleList
+                  .topology                                         = vk::PrimitiveTopology::ePointList
                 , .primitiveRestartEnable                           = vk::False
             };
 
@@ -1546,21 +1546,17 @@ class MultithreadedApplication
                   .rasterizationSamples                             = vk::SampleCountFlagBits::e1
                 , .sampleShadingEnable                              = vk::False
             };
-	    
-		    // Depth/Stencil
-            vk::PipelineDepthStencilStateCreateInfo                 depthStencil
-            {
-                  .depthTestEnable                                  = vk::True
-                , .depthWriteEnable                                 = vk::True
-                , .depthCompareOp                                   = vk::CompareOp::eLess
-                , .depthBoundsTestEnable			                = vk::False
-                , .stencilTestEnable				                = vk::False
-            };
 
 		    // Color blending
             vk::PipelineColorBlendAttachmentState                   colorBlendAttachment
             {
-                  .blendEnable                                      = vk::False
+                  .blendEnable                                      = vk::True
+		, .srcColorBlendFactor					= vk::BlendFactor::eSrcAlpha
+		, .dstColorBlendFactor					= vk::BlendFactor::eOneMinusSrcAlpha
+		, .colorBlendOp						= vk::BlendOp::eAdd
+		, .srcAlphaBlendFactor					= vk::BlendFactor::eOneMinusSrcAlpha
+		, .dstAlphaBlendFactor					= vk::BlendFactor::eZero
+		, .alphaBlendOp						= vk::BlendOp::eAdd
                 , .colorWriteMask                                   =       vk::ColorComponentFlagBits::eR
                                                                         |   vk::ColorComponentFlagBits::eG
                                                                         |   vk::ColorComponentFlagBits::eB
@@ -1589,16 +1585,9 @@ class MultithreadedApplication
             };
 
 		    // Pipeline layout
-            vk::PipelineLayoutCreateInfo                            pipelineLayoutInfo
-            {
-                  .setLayoutCount                                   = 1
-                , .pSetLayouts                                      = &*descriptorSetLayout
-		        , .pushConstantRangeCount			                = 0
-            };
+            vk::PipelineLayoutCreateInfo                            pipelineLayoutInfo;
 
             pipelineLayout                                          = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
-
-            vk::Format			            depthFormat		        = findDepthFormat();
 
             // Create the graphics pipeline
             vk::StructureChain<
@@ -1614,7 +1603,6 @@ class MultithreadedApplication
                     , .pViewportState                               = &viewportState
                     , .pRasterizationState                          = &rasterizer
                     , .pMultisampleState                            = &multisampling
-                    , .pDepthStencilState                           = &depthStencil
                     , .pColorBlendState                             = &colorBlending
                     , .pDynamicState                                = &dynamicState
                     , .layout                                       = *pipelineLayout
@@ -1624,7 +1612,6 @@ class MultithreadedApplication
                 {
                       .colorAttachmentCount				            = 1
                     , .pColorAttachmentFormats			            = &swapChainSurfaceFormat.format
-                    , .depthAttachmentFormat			            = depthFormat
                 }
             };
 
@@ -1634,6 +1621,59 @@ class MultithreadedApplication
                 , pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>()
 		    );
         }
+
+
+//******************************************************************************************
+// 
+//  Name:           createComputePipeline
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	void createComputePipeline()
+	{
+		vk::raii::ShaderModule		shaderModule			= createShaderModule(readFile("shaders/slang.spv"));
+		
+		// Create push constant range for particle group information
+		vk::PushConstantRange		pushConstantRange
+		{
+			.stageFlags					 	= vk::ShaderStageFlagBits::eCompute
+			, .offset						= 0
+			, .size							= sizeof(uint32_t) * 2			// startIndex and count
+		};
+		
+		vk::PipelineShaderStageCreateInfo	computeShaderStageInfo
+		{
+			.stage							= vk::ShaderStageFlagBits::eCompute
+			, .module						= shaderModule
+			, .pName						= "compMain"
+		};
+		
+		vk::PipelineLayoutCreateInfo					= pipelineLayoutInfo
+		{
+			.setLayoutCount						= 1
+			, .pSetLayouts						= &*computeDescriptorSetLayout
+			, .pushConstantRangeCount				= 1
+			, .pPushConstantRanges					= &pushConstantRange
+		};
+		
+		computePipelineLayout						= vk::raii::PipelineLayout(
+												device
+												, pipelineLayoutInfo
+											);
+											
+		vk::ComputePipelineCreateInfo	pipelineInfo
+		{
+			.stage							= computeShaderStageInfo
+			, .layout						= *computePipelineLayout
+		};
+		
+		computePipeline							= vk::raii::Pipeline(device, nullptr, pipelineInfo);
+	}
 
 
 //******************************************************************************************
@@ -1659,786 +1699,6 @@ class MultithreadedApplication
         }
 	
 
-//******************************************************************************************
-// 
-//  Name:           createDepthResources
-//  Arguments:      N/A
-//  Returns:        
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createDepthResources()
-        {
-            vk::Format 			            depthFormat     = findDepthFormat();
-
-            createImage(
-                  swapChainExtent.width
-                , swapChainExtent.height
-                , depthFormat
-                , vk::ImageTiling::eOptimal
-                , vk::ImageUsageFlagBits::eDepthStencilAttachment
-                , vk::MemoryPropertyFlagBits::eDeviceLocal
-                , depthImage
-                , depthImageMemory
-            );
-
-            depthImageView                                  = createImageView( 
-                                                                                depthImage
-                                                                              , depthFormat
-                                                                              , vk::ImageAspectFlagBits::eDepth
-                                                                            );
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           findSupportedformat
-//  Arguments:      N/A
-//  Returns:        
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        vk::Format findSupportedFormat(
-              const std::vector<vk::Format>     &candidates
-            , vk::ImageTiling                   tiling
-            , vk::FormatFeatureFlags            features
-        ) const
-        {
-            for (const auto format : candidates)
-            {
-                vk::FormatProperties            props           = physicalDevice.getFormatProperties(format);
-
-                if (   tiling == vk::ImageTiling::eLinear
-                    && (props.linearTilingFeatures & features) == features)
-                {
-                    return format;
-                }
-                if (   tiling == vk::ImageTiling::eOptimal
-                    && (props.optimalTilingFeatures & features) == features)
-                {
-                    return format;
-                }
-            }
-
-            throw std::runtime_error("Failed to find supported format!");
-	}
-
-
-//******************************************************************************************
-// 
-//  Name:           findDepthFormat
-//  Arguments:      N/A
-//  Returns:        [[nodiscard]] vk::Format
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        [[nodiscard]] vk::Format findDepthFormat() const
-        {
-            return findSupportedFormat(
-                {
-                      vk::Format::eD32Sfloat
-                    , vk::Format::eD32SfloatS8Uint
-                    , vk::Format::eD24UnormS8Uint
-                }
-                , vk::ImageTiling::eOptimal
-                , vk::FormatFeatureFlagBits::eDepthStencilAttachment
-            );
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           hasStencilComponent
-//  Arguments:      N/A
-//  Returns:        bool
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-        
-        static bool hasStencilComponent(vk::Format format)
-        {
-            return     format == vk::Format::eD32SfloatS8Uint 
-                    || format == vk::Format::eD24UnormS8Uint;
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createTextureImage
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createTextureImage()
-        {
-            // Load KTX2 texture instead of using stb_image
-            ktxTexture	*kTexture;
-            KTX_error_code	            result		        = 	ktxTexture_CreateFromNamedFile(
-                                                                            TEXTURE_PATH.c_str()
-                                                                            , KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT
-                                                                            , &kTexture
-                                                                    );
-
-            if (result != KTX_SUCCESS)
-            {
-                throw std::runtime_error("Failed to load ktx texture image!");
-            }
-
-            // Get texture dimensions and data
-            uint32_t			        texWidth			= kTexture->baseWidth;
-            uint32_t			        texHeight			= kTexture->baseHeight;
-            ktx_size_t			        imageSize			= ktxTexture_GetImageSize(kTexture, 0);
-            ktx_uint8_t			        *ktxTextureData	    = ktxTexture_GetData(kTexture);
-	    
-
-		    // Create staging buffer
-            vk::raii::Buffer            stagingBuffer({});
-            vk::raii::DeviceMemory      stagingBufferMemory({});
-
-            createBuffer(
-                  imageSize
-                , vk::BufferUsageFlagBits::eTransferSrc
-                , vk::MemoryPropertyFlagBits::eHostVisible
-                | vk::MemoryPropertyFlagBits::eHostCoherent
-                , stagingBuffer
-                , stagingBufferMemory
-            );
-
-            void                        *data               = stagingBufferMemory.mapMemory(0, imageSize);
-
-            memcpy(  
-                  data
-                , ktxTextureData
-                , imageSize
-            );
-
-            stagingBufferMemory.unmapMemory();
-
-            // Determine the Vulkan format from KTX format
-	        vk::Format		            textureFormat;
-	    
-            if (kTexture->classId == ktxTexture2_c)
-            {
-                // For KTX2 files, we can get the format directly
-                auto                    *ktx2				= reinterpret_cast<ktxTexture2 *>(kTexture);
-                textureFormat						        = static_cast<vk::Format>(ktx2->vkFormat);
-                if (textureFormat == vk::Format::eUndefined)
-                {
-                    // If the format is undefined, fall backto a reasonable default
-                    textureFormat					        = vk::Format::eR8G8B8A8Unorm;
-                }
-            }
-            else
-            {
-                // For KTX1 files or if we can't determine the format, use a reasonable default
-                textureFormat						        = vk::Format::eR8G8B8A8Unorm;
-            }
-	    
-	        textureImageFormat						        = textureFormat;
-	    
-            // Create image
-            createImage(  
-                  texWidth
-                , texHeight
-                , textureFormat
-                , vk::ImageTiling::eOptimal
-                , vk::ImageUsageFlagBits::eTransferDst
-                | vk::ImageUsageFlagBits::eSampled
-                , vk::MemoryPropertyFlagBits::eDeviceLocal
-                , textureImage
-                , textureImageMemory
-            );
-
-            transitionImageLayout(  
-                  textureImage
-                , vk::ImageLayout::eUndefined
-                , vk::ImageLayout::eTransferDstOptimal
-            );
-
-            copyBufferToImage(
-                  stagingBuffer
-                , textureImage
-                , texWidth
-                , texHeight
-            );
-            
-            transitionImageLayout(
-                  textureImage
-                , vk::ImageLayout::eTransferDstOptimal
-                , vk::ImageLayout::eShaderReadOnlyOptimal
-            );
-	    
-	        ktxTexture_Destroy(kTexture);
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createTextureImageView
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createTextureImageView()
-        {
-            textureImageView                                = createImageView(  
-                                                                          textureImage
-                                                                        , textureImageFormat
-                                                                        , vk::ImageAspectFlagBits::eColor
-                                                                );
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createTextureSampler
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createTextureSampler()
-        {
-		    vk::PhysicalDeviceProperties 	properties	        = physicalDevice.getProperties();
-            vk::SamplerCreateInfo           samplerInfo
-            {
-                  .magFilter                                    = vk::Filter::eLinear
-                , .minFilter                                    = vk::Filter::eLinear
-                , .mipmapMode                                   = vk::SamplerMipmapMode::eLinear
-                , .addressModeU                                 = vk::SamplerAddressMode::eRepeat
-                , .addressModeV                                 = vk::SamplerAddressMode::eRepeat
-                , .addressModeW                                 = vk::SamplerAddressMode::eRepeat
-		, .mipLodBias				                    = 0.0f
-                , .anisotropyEnable                             = vk::True
-                , .maxAnisotropy                                = properties.limits.maxSamplerAnisotropy
-                , .compareEnable                                = vk::False
-                , .compareOp                                    = vk::CompareOp::eAlways
-            };
-
-            textureSampler                                      = vk::raii::Sampler(device, samplerInfo);
-        }
-	
-
-//******************************************************************************************
-// 
-//  Name:           createImageView
-//  Arguments:      N/A
-//  Returns:        vk::raii::ImageView
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        vk::raii::ImageView createImageView(
-              vk::raii::Image &image
-            , vk::Format format
-            , vk::ImageAspectFlags aspectFlags
-        )
-        {
-            vk::ImageViewCreateInfo             viewInfo
-            {
-                  .image                                        = *image
-                , .viewType                                     = vk::ImageViewType::e2D
-                , .format                                       = format
-                , .subresourceRange                             = 
-                {
-                      aspectFlags
-                    , 0
-                    , 1
-                    , 0
-                    , 1
-                }
-            };
-
-            return vk::raii::ImageView(device, viewInfo);
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           createImage
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createImage(
-              uint32_t                      width
-            , uint32_t                      height
-            , vk::Format                    format
-            , vk::ImageTiling               tiling
-            , vk::ImageUsageFlags           usage
-            , vk::MemoryPropertyFlags       properties
-            , vk::raii::Image               &image
-            , vk::raii::DeviceMemory        &imageMemory
-        )
-        {
-            vk::ImageCreateInfo             imageInfo
-            {
-                  .imageType                                    = vk::ImageType::e2D
-                , .format                                       = format
-                , .extent                                       = 
-                { 
-                      width
-                    , height
-                    , 1 
-                }
-                , .mipLevels                                    = 1
-                , .arrayLayers                                  = 1
-                , .samples                                      = vk::SampleCountFlagBits::e1
-                , .tiling                                       = tiling
-                , .usage                                        = usage
-                , .sharingMode                                  = vk::SharingMode::eExclusive
-                , .initialLayout                                = vk::ImageLayout::eUndefined
-            };
-
-            image                                               = vk::raii::Image(device, imageInfo);
-            
-            vk::MemoryRequirements          memRequirements     = image.getMemoryRequirements();
-	    
-            vk::MemoryAllocateInfo          allocInfo
-            {
-                      .allocationSize                           = memRequirements.size
-                    , .memoryTypeIndex                          = findMemoryType(
-                                                                                  memRequirements.memoryTypeBits
-                                                                                , properties
-                                                                            )
-            };
-	    
-            imageMemory                                         = vk::raii::DeviceMemory(device, allocInfo);
-            image.bindMemory(*imageMemory, 0);
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           transitionImageLayout
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void transitionImageLayout(
-              const vk::raii::Image         &image
-            , vk::ImageLayout               oldLayout
-            , vk::ImageLayout               newLayout
-        )
-        {
-		    auto                            commandBuffer		= beginSingleTimeCommands();
-
-            vk::ImageMemoryBarrier  barrier         
-            {
-                  .oldLayout                                    = oldLayout
-                , .newLayout                                    = newLayout
-                , .image                                        = *image
-                , .subresourceRange                             = 
-                {
-			          vk::ImageAspectFlagBits::eColor
-                    , 0
-                    , 1
-                    , 0
-                    , 1
-                }
-            };
-
-            vk::PipelineStageFlags sourceStage;
-            vk::PipelineStageFlags destinationStage;
-
-            if (   oldLayout == vk::ImageLayout::eUndefined 
-                && newLayout == vk::ImageLayout::eTransferDstOptimal)
-            {
-                barrier.srcAccessMask                           = {};
-                barrier.dstAccessMask                           = vk::AccessFlagBits::eTransferWrite;
-
-                sourceStage                                     = vk::PipelineStageFlagBits::eTopOfPipe;
-                destinationStage                                = vk::PipelineStageFlagBits::eTransfer;
-            }
-            else if (   oldLayout == vk::ImageLayout::eTransferDstOptimal
-                     && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
-            {
-                barrier.srcAccessMask                           = vk::AccessFlagBits::eTransferWrite;
-                barrier.dstAccessMask                           = vk::AccessFlagBits::eShaderRead;
-
-                sourceStage                                     = vk::PipelineStageFlagBits::eTransfer;
-                destinationStage                                = vk::PipelineStageFlagBits::eFragmentShader;
-            }
-            else
-            {
-                throw std::invalid_argument("Unsupported layout transition!");
-            }
-
-            commandBuffer->pipelineBarrier(
-                  sourceStage
-                , destinationStage
-                , {}
-                , {}
-                , nullptr
-                , barrier
-            );
-	    
-            endSingleTimeCommands(*commandBuffer);
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           copyBufferToImage
-//  Arguments:      N/A
-//  Returns:        
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void copyBufferToImage(
-		      const vk::raii::Buffer    	&buffer
-            , vk::raii::Image     	        &image
-            , uint32_t      		        width
-            , uint32_t      		        height
-        )
-        {
-	        std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = beginSingleTimeCommands();
-            vk::BufferImageCopy             region
-            {
-                  .bufferOffset                                     = 0
-                , .bufferRowLength                                  = 0
-                , .bufferImageHeight                                = 0
-                , .imageSubresource                                 =
-                {
-                      vk::ImageAspectFlagBits::eColor
-                    , 0
-                    , 0
-                    , 1
-                }
-                , .imageOffset                                      = { 0, 0, 0 }
-                , .imageExtent                                      = { width, height, 1}
-            };
-
-            commandBuffer->copyBufferToImage(
-                  *buffer
-                , *image
-                , vk::ImageLayout::eTransferDstOptimal
-                , {region}
-            );
-	    
-	        endSingleTimeCommands(*commandBuffer);
-        }
-
-
-//******************************************************************************************
-// 
-//  Name:           loadModel
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void loadModel()
-        {
-            // Use tinygltf to load the model instead of tinyobjloader
-            tinygltf::Model			        model;
-            tinygltf::TinyGLTF		        loader;
-            std::string			            err;
-            std::string			            warn;
-            
-            bool 				            ret			            = loader.LoadBinaryFromFile(
-                                                                                  &model
-                                                                                , &err
-                                                                                , &warn
-                                                                                , MODEL_PATH
-                                                                            );
-            
-            if (!warn.empty())
-            {
-                std::cout << "glTF warning: " << warn << std::endl;
-            }
-            
-            if (!err.empty())
-            {
-                std::cout << "glTF error: " << err << std::endl;
-            }
-            
-            if (!ret)
-            {
-                throw std::runtime_error("Failed to load glTF model");
-            }
-            
-            vertices.clear();
-            indices.clear();
-            
-            // Process all meshes in the model
-            for (const auto &mesh : model.meshes)
-            {
-                for (const auto &primitive : mesh.primitives)
-                {
-                    // Get indices
-                    const tinygltf::Accessor		&indexAccessor		= model.accessors[primitive.indices];
-                    const tinygltf::BufferView		&indexBufferView	= model.bufferViews[indexAccessor.bufferView];
-                    const tinygltf::Buffer			&indexBuffer		= model.buffers[indexBufferView.buffer];
-                    
-                    // Get vertex positions
-                    const tinygltf::Accessor		&posAccessor		= model.accessors[primitive.attributes.at("POSITION")];
-                    const tinygltf::BufferView		&posBufferView		= model.bufferViews[posAccessor.bufferView];
-                    const tinygltf::Buffer			&posBuffer		    = model.buffers[posBufferView.buffer];
-                    
-                    // Get texture coordinates if available
-                    bool 					        hasTexCoords		= primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end();
-                    const tinygltf::Accessor		*texCoordAccessor	= nullptr;
-                    const tinygltf::BufferView		*texCoordBufferView	= nullptr;
-                    const tinygltf::Buffer			*texCoordBuffer		= nullptr;
-                    
-                    if (hasTexCoords)
-                    {
-                        texCoordAccessor					            = &model.accessors[primitive.attributes.at("TEXCOORD_0")];
-                        texCoordBufferView					            = &model.bufferViews[texCoordAccessor->bufferView];
-                        texCoordBuffer						            = &model.buffers[texCoordBufferView->buffer];
-                    }
-                    
-                    uint32_t                        baseVertex			= static_cast<uint32_t>(vertices.size());
-                    
-                    for (size_t i = 0; i < posAccessor.count; i++)
-                    {
-                        Vertex vertex{};
-                        
-                        const float                 *pos				= reinterpret_cast<const float *>(&posBuffer.data[posBufferView.byteOffset + posAccessor.byteOffset + i * 12]);
-                        // glTF uses a right-handed coordinate system with Y-up
-                        // Vulkan uses a right-handed coordinate system with Y-down
-                        // We need to flip the Y coordinate
-                        vertex.pos						                = {pos[0], pos[1], pos[2]};
-                        
-                        if (hasTexCoords)
-                        {
-                            const float             *texCoord			= reinterpret_cast<const float *>(&texCoordBuffer->data[texCoordBufferView->byteOffset + texCoordAccessor->byteOffset + i * 8]);
-                            vertex.texCoord					            = {texCoord[0], texCoord[1]};
-                        }
-                        else
-                        {
-                            vertex.texCoord					            = {0.0f, 0.0f};
-                        }
-                        
-                        vertex.color = {1.0f, 1.0f, 1.0f};
-                        
-                        vertices.push_back(vertex);
-                    }
-                    
-                    const unsigned char             *indexData			= &indexBuffer.data[indexBufferView.byteOffset + indexAccessor.byteOffset];
-                    size_t				            indexCount			= indexAccessor.count;
-                    size_t				            indexStride			= 0;
-                    
-                    // Determine index stride based on component type
-                    if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
-                    {
-                        indexStride						                = sizeof(uint16_t);
-                    }
-                    else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
-                    {
-                        indexStride						                = sizeof(uint32_t);
-                    }
-                    else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
-                    {
-                        indexStride						                = sizeof(uint8_t);
-                    }
-                    else
-                    {
-                        throw std::runtime_error("Unsupported index component type");
-                    }
-                    
-                    indices.reserve(indices.size() + indexCount);
-                    
-                    for (size_t i = 0; i < indexCount; i++)
-                    {
-                        uint32_t		            index				= 0;
-                        
-                        if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
-                        {
-                            index						                = *reinterpret_cast<const uint16_t *>(indexData + i * indexStride);
-                        }
-                        else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
-                        {
-                            index						                = *reinterpret_cast<const uint32_t *>(indexData + i * indexStride);
-                        }
-                        else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
-                        {
-                            index						                = *reinterpret_cast<const uint8_t *>(indexData + i * indexStride);
-                        }
-                        
-                        indices.push_back(baseVertex + index);
-                    }
-                }
-            }
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createVertexBuffer
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createVertexBuffer()
-        {
-            vk::DeviceSize                  bufferSize              = sizeof(vertices[0]) * vertices.size();
-            
-            vk::raii::Buffer                stagingBuffer({});
-            vk::raii::DeviceMemory          stagingBufferMemory({});
-
-            createBuffer(
-                  bufferSize
-                , vk::BufferUsageFlagBits::eTransferSrc
-                , vk::MemoryPropertyFlagBits::eHostVisible
-                | vk::MemoryPropertyFlagBits::eHostCoherent
-                , stagingBuffer
-                , stagingBufferMemory
-            );
-
-            void                            *dataStaging			= stagingBufferMemory.mapMemory(0, bufferSize);
-
-            memcpy(
-                  dataStaging
-                , vertices.data()
-                , bufferSize
-            );
-
-            stagingBufferMemory.unmapMemory();
-
-            createBuffer(
-                  bufferSize
-                , vk::BufferUsageFlagBits::eTransferDst
-                | vk::BufferUsageFlagBits::eVertexBuffer 
-                , vk::MemoryPropertyFlagBits::eDeviceLocal
-                , vertexBuffer
-                , vertexBufferMemory
-            );
-
-            copyBuffer(
-                  stagingBuffer
-                , vertexBuffer
-                , bufferSize
-            );
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           createIndexBuffer
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-        void createIndexBuffer()
-        {
-            vk::DeviceSize                  bufferSize              = sizeof(indices[0]) * indices.size();
-
-            vk::raii::Buffer                stagingBuffer({});
-            vk::raii::DeviceMemory          stagingBufferMemory({});
-
-            createBuffer(
-                  bufferSize
-                , vk::BufferUsageFlagBits::eTransferSrc
-                , vk::MemoryPropertyFlagBits::eHostVisible
-                | vk::MemoryPropertyFlagBits::eHostCoherent
-                , stagingBuffer
-                , stagingBufferMemory
-            );
-
-            void                            *data 		            = stagingBufferMemory.mapMemory(0, bufferSize);
-
-            memcpy(
-                  data
-                , indices.data()
-                , bufferSize
-            );
-
-            stagingBufferMemory.unmapMemory();
-
-            createBuffer(  
-                  bufferSize
-                , vk::BufferUsageFlagBits::eTransferDst
-                | vk::BufferUsageFlagBits::eIndexBuffer
-                , vk::MemoryPropertyFlagBits::eDeviceLocal
-                , indexBuffer
-                , indexBufferMemory
-            );
-
-            copyBuffer(
-                  stagingBuffer
-                , indexBuffer
-                , bufferSize
-            );
-        }
-        
-
-//******************************************************************************************
-// 
-//  Name:           setupGameObjects
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-		// Initialize the game objects with different positions, rotations, and scales
-		void setupGameObjects()
-		{
-			// Object 1 - Center
-			gameObjects[0].position					= {0.0f, 0.0f, 0.0f};
-			gameObjects[0].rotation					= {0.0f, glm::radians(-90.0f), 0.0f};
-			gameObjects[0].scale					= {1.0f, 1.0f, 1.0f};
-			
-			// Object 2 - Left
-			gameObjects[1].position					= {-2.0f, 0.0f, -1.0f};
-			gameObjects[1].rotation					= {0.0f, glm::radians(-45.0f), 0.0f};
-			gameObjects[1].scale					= {0.75f, 0.75f, 0.75f};
-			
-			// Object 3 - Right
-			gameObjects[2].position					= {2.0f, 0.0f, -1.0f};
-			gameObjects[2].rotation					= {0.0f, glm::radians(45.0f), 0.0f};
-			gameObjects[2].scale					= {0.75f, 0.75f, 0.75f};
-		}
 
 
 //******************************************************************************************
@@ -2452,7 +1712,6 @@ class MultithreadedApplication
 // 
 //******************************************************************************************
 
-	// Create uniform buffers for each object
         void createUniformBuffers()
         {
 		// For each game object
@@ -2501,36 +1760,33 @@ class MultithreadedApplication
 
         void createDescriptorPool()
         {
-		// We need MAX_OBJECTS * MAX_FRAMES_IN_FLIGHT descriptor sets
             std::array poolSize
             {
                 vk::DescriptorPoolSize
                 (
                       vk::DescriptorType::eUniformBuffer
-                    , MAX_OBJECTS * MAX_FRAMES_IN_FLIGHT
+                    , MAX_FRAMES_IN_FLIGHT
                 )
                 , vk::DescriptorPoolSize
                 (
-                      vk::DescriptorType::eCombinedImageSampler
-                    , MAX_OBJECTS * MAX_FRAMES_IN_FLIGHT
+                      vk::DescriptorType::eStorageBuffer
+                    , MAX_FRAMES_IN_FLIGHT * 2
                 )
             };
 
-            vk::DescriptorPoolCreateInfo    poolInfo
-            {
-                  .flags				                    = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
-                , .maxSets                                  = MAX_OBJECTS * MAX_FRAMES_IN_FLIGHT
-                , .poolSizeCount                            = static_cast<uint32_t>(poolSize.size())
-                , .pPoolSizes                               = poolSize.data()
-            };
-
+            vk::DescriptorPoolCreateInfo    poolInfo {};
+                  
+	    poolInfo.flags				                    = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+            poolInfo.maxSets                                  = MAX_FRAMES_IN_FLIGHT;
+	    poolInfo.poolSizeCount                            = poolSize.size();
+	    poolInfo.pPoolSizes                               = poolSize.data();
             descriptorPool                                  = vk::raii::DescriptorPool(device, poolInfo);
         }
 
 
 //******************************************************************************************
 // 
-//  Name:           createDescriptorSets
+//  Name:           createComputeDescriptorSets
 //  Arguments:      N/A
 //  Returns:        void
 //  Calls:          
@@ -2539,66 +1795,80 @@ class MultithreadedApplication
 // 
 //******************************************************************************************
 
-        void createDescriptorSets()
+        void createComputeDescriptorSets()
         {
-		// For each game object
-		for (auto &gameObject : gameObjects)
-		{
-			// Create descriptor sets for each frame in flight
             std::vector<vk::DescriptorSetLayout>    layouts(  MAX_FRAMES_IN_FLIGHT
-                                                            , *descriptorSetLayout);
+                                                            , computeDescriptorSetLayout);
 
-            vk::DescriptorSetAllocateInfo           allocInfo
-            {
-                  .descriptorPool                           = *descriptorPool
-                , .descriptorSetCount                       = static_cast<uint32_t>(layouts.size())
-                , .pSetLayouts                              = layouts.data()
-            };
+            vk::DescriptorSetAllocateInfo           allocInfo{};
+	    allocInfo.descriptorPool                           = *descriptorPool;
+            allocInfo.descriptorSetCount                       = MAX_FRAMES_IN_FLIGHT;
+            allocInfo.pSetLayouts                              = layouts.data();
 
-	        gameObject.descriptorSets.clear();
-                gameObject.descriptorSets                                  = device.allocateDescriptorSets(allocInfo);
+	        computeDescriptorSets.clear();
+                computeDescriptorSets                                  = device.allocateDescriptorSets(allocInfo);
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
                 vk::DescriptorBufferInfo            bufferInfo
-                {
-                      .buffer                               = *gameObject.uniformBuffers[i]
-                    , .offset                               = 0
-                    , .range                                = sizeof(UniformBufferObject)
-                };
+                (
+                      uniformBuffers[i]
+                    , 0
+                    , sizeof(UniformBufferObject)
+                );
 
-                vk::DescriptorImageInfo             imageInfo
-                {
-                      .sampler                              = *textureSampler
-                    , .imageView                            = *textureImageView
-                    , .imageLayout                          = vk::ImageLayout::eShaderReadOnlyOptimal
-                };
+                vk::DescriptorBufferInfo             storageBufferInfoLastFrame
+                (
+			shaderStorageBuffers[(i + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT]
+			, 0
+			, sizeof(Particle) * PARTICLE_COUNT
+                );
 
-                std::array descriptorWrites
+		vk::DescriptorBufferInfo             storageBufferInfoCurrentFrame
+                (
+			shaderStorageBuffers[i]
+			, 0
+			, sizeof(Particle) * PARTICLE_COUNT
+                );
+
+		std::array descriptorWrites
                 {
                     vk::WriteDescriptorSet
                     {
-                          .dstSet                           = *gameObject.descriptorSets[i]
+                          .dstSet                           = *computeDescriptorSets[i]
                         , .dstBinding                       = 0
                         , .dstArrayElement                  = 0
                         , .descriptorCount                  = 1
                         , .descriptorType                   = vk::DescriptorType::eUniformBuffer
+			, .pImageInfo				= nullptr
                         , .pBufferInfo                      = &bufferInfo
+			, .pTexelBufferView			= nullptr
                     }
-		    
                     , vk::WriteDescriptorSet
                     {
-                          .dstSet                           = *gameObject.descriptorSets[i]
+                          .dstSet                           = *computeDescriptorSets[i]
                         , .dstBinding                       = 1
                         , .dstArrayElement                  = 0
                         , .descriptorCount                  = 1
-                        , .descriptorType                   = vk::DescriptorType::eCombinedImageSampler
-                        , .pImageInfo                       = &imageInfo
+                        , .descriptorType                   = vk::DescriptorType::eStorageBuffer
+                        , .pImageInfo                       = 
+			, .pBufferInfo				= &storageBufferInfoLastFrame
+			, .pTexelBufferView			= nullptr
+                    }
+                    , vk::WriteDescriptorSet
+                    {
+                          .dstSet                           = *computeDescriptorSets[i]
+                        , .dstBinding                       = 2
+                        , .dstArrayElement                  = 0
+                        , .descriptorCount                  = 1
+                        , .descriptorType                   = vk::DescriptorType::eStorageBuffer
+                        , .pImageInfo                       = nullptr
+			, .pBufferInfo				= &storageBufferInfoCurrentFrame
+			, .pTexelBufferView			= nullptr
                     }
                 };
 
-                device.updateDescriptorSets(  descriptorWrites
-                                            , {});
+                device.updateDescriptorSets( descriptorWrites, {});
 		}
             }
         }
