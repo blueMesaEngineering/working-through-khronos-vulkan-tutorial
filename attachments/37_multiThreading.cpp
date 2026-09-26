@@ -1116,28 +1116,6 @@ class MultithreadedApplication
 
 //******************************************************************************************
 // 
-//  Name:           setupDebugMessenger
-//  Arguments:      N/A
-//  Returns:        void
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-	void setupDebugMessenger()
-	{
-		// Debug messenger setup is disabled for now to avoid compatibility issues
-		// This is a simplified approach to get the code compiling
-		if (!enableValidationLayers)
-			return;
-
-		LOGI("Debug messenger setup skipped for compatibility");
-	}
-	
-
-//******************************************************************************************
-// 
 //  Name:           createSurface
 //  Arguments:      N/A
 //  Returns:        void
@@ -1151,46 +1129,20 @@ class MultithreadedApplication
 
         void createSurface()
         {
-#if PLATFORM_DESKTOP
             VkSurfaceKHR _surface;
 
             // Create desktop surface using GLFW
-
             if (glfwCreateWindowSurface(  
                   *instance
                 , window
                 , nullptr
                 , &_surface
-                ) != VK_SUCCESS
+                ) != 0
             )
             {
                 throw std::runtime_error("Failed to create window surface!");
             }
             surface = vk::raii::SurfaceKHR(instance, _surface);
-#else
-
-            VkSurfaceKHR _surface;
-
-            // Create Android surface
-            VkAndroidSurfaceCreateInfoKHR 		createInfo
-            {
-                  .sType						            = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR
-                , .window					                = androidAppState.nativeWindow
-            };
-
-            if (vkCreateAndroidSurfaceKHR(
-                    *instance
-                    , &createInfo
-                    , nullptr
-                    , &_surface
-                ) != VK_SUCCESS
-	        )
-            {
-                throw std::runtime_error("Failed to create Android surface");
-            }
-            
-            surface = vk::raii::SurfaceKHR(instance, _surface);
-#endif
         }
         
 
@@ -1277,79 +1229,19 @@ class MultithreadedApplication
         void pickPhysicalDevice()
         {
             std::vector<vk::raii::PhysicalDevice>   physicalDevices = instance.enumeratePhysicalDevices();
-            auto const                              devIter         = std::ranges::find_if(  physicalDevices
+            auto const                              devIter         = std::ranges::find_if(
+											     physicalDevices
                                                                                            , [&](auto const &physicalDevice)
                                                                                             {
                                                                                                 return isDeviceSuitable(physicalDevice);
-                                                                                            });
+                                                                                            }
+											);
             if (devIter == physicalDevices.end())
             {
                 throw std::runtime_error("Failed to find a suitable GPU!");
             }
             physicalDevice                                          = *devIter;
-	    
-            // Check for Vulkan profile support
-            VpProfileProperties			profileProperties;
-
-#if PLATFORM_ANDROID
-            strcpy(
-                  profileProperties.name
-                , VP_KHR_ROADMAP_2022_NAME
-            );
-#else	    
-            strcpy(
-                  profileProperties.profileName
-                , VP_KHR_ROADMAP_2022_NAME
-            );
-#endif
-            profileProperties.specVersion			                = VP_KHR_ROADMAP_2022_SPEC_VERSION;
-        
-            VkBool32	                supported	                = VK_FALSE;
-            bool		                result			            = false;
-			
-#if PLATFORM_ANDROID
-			// Create a vp::ProfileDesc from our VpProfileProperties
-			vp::ProfileDesc			    profileDesc		            = 
-			{
-				  profileProperties.name
-				, profileProperties.specVersion
-			};
-			
-			// Use vp::GetProfileSupport for Android
-			result			                                        = vp::GetProfileSupport(
-				  *physicalDevice			// Pass the physical device directly
-				, &profileDesc			    // Pass the profile description
-				, &supported			    // Output parameter for support status
-			);
-#else
-			// Use vpGetPhysicalDeviceProfileSupport for Desktop
-			VkResult	                vk_result		  	        = vpGetPhysicalDeviceProfileSupport(
-                                                                                          *instance
-                                                                                        , *physicalDevice
-                                                                                        , &profileProperties
-                                                                                        , &supported
-                                                                                    );
-											    
-			result				                                    = vk_result == static_cast<int>(vk::Result::eSuccess);
-#endif
-			const char                  *name 	                    = nullptr;
-#ifdef PLATFORM_ANDROID
-			name			                                        = profileProperties.name;
-#else
-			name			                                        = profileProperties.profileName;
-#endif
-
-			if (result && supported == VK_TRUE)
-			{
-				appInfo.profileSupported	                        = true;
-				appInfo.profile					                    = profileProperties;
-				LOGI("Device supports Vulkan profile: %s", name);
-			}
-			else
-			{
-				LOGI("Device does not support Vulkan profile: %s", name);
-			}
-		}
+	}
 
 
 //******************************************************************************************
