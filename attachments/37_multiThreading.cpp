@@ -1273,8 +1273,12 @@ class MultithreadedApplication
             for (uint32_t qfpIndex = 0; qfpIndex < queueFamilyProperties.size(); qfpIndex++)
             {
                 if ((queueFamilyProperties[qfpIndex].queueFlags & vk::QueueFlagBits::eGraphics) &&
-                     physicalDevice.getSurfaceSupportKHR(  qfpIndex
-                                                         , *surface))
+                    (queueFamilyProperties[qfpIndex].queueFlags & vk::QueueFlagBits::eCompute) &&
+                     physicalDevice.getSurfaceSupportKHR(
+							   qfpIndex
+                                                         , *surface
+							 )
+						)
                 {
                     // Found a queue family that supports both graphics and present
                     queueIndex                              = qfpIndex;
@@ -1288,11 +1292,15 @@ class MultithreadedApplication
 
             // Query for Vulkan 1.3 features
             auto							                    features 		= physicalDevice.getFeatures2();
+	    features.features.samplerAnisotropy									= vk::True;
             vk::PhysicalDeviceVulkan13Features			        vulkan13Features;
             vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT	extendedDynamicStateFeatures;
+	    vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR							= timelineSemaphoreFeatures;
+	    timelineSemaphoreFeatures.timelineSemaphore								= vk::True;
             vulkan13Features.dynamicRendering						            = vk::True;
             vulkan13Features.synchronization2						            = vk::True;
             extendedDynamicStateFeatures.extendedDynamicState 				    = vk::True;
+	    extendedDynamicStateFeatures.pNext									= &timelineSemaphoreFeatures;
             vulkan13Features.pNext								                = &extendedDynamicStateFeatures;
             features.pNext									                    = &vulkan13Features;
             
@@ -1316,8 +1324,10 @@ class MultithreadedApplication
                 };
                 
                 // Create the device with the appropriate features
-                device 			                            = vk::raii::Device(  physicalDevice
-                                                                               , deviceCreateInfo);
+                device 			                            = vk::raii::Device(
+										  physicalDevice
+                                                                               , deviceCreateInfo
+									);
 									       
 		queue		= vk::raii::Queue(device, queueIndex, 0);
         }
@@ -1407,7 +1417,7 @@ class MultithreadedApplication
 
 //******************************************************************************************
 // 
-//  Name:           createDescriptorSetLayout
+//  Name:           createComputeDescriptorSetLayout
 //  Arguments:      N/A
 //  Returns:        void
 //  Calls:          
@@ -1416,35 +1426,43 @@ class MultithreadedApplication
 // 
 //******************************************************************************************
 
-        void createDescriptorSetLayout()
+        void createComputeDescriptorSetLayout()
         {
-            std::array bindings			                    = 
+            std::array layoutBindings
             {
                 vk::DescriptorSetLayoutBinding
                 (
                       0
                     , vk::DescriptorType::eUniformBuffer
                     , 1
-                    , vk::ShaderStageFlagBits::eVertex
+                    , vk::ShaderStageFlagBits::eCompute
                     , nullptr
                 )
                 , vk::DescriptorSetLayoutBinding
                 (
                       1
-                    , vk::DescriptorType::eCombinedImageSampler
+                    , vk::DescriptorType::eStorageBuffer
+		    , 
+		    , vk::ShaderStageFlagBits::eCompute
+		    , nullptr
+		)
+		, vk::DescriptorSetLayoutBinding
+		(
+		    2
+		    , vk::DescriptorType::eStorageBuffer
                     , 1
-                    , vk::ShaderStageFlagBits::eFragment
+                    , vk::ShaderStageFlagBits::eCompute
                     , nullptr
                 )
             };
 	    
             vk::DescriptorSetLayoutCreateInfo   layoutInfo
             {
-                  .bindingCount                             = static_cast<uint32_t>(bindings.size())
-                , .pBindings                                = bindings.data()
+                  .bindingCount                             = static_cast<uint32_t>(layoutBindings.size())
+                , .pBindings                                = layoutBindings.data()
             };
 
-            descriptorSetLayout                             = vk::raii::DescriptorSetLayout(device, layoutInfo);
+            computeDescriptorSetLayout                             = vk::raii::DescriptorSetLayout(device, layoutInfo);
         }
 
 
@@ -1461,7 +1479,7 @@ class MultithreadedApplication
 
         void createGraphicsPipeline()
         {
-            vk::raii::ShaderModule		    shaderModule		    = createShaderModule(this->readFile("shaders/slang.spv"));
+            vk::raii::ShaderModule		    shaderModule		    = createShaderModule(readFile("shaders/slang.spv"));
             
             vk::PipelineShaderStageCreateInfo   vertShaderStageInfo
             {
