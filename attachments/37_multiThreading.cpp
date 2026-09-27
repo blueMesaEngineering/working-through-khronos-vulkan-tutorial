@@ -1790,7 +1790,6 @@ class MultithreadedApplication
 	}
 
 
-
 //******************************************************************************************
 // 
 //  Name:           createUniformBuffers
@@ -1804,14 +1803,10 @@ class MultithreadedApplication
 
         void createUniformBuffers()
         {
-		// For each game object
-		for (auto &gameObject : gameObjects)
-		{
-	            gameObject.uniformBuffers.clear();
-	            gameObject.uniformBuffersMemory.clear();
-		        gameObject.uniformBuffersMapped.clear();
+	            uniformBuffers.clear();
+	            uniformBuffersMemory.clear();
+		    uniformBuffersMapped.clear();
 
-		// Create uniform buffers for each frame in flight
 	            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	            {
 	                vk::DeviceSize              bufferSize              = sizeof(UniformBufferObject);
@@ -1827,12 +1822,11 @@ class MultithreadedApplication
 	                    , bufferMem
 	                );
 
-	                gameObject.uniformBuffers.emplace_back(std::move(buffer));
-	                gameObject.uniformBuffersMemory.emplace_back(std::move(bufferMem));
-	                gameObject.uniformBuffersMapped.emplace_back(
-	                                    gameObject.uniformBuffersMemory[i].mapMemory(0, bufferSize)
-	                                );
-			}
+	                uniformBuffers.emplace_back(std::move(buffer));
+	                uniformBuffersMemory.emplace_back(std::move(bufferMem));
+	                uniformBuffersMapped.emplace_back(
+				uniformBuffersMemory[i].mapMemory(0, bufferSize)
+			);
 	            }
         }
 
@@ -1955,13 +1949,12 @@ class MultithreadedApplication
                         , .pImageInfo                       = nullptr
 			, .pBufferInfo				= &storageBufferInfoCurrentFrame
 			, .pTexelBufferView			= nullptr
-                    }
+                    },
                 };
 
                 device.updateDescriptorSets( descriptorWrites, {});
 		}
             }
-        }
         
 
 //******************************************************************************************
@@ -1981,27 +1974,23 @@ class MultithreadedApplication
             , vk::MemoryPropertyFlags   properties
             , vk::raii::Buffer          &buffer
             , vk::raii::DeviceMemory    &bufferMemory
-        )
+        ) const
         {
-            vk::BufferCreateInfo bufferInfo
-            {
-                  .size                                     = size
-                , .usage                                    = usage
-                , .sharingMode                              = vk::SharingMode::eExclusive
-            };
+            vk::BufferCreateInfo bufferInfo{};
+	    bufferInfo.size                                     = size;
+	    bufferInfo.usage                                    = usage;
+	    bufferInfo.sharingMode                              = vk::SharingMode::eExclusive;
 
             buffer                                          = vk::raii::Buffer(device, bufferInfo);
 
             vk::MemoryRequirements      memRequirements     = buffer.getMemoryRequirements();
 
-            vk::MemoryAllocateInfo      allocInfo
-            {
-                  .allocationSize                           = memRequirements.size
-                , .memoryTypeIndex                          = findMemoryType(
+            vk::MemoryAllocateInfo      allocInfo{};
+	    allocInfo.allocationSize                           = memRequirements.size;
+	    allocInfo.memoryTypeIndex                          = findMemoryType(
                                                                                memRequirements.memoryTypeBits
                                                                              , properties
-                                                                            )
-            };
+                                                                            );
 
             bufferMemory                                    = vk::raii::DeviceMemory(device, allocInfo);
             
@@ -2020,24 +2009,21 @@ class MultithreadedApplication
 // 
 //******************************************************************************************
 
-	std::unique_ptr<vk::raii::CommandBuffer> beginSingleTimeCommands()
+	[[nodiscard]] vk::raii::CommandBuffer beginSingleTimeCommands() const
 	{
-		vk::CommandBufferAllocateInfo	allocInfo
-		{
-			  .commandPool						            = *commandPool
-			, .level						                = vk::CommandBufferLevel::ePrimary
-			, .commandBufferCount					        = 1
-		};
+		vk::CommandBufferAllocateInfo	allocInfo{};
+		allocInfo.commandPool						            = *commandPool;
+		allocInfo.level						                = vk::CommandBufferLevel::ePrimary;
+		allocInfo.commandBufferCount					        = 1;
 		
-		std::unique_ptr<vk::raii::CommandBuffer>    
-                                        commandBuffer	    = std::make_unique<vk::raii::CommandBuffer>(std::move(vk::raii::CommandBuffers(device, allocInfo).front()));
+		vk::raii::CommandBuffer commandBuffer	    = std::move(vk::raii::CommandBuffers(device, allocInfo).front());
 		
 		vk::CommandBufferBeginInfo		beginInfo
 		{
 			.flags							                = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
 		};
 		
-		commandBuffer->begin(beginInfo);
+		commandBuffer.begin(beginInfo);
 		
 		return commandBuffer;
 	}
