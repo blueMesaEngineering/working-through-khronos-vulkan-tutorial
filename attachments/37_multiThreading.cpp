@@ -1689,15 +1689,105 @@ class MultithreadedApplication
 
         void createCommandPool()
         {
-            vk::CommandPoolCreateInfo       poolInfo
-            {
-                  .flags                                    = vk::CommandPoolCreateFlagBits::eResetCommandBuffer
-                , .queueFamilyIndex                         = queueIndex
-            };
+            vk::CommandPoolCreateInfo       poolInfo{};
+	    poolInfo.flags                                    = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+	    poolInfo.queueFamilyIndex                         = queueIndex;
 
-            commandPool = vk::raii::CommandPool(device, poolInfo);
+            commandPool 					= vk::raii::CommandPool(device, poolInfo);
         }
-	
+
+
+//******************************************************************************************
+// 
+//  Name:           createShaderStorageBuffers
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	void createShaderStorageBuffers()
+	{
+		std::default_random_engine		rndEngine(static_cast<unsigned>(time(nullptr)));
+		std::uniform_real_distribution		rndDist(0.0f, 1.0f);
+		
+		std::vector<Particle>			particles(PARTICLE_COUNT);
+		for (auto &particle : particles)
+		{
+			// Generate a random position for the particle
+			float theta						= rndDist(rndEngine) * 2.0f * 3.14159265358979323846f;
+			
+			// Use square root of random value to ensure uniform distribution across the area
+			// This prevents clustering near the center (which causes the donut effect)
+			float r 						= sqrtf(rndDist(rndEngine)) * 0.25f;
+			
+			float x						 	= r * cosf(theta) * HEIGHT / WIDTH;
+			float y							= r * sinf(theta);
+			particle.position					= glm::vec2(x, y);
+			
+			// Ensure a minimum velocity and scale based on distance from center
+			float minVelocity					= 0.001f;
+			float velocityScale					= 0.003f;
+			float velocityMagnitude					= std::max(minVelocity, r * velocityScale);
+			particle.velocity					= normalize(glm::vec2(x, y)) * velocityMagnitude;
+			particle.color						= glm::vec4(
+											rndDist(rndEngine)
+											, rndDist(rndEngine)
+											, rndDist(rndEngine)
+											, 1.0f
+										);
+		}
+		
+		vk::DeviceSize			bufferSize			= sizeof(Particle) * PARTICLE_COUNT;
+		
+		vk::raii::Buffer		stagingBuffer({});
+		vk::raii::DeviceMemory		stagingBufferMemory({});
+		createBuffer(
+			bufferSize
+			, vk::BufferUsageFlagBits::eTransferSrc
+			, vk::MemoryPropertyFlagBits::eHostVisible
+			| vk::MemoryPropertyFlagBits::eHostCoherent
+			, stagingBuffer
+			, stagingBufferMemory
+		);
+		
+		void *dataStaging						= stagingBufferMemory.mapMemory(0, bufferSize);
+		memcpy(
+			dataStaging
+			, particles.data()
+			, (size_t) bufferSize
+		);
+		stagingBufferMemory.unmapMemory();
+		
+		shaderStorageBuffers.clear();
+		shaderStorageBuffersMemory.clear();
+		
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			vk::raii::Buffer		shaderStorageBufferTemp({});
+			vk::raii::DeviceMemory		shaderStorageBufferTempMemory({});
+			createBuffer(
+				bufferSize
+				, vk::BufferUsageFlagBits::eStorageBuffer
+				| vk::BufferUsageFlagBits::eVertexBuffer
+				| vk::BufferUsageFlagBits::eTransferDst
+				, vk::MemoryPropertyFlagBits::eDeviceLocal
+				, shaderStorageBufferTemp
+				, shaderStorageBufferTempMemory
+			);
+			
+			copyBuffer(
+				stagingBuffer
+				, shaderStorageBufferTemp
+				, bufferSize
+			);
+			
+			shaderStorageBuffers.emplace_back(std::move(shaderStorageBufferTemp));
+			shaderStorageBuffersMemory.emplace_back(std::move(shaderStorageBufferTempMemory));
+		}
+	}
 
 
 
