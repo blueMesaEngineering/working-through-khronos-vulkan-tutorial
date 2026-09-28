@@ -2374,7 +2374,7 @@ class MultithreadedApplication
                 , .pImageMemoryBarriers					            = &barrier
             };
             
-            commandBuffers[frameIndex].pipelineBarrier2(dependency_info);
+            graphicsCommandBuffers[frameIndex].pipelineBarrier2(dependency_info);
         }
 
 
