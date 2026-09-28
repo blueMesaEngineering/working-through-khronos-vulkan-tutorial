@@ -2380,6 +2380,44 @@ class MultithreadedApplication
 
 //******************************************************************************************
 // 
+//  Name:           signalThreadsToWork
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	void signalThreadsToWork()
+	{
+		// Mark all threads as not done
+		for (uint32_t i = 0; i < threadCount; i++)
+		{
+			threadWorkDone[i].store(
+				false
+				, std::memory_order_release
+			);
+		}
+		
+		// Memory barrier to ensure all threads see the updated threadWorkDone values
+		std::atomic_thread_fence(std::memory_order_seq_cst);
+		
+		// Only signal the first thread to start work
+		threadWorkReady[0].store(
+			true
+			, std::memory_order_release
+		);
+		
+		// Notify all threads in case they're waiting on the condition variable
+		{
+			std::lock_guard<std::mutex> lock(workCompleteMutex);
+			workCompleteCv.notify_all();
+		}
+	}
+
+//******************************************************************************************
+// 
 //  Name:           createSyncObjects
 //  Arguments:      N/A
 //  Returns:        void
