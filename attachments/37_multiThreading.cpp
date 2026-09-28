@@ -2044,11 +2044,9 @@ class MultithreadedApplication
 	{
 		commandBuffer.end();
 		
-		vk::SubmitInfo submitInfo
-		{
-			  .commandBufferCount				                    = 1
-			, .pCommandBuffers					                    = &*commandBuffer
-		};
+		vk::SubmitInfo submitInfo{};
+		submitInfo.commandBufferCount				         = 1;
+		submitInfo.pCommandBuffers					 = &*commandBuffer;
 		
 		queue.submit(submitInfo, nullptr);
 		queue.waitIdle();
@@ -2067,43 +2065,20 @@ class MultithreadedApplication
 //******************************************************************************************
 
         void copyBuffer(  
-              vk::raii::Buffer              &srcBuffer
-            , vk::raii::Buffer              &dstBuffer
+              const vk::raii::Buffer              &srcBuffer
+            , const vk::raii::Buffer              &dstBuffer
             , vk::DeviceSize                size
-        )
+        ) const
         {
-            vk::CommandBufferAllocateInfo   allocInfo
-            {
-                  .commandPool					                    = *commandPool
-                , .level					                        = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount				                = 1
-            };
-            
-            vk::raii::CommandBuffer		    commandCopyBuffer	    = std::move(device.allocateCommandBuffers(allocInfo).front());
-            
-            commandCopyBuffer.begin(vk::CommandBufferBeginInfo
-                {
-                    .flags						                    = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-                }
-            );
+            vk::raii::CommandBuffer   		commandCopyBuffer		= beginSingleTimeCommands();
         
                 commandCopyBuffer.copyBuffer(
-                      *srcBuffer
-                    , *dstBuffer
-                    , vk::BufferCopy{.size = size}
+                      srcBuffer
+                    , dstBuffer
+                    , vk::BufferCopy(0, 0, size)
                 );
 
-            commandCopyBuffer.end();
-                
-            queue.submit(vk::SubmitInfo
-                {
-                      .commandBufferCount		                    = 1
-                    , .pCommandBuffers		                        = &*commandCopyBuffer
-                }
-                , nullptr
-            );
-
-            queue.waitIdle();
+            endSingleTimeCommands(commandCopyBuffer);
         }
         
 
@@ -2118,10 +2093,10 @@ class MultithreadedApplication
 // 
 //******************************************************************************************
 
-        uint32_t findMemoryType(
+        [[nodiscard]] uint32_t findMemoryType(
               uint32_t                      typeFilter
             , vk::MemoryPropertyFlags       properties
-        )
+        ) const
         {
             vk::PhysicalDeviceMemoryProperties      memProperties   = physicalDevice.getMemoryProperties();
 
@@ -2140,7 +2115,7 @@ class MultithreadedApplication
 	
 //******************************************************************************************
 // 
-//  Name:           createCommandBuffers
+//  Name:           createGraphicsCommandBuffers
 //  Arguments:      N/A
 //  Returns:        void
 //  Calls:          
@@ -2149,24 +2124,20 @@ class MultithreadedApplication
 // 
 //******************************************************************************************
 
-        void createCommandBuffers()
+        void createGraphicsCommandBuffers()
         {
-            commandBuffers.clear();
-	    
-            vk::CommandBufferAllocateInfo allocInfo
-            {
-                  .commandPool                              = *commandPool
-                , .level                                    = vk::CommandBufferLevel::ePrimary
-                , .commandBufferCount                       = MAX_FRAMES_IN_FLIGHT
-            };
-
-            commandBuffers                                  = vk::raii::CommandBuffers(device, allocInfo);
+            graphicsCommandBuffers.clear();
+            vk::CommandBufferAllocateInfo allocInfo{};
+	    allocInfo.commandPool                              = *commandPool;
+            allocInfo.level                                    = vk::CommandBufferLevel::ePrimary;
+            allocInfo.commandBufferCount                       = MAX_FRAMES_IN_FLIGHT;
+            graphicsCommandBuffers                                  = vk::raii::CommandBuffers(device, allocInfo);
         }
 
 
 //******************************************************************************************
 // 
-//  Name:           recordCommandBuffer
+//  Name:           recordComputeCommandBuffer
 //  Arguments:      N/A
 //  Returns:        void
 //  Calls:          
@@ -2175,13 +2146,83 @@ class MultithreadedApplication
 // 
 //******************************************************************************************
 
-        void recordCommandBuffer(
-            uint32_t imageIndex
+        void recordComputeCommandBuffer(
+		vk::raii::CommandBuffer		&cmdBuffer
+		, uint32_t startIndex
+		, uint32_t count
         )
         {
-	        auto                    &commandBuffer			    = commandBuffers[frameIndex];
-            commandBuffer.begin({});
+		cmdBuffer.reset();
+		
+		vk::CommandBufferBeginInfo	beginInfo
+		{
+			.flags							= vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+		};
+		
+		cmdBuffer.begin(beginInfo);
+		
+		cmdBuffer.bindPipeline
+		(
+			vk::PipelineBindPoint::eCompute
+			, *computePipeline
+		);
+		
+		cmdBuffer.bindDescriptorSets
+		(
+			vk::PipelineBindPoint::eCompute
+			, *computePipelineLayout
+			, 0
+			, {
+				*computeDescriptorSets[frameIndex]
+			  }
+			, {}
+		);
+		
+		struct				PushConstants
+		{
+			uint32_t		startIndex;
+			uint32_t		count;
+		} pushConstants{startIndex, count};
+		
+		cmdBuffer.pushConstants<PushConstants>
+		(
+			*computePipelineLayout
+			, vk::ShaderStageFlagBits::eCompute
+			, 0
+			, pushConstants
+		);
+		
+		uint32_t			groupCount			= (count + 255) / 256;
+		cmdBuffer.dispatch(groupCount, 1, 1);
+		
+		cmdBuffer.end();
+	}
+
+
+//******************************************************************************************
+// 
+//  Name:           recordGraphicsCommandBuffer
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	void recordGraphicsCommandBuffer(
+		uint32_t			imageIndex
+	)
+	{
+		graphicsCommandBuffers[frameIndex].reset();
+		
+		vk::CommandBufferBeginInfo	beginInfo
+		{
+			.flags							= vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+		};
 	    
+		graphicsCommandBuffers[frameIndex].begin(beginInfo);
+		
 	    // Before starting rendering, transition the swapchain image to COLOR_ATTACHMENT_OPTIMAL
             transition_image_layout(
                   swapChainImages[imageIndex]
@@ -2194,21 +2235,8 @@ class MultithreadedApplication
                 , vk::ImageAspectFlagBits::eColor
             );
 	
-            // Transition depth image to depth attachment optimal layout
-            transition_image_layout(
-                  *depthImage
-                , vk::ImageLayout::eUndefined
-                , vk::ImageLayout::eDepthAttachmentOptimal
-                , vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-                , vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-                , vk::PipelineStageFlagBits2::eEarlyFragmentTests
-                | vk::PipelineStageFlagBits2::eLateFragmentTests
-                , vk::PipelineStageFlagBits2::eEarlyFragmentTests
-                | vk::PipelineStageFlagBits2::eLateFragmentTests
-                , vk::ImageAspectFlagBits::eDepth
-            );
-	
-            vk::ClearValue                  clearColor		   = vk::ClearColorValue(  
+            vk::ClearValue                  clearColor		   = vk::ClearColorValue
+	    (  
                           0.0f
                         , 0.0f
                         , 0.0f
@@ -2217,22 +2245,11 @@ class MultithreadedApplication
 
             vk::RenderingAttachmentInfo		attachmentInfo		=
             {
-                  .imageView						            = *swapChainImageViews[imageIndex]
+                  .imageView						            = swapChainImageViews[imageIndex]
                 , .imageLayout						            = vk::ImageLayout::eColorAttachmentOptimal
                 , .loadOp						                = vk::AttachmentLoadOp::eClear
                 , .storeOp						                = vk::AttachmentStoreOp::eStore
                 , .clearValue						            = clearColor
-            };
-		
-            vk::ClearValue				    clearDepth		    = vk::ClearDepthStencilValue{1.0f, 0};
-            
-            vk::RenderingAttachmentInfo		depthAttachmentInfo
-            {
-                  .imageView						            = *depthImageView
-                , .imageLayout						            = vk::ImageLayout::eDepthStencilAttachmentOptimal
-                , .loadOp						                = vk::AttachmentLoadOp::eClear
-                , .storeOp						                = vk::AttachmentStoreOp::eDontCare
-                , .clearValue						            = clearDepth
             };
             
             vk::RenderingInfo			    renderingInfo		=
@@ -2241,19 +2258,21 @@ class MultithreadedApplication
                 , .layerCount						            = 1
                 , .colorAttachmentCount					        = 1
                 , .pColorAttachments					        = &attachmentInfo
-                , .pDepthAttachment					            = &depthAttachmentInfo
             };
 		
-		    commandBuffer.beginRendering(renderingInfo);
+	    graphicsCommandBuffers[frameIndex].beginRendering(renderingInfo);
 
-            commandBuffer.bindPipeline(
+            graphicsCommandBuffers[frameIndex].bindPipeline
+	    (
                   vk::PipelineBindPoint::eGraphics
                 , *graphicsPipeline
             );
 
-            commandBuffer.setViewport(
+            graphicsCommandBuffers[frameIndex].setViewport
+	    (
                   0
-                , vk::Viewport(
+                , vk::Viewport
+		(
                       0.0f
                     , 0.0f
                     , static_cast<float>(swapChainExtent.width)
@@ -2263,7 +2282,8 @@ class MultithreadedApplication
                 )
             );
             
-            commandBuffer.setScissor(
+            graphicsCommandBuffers[frameIndex].setScissor
+	    (
                   0
                 , vk::Rect2D(
                           vk::Offset2D(0, 0)
@@ -2271,56 +2291,36 @@ class MultithreadedApplication
                     )
             );
 
-		// Bind vertex and index buffers (shared by all objects)
-            commandBuffer.bindVertexBuffers(  
+            graphicsCommandBuffers[frameIndex].bindVertexBuffers
+	    (  
                   0
-                , *vertexBuffer
+                , {shaderStorageBuffers[frameIndex]}
                 , {0}
             );
 
-            commandBuffer.bindIndexBuffer(  
-                  *indexBuffer
-                , 0
-                , vk::IndexType::eUint32
-            );
-
-	    // Draw each object with its own descriptor set
-	    for (const auto &gameObject : gameObjects)
-	    {
-		// Bind the descriptor set for this object
-            commandBuffer.bindDescriptorSets(
-                  vk::PipelineBindPoint::eGraphics
-                , *pipelineLayout
-                , 0
-                , *gameObject.descriptorSets[frameIndex]
-                , nullptr
-            );
-
-		// Draw the object
-            commandBuffer.drawIndexed(
-                  indices.size()
+            graphicsCommandBuffers[frameIndex].draw
+	    (
+                  PARTICLE_COUNT
                 , 1
                 , 0
                 , 0
-                , 0
             );
-	    }
 
-	        commandBuffer.endRendering();
+	        graphicsCommandBuffers[frameIndex].endRendering();
 
             // After rendering, transition the swapchain image to PRESENT_SRC
             transition_image_layout(
                   swapChainImages[imageIndex]
                 , vk::ImageLayout::eColorAttachmentOptimal
                 , vk::ImageLayout::ePresentSrcKHR
-                , vk::AccessFlagBits2::eColorAttachmentWrite		    // srcAccessMask
-                , {}							                        // dstAccessMask
-                , vk::PipelineStageFlagBits2::eColorAttachmentOutput	// srcStage
+                , vk::AccessFlagBits2::eColorAttachmentWrite		    	// srcAccessMask
+                , {}							        // dstAccessMask
+                , vk::PipelineStageFlagBits2::eColorAttachmentOutput		// srcStage
                 , vk::PipelineStageFlagBits2::eBottomOfPipe		        // dstStage
                 , vk::ImageAspectFlagBits::eColor
             );
 	    
-            commandBuffer.end();
+            graphicsCommandBuffers[frameIndex].end();
         }
 
 
