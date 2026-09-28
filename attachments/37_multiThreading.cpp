@@ -2416,6 +2416,61 @@ class MultithreadedApplication
 		}
 	}
 
+
+//******************************************************************************************
+// 
+//  Name:           waitForThreadsToComplete
+//  Arguments:      N/A
+//  Returns:        void
+//  Calls:          
+//  Called by:      
+//  Description:    
+// 
+//******************************************************************************************
+
+	void waitForThreadsToComplete()
+	{
+		std::unique_lock<std::mutex> 	lock(workCompleteMutex);
+		
+		// Wait for the last thread to complete with a timeout
+		auto waitResult							= workCompleteCv.wait_for(
+												lock
+												, std::chrono::milliseconds(3000)
+												, [this]()
+												{
+													return threadWorkDone[threadCount - 1].load(std::memory_order_acquire);
+												}
+											);
+
+		// If we timed out, force completion
+		if (!waitResult)
+		{
+			// Force all threads to complete
+			for (uint32_t i = 0; i < threadCount; i++)
+			{
+				threadWorkDone[i].store
+				(
+					true
+					, std::memory_order_release
+				);
+				
+				threadWorkReady[i].store
+				(
+					false
+					, std::memory_order_release
+				);
+			}
+
+			// Notify all threads
+			workCompleteCv.notify_all();
+			lock.unlock();
+
+			// Give threads a chance to respond to the forced completion
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
+	}
+
+
 //******************************************************************************************
 // 
 //  Name:           createSyncObjects
@@ -2429,26 +2484,32 @@ class MultithreadedApplication
 
         void createSyncObjects()
         {
-            assert(
-                presentCompleteSemaphores.empty()
-                && renderFinishedSemaphores.empty()
-                && inFlightFences.empty()
-            );
+		imageAvailableSemaphores.clear();
+		inFlightFences.clear();
 
-            for (size_t i = 0; i < swapChainImages.size(); i++)
-            {
-                renderFinishedSemaphores.emplace_back(device, vk::SemaphoreCreateInfo());
-            }
+		vk::SemaphoreTypeCreateInfo	semaphoreType
+		{
+			.semaphoreType						= vk::SemaphoreType::eTimeline
+			, .initialValue						= 0
+		};
 	    
+		timelineSemaphore						= vk::raii::Semaphore
+		(
+			device
+			, {.pNext						= &semaphoreType}
+		);
+		
+		timelineValue							= 0;
+		
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-                presentCompleteSemaphores.emplace_back(device, vk::SemaphoreCreateInfo());
+                imageAvailableSemaphores.emplace_back(device, vk::SemaphoreCreateInfo());
+		
+		vk::FenceCreateInfo		fenceInfo;
+		fenceInfo.flags							= vk::FenceCreateFlagBits::eSignaled;
                 inFlightFences.emplace_back(
                       device
-                    , vk::FenceCreateInfo
-                    {
-                        .flags						        = vk::FenceCreateFlagBits::eSignaled
-                    }
+                    , fenceInfo
                 );
             }
         }
@@ -2456,7 +2517,7 @@ class MultithreadedApplication
 
 //******************************************************************************************
 // 
-//  Name:           updateUniformBuffers
+//  Name:           updateUniformBuffer
 //  Arguments:      N/A
 //  Returns:        void
 //  Calls:          
@@ -2465,7 +2526,9 @@ class MultithreadedApplication
 // 
 //******************************************************************************************
 
-        void updateUniformBuffers()
+        void updateUniformBuffer(
+		uint32_t		currentImage
+	)
         {
             static auto             startTime               = std::chrono::high_resolution_clock::now();
 	    static auto 		lastFrameTime		= startTime;
