@@ -1070,7 +1070,6 @@ class MultithreadedApplication
             glfwDestroyWindow(window);
             glfwTerminate();
         }
-        }
         
 
 //******************************************************************************************
@@ -2530,56 +2529,14 @@ class MultithreadedApplication
 		uint32_t		currentImage
 	)
         {
-            static auto             startTime               = std::chrono::high_resolution_clock::now();
-	    static auto 		lastFrameTime		= startTime;
-
-            auto                    currentTime             = std::chrono::high_resolution_clock::now();
-            float                   time                    = std::chrono::duration<float>(currentTime - startTime).count();
-	    
-	    float 			deltaTime		= std::chrono::duration<float>(currentTime - lastFrameTime).count();
-	    lastFrameTime					= currentTime;
-
-	    // Camera and projection matrices (shared by all objects)
-            glm::mat4			view                = glm::lookAt(
-                                                                      glm::vec3(2.0f, 2.0f, 6.0f)
-                                                                    , glm::vec3(0.0f, 0.0f, 0.0f)
-                                                                    , glm::vec3(0.0f, 1.0f, 0.0f)
-                                                                );
-
-            glm::mat4			proj                = glm::perspective(
-                                                                      glm::radians(45.0f)
-                                                                    , static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height)
-                                                                    , 0.1f
-                                                                    , 20.0f
-                                                                );
-
-            proj[1][1] *= -1;
-
-		// Update uniform buffers for each object
-		for (auto &gameObject : gameObjects)
-		{
-			// Apply continuous rotation to the object based on frame time
-			const float 			rotationSpeed		= 0.5f;				// Rotation speed in radians per second
-			gameObject.rotation.y					+= rotationSpeed * deltaTime;	// Slow rotation around Y axis scaled by frame time
-			
-			// Get the model matrix for this object
-			glm::mat4			model			= gameObject.getModelMatrix();
-			
-			// Create and update the UBO
-			UniformBufferObject ubo
-			{
-				  .model					= model
-				, .view						= view
-				, .proj						= proj
-			};
-			
-		// Copy the UBO data to the mapped memory
+		UniformBufferObject 	ubo{};
+		ubo.deltaTime							= static_cast<float>(lastFrameTime) * 2.0f;
+		
 		memcpy(
-			  gameObject.uniformBuffersMapped[frameIndex]
+			uniformBuffersMapped[currentImage]
 			, &ubo
 			, sizeof(ubo)
 		);
-	    }
         }
 	
 
@@ -2596,8 +2553,7 @@ class MultithreadedApplication
 
         void drawFrame()
         {
-            // Note: inFlightFences, presentCompleteSemaphores, and commandBuffers are indexed by frameIndex,
-            // 	 while renderFinishedSemaphores is indexed by imageIndex
+		// Wait for the previous frame to finish
             auto 			        fenceResult				= device.waitForFences(
                                                                     *inFlightFences[frameIndex]
                                                                     , vk::True
@@ -2608,12 +2564,21 @@ class MultithreadedApplication
                 throw std::runtime_error("Failed to wait for fence!");
             }
 
+		// If the framebuffer was resized, rebuild the swap chain before acquiring a new image
+		if (framebufferResized)
+		{
+			recreateSwapChain();
+			framebufferResized					= false;
+			return;
+		}
+		
+		// Acquire the next image
             auto [
                   result
                 , imageIndex
                 ]           = swapChain.acquireNextImage(
 			                                          UINT64_MAX
-                                                    , *presentCompleteSemaphores[frameIndex]
+                                                    , *imageAvailableSemaphores[frameIndex]
                                                     , nullptr
                                                 );
 
@@ -2629,7 +2594,7 @@ class MultithreadedApplication
             // On other success codes than eSuccess and eSuboptimalKHR we just throw an exception.
             // On any error code, aquireNextImage already threw an exception.
 
-            if (   result != vk::Result::eSuccess 
+            else if (   result != vk::Result::eSuccess 
                 && result != vk::Result::eSuboptimalKHR)
             {
                 assert(   result == vk::Result::eTimeout 
@@ -2637,9 +2602,16 @@ class MultithreadedApplication
                 throw std::runtime_error("Failed to acquire swap chain image!");
             }
 
-		// Update uniform buffers for all objects
-            updateUniformBuffers();
+		// Update timeline values for synchronization
+		uint64_t 		computeWaitValue			= timelineValue;
+		uint64_t		computeSignalValue			= ++timelineValue;
+		uint64_t		graphicsWaitValue			= computeSignalValue;
+		uint64_t		graphicsSignalValue			= ++timelineValue;
+		
+		// Update uniform buffer with the latest delta time
+            updateUniformBuffer(frameIndex);
 
+		// Record graphics command buffer while worker threads are busy
             // Only reset the fence if we are submitting work                    
             device.resetFences(*inFlightFences[frameIndex]);
 
@@ -2648,32 +2620,28 @@ class MultithreadedApplication
 
             vk::PipelineStageFlags      waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
 
-            const vk::SubmitInfo        submitInfo
+            vk::SubmitInfo        graphicsSubmitInfo
             {
-                  .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*presentCompleteSemaphores[frameIndex]
-                , .pWaitDstStageMask                        = &waitDestinationStageMask
+		  .pNext					= &graphicsTimelineInfo
+                , .waitSemaphoreCount                       = static_cast<uint32_t>(waitSemaphores.size())
+                , .pWaitSemaphores                          = waitSemaphores.data()
+                , .pWaitDstStageMask                        = &graphicsWaitStages
                 , .commandBufferCount                       = 1
-                , .pCommandBuffers                          = &*commandBuffers[frameIndex]
+                , .pCommandBuffers                          = &*graphicsCommandBuffers[frameIndex]
                 , .signalSemaphoreCount                     = 1
-                , .pSignalSemaphores                        = &*renderFinishedSemaphores[imageIndex]
+                , .pSignalSemaphores                        = &*timelineSemaphore
             };
 
-            queue.submit(
-                  submitInfo
-                , *inFlightFences[frameIndex]
-            );
-
-            const vk::PresentInfoKHR    presentInfoKHR
+            vk::PresentInfoKHR    presentInfo
             {
-                  .waitSemaphoreCount                       = 1
-                , .pWaitSemaphores                          = &*renderFinishedSemaphores[imageIndex]
+                  .waitSemaphoreCount                       = 0
+                , .pWaitSemaphores                          = nullptr
                 , .swapchainCount                           = 1
                 , .pSwapchains                              = &*swapChain
                 , .pImageIndices                            = &imageIndex
             };
 
-            result                                          = queue.presentKHR(presentInfoKHR);
+            result                                          = queue.presentKHR(presentInfo);
 
             // Due to VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS being defined, eErrorOutOfDateKHR can be checked as a result
             // here and does not need to be caught by an exception.
@@ -2691,70 +2659,10 @@ class MultithreadedApplication
                 assert(result == vk::Result::eSuccess);
             }
 
+		// Move to the next frame
             frameIndex                                      = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
         }
-
-	
-//******************************************************************************************
-// 
-//  Name:           checkValidationLayerSupport
-//  Arguments:      
-//  Returns:        bool
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-	[[nodiscard]] bool checkValidationLayerSupport() const
-	{
-		return (std::ranges::any_of(
-					context.enumerateInstanceLayerProperties()
-					, [](vk::LayerProperties const &lp)
-					{
-						return (
-							strcmp("VK_LAYER_KHRONOS_validation"
-							, lp.layerName) == 0
-						);
-					}
-				)
-			);
-	}
-	
-
-//******************************************************************************************
-// 
-//  Name:           checkValidationLayerSupport
-//  Arguments:      vk::DebugUtilsMessageSeverityFlagBitsEXT severity
-//                  , vk::DebugUtilsMessageTypeFlagsEXT type
-//                  , const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData
-//                  , void *
-//  Returns:        bool
-//  Calls:          
-//  Called by:      
-//  Description:    
-// 
-//******************************************************************************************
-
-	static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
-		vk::DebugUtilsMessageSeverityFlagBitsEXT severity
-		, vk::DebugUtilsMessageTypeFlagsEXT type
-		, const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData
-		, void *
-	)
-	{
-		if (   severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
-			|| severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning)
-		{
-			std::cerr << "Validation layer: type " << to_string(type) << " msg: " << pCallbackData->pMessage<< std::endl;
-		}
-		
-		return vk::False;
-	}
-        
-
 };
-
 
 
 //******************************************************************************************
@@ -2772,15 +2680,14 @@ int main()
 {
     try
     {
-        VulkanApplication app;
+        MultithreadedApplication app;
         app.run();
     }
     catch (const std::exception &e)
     {
-        LOGE("%s", e.what());
+        std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
 }
-#endif
