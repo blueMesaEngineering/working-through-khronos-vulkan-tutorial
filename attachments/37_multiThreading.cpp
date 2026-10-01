@@ -2611,27 +2611,137 @@ class MultithreadedApplication
 		// Update uniform buffer with the latest delta time
             updateUniformBuffer(frameIndex);
 
+		// Signal worker threads to start processing particles
+		signalThreadsToWork();
+		
 		// Record graphics command buffer while worker threads are busy
-            // Only reset the fence if we are submitting work                    
-            device.resetFences(*inFlightFences[frameIndex]);
+            recordGraphicsCommandBuffer(imageIndex);
 
-            commandBuffers[frameIndex].reset();
-            recordCommandBuffer(imageIndex);
+		// Wait for all worker threads to complete
+		waitForThreadsToComplete();
+		
+		// Collect command buffers from all threads
+		std::vector<vk::CommandBuffer> computeCmdBuffers;
+		computeCmdBuffers.reserve(threadCount);
+		for (uint32_t i = 0; i < threadCount; i++)
+		{
+			try
+			{
+				computeCmdBuffers.push_back(*resourceManager.getcommandBuffer(i));
+			}
+			catch (const std::exception &)
+			{
+				// Skip this thread's command buffer if there was an error
+			}
+		}
 
-            vk::PipelineStageFlags      waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
-
+		// Ensure we have at least one command buffer
+		if (computeCmdBuffers.empty())
+		{
+			return;
+		}
+		
+		// Set up compute submission
+		vk::TimelineSemaphoreSubmitInfo		computeTimelineInfo
+		{
+			.waitSemaphoreValueCount				= 1
+			, .pWaitSemaphoreValues					= &computeWaitValue
+			, .signalSemaphoreValues				= 1
+			, .pSignalSemaphoreValueCount				= &computeSignalValue
+		};
+		
+		vk::PipelineStageFlags			waitStages[]		=
+		{
+			vk::PipelineStageFlagBits::eComputeShader
+		};
+		
+		vk::SubmitInfo				computSubmitInfo
+		{
+			.pNext							= &computeTimelineInfo
+			, .waitSemaphoreCount					= 1
+			, .pWaitSemaphores					= &*timelineSemaphore
+			, .pWaitDstStageMask					= waitStages
+			, .commandBufferCount					= static_cast<uint32_t>(computeCmdBuffers.size())
+			, .pCommandBuffers					= computeCmdBuffers.data()
+			, .signalSemaphoreCount					= 1
+			, .pSignalSemaphores					= &*timelineSemaphore
+		};
+		
+		// Submit compute work
+		{
+			std::lock_guard<std::mutex> lock(queueSubmitMutex);
+			queue.submit(computeSubmitInfo, nullptr);
+		}
+		
+		// Set up graphics submission
+		vk::PipelineStageFlags			graphicsWaitStages[]	=
+		{
+			vk::PipelineStageFlagBits::eVertexInput
+			, vk::PipelineStageFlagBits::eColorAttachmentOutput
+		};
+		
+		std::array<vk::Semaphore, 2> 		waitSemaphores		=
+		{
+			*timelineSemaphore
+			, *imageAvailableSemaphores[frameIndex]
+		};
+		
+		std::array<uint64_t, 2>			waitSemaphoreValues	=
+		{
+			graphicsWaitValue
+			, 0
+		};
+		
+		vk::TimelineSemaphoreSubmitInfo		graphicsTimelineInfo
+		{
+			.waitSemaphoreValueCount				= static_cast<uint32_t>(waitSemaphoreValues.size())
+			, .pWaitSemaphoreValues					= waitSemaphoreValues.data()
+			, .signalSemaphoreValueCount				= 1
+			, .pSignalSemaphoreValues				= &graphicsSignalValue
+		};
+		
             vk::SubmitInfo        graphicsSubmitInfo
             {
 		  .pNext					= &graphicsTimelineInfo
                 , .waitSemaphoreCount                       = static_cast<uint32_t>(waitSemaphores.size())
                 , .pWaitSemaphores                          = waitSemaphores.data()
-                , .pWaitDstStageMask                        = &graphicsWaitStages
+                , .pWaitDstStageMask                        = graphicsWaitStages
                 , .commandBufferCount                       = 1
                 , .pCommandBuffers                          = &*graphicsCommandBuffers[frameIndex]
                 , .signalSemaphoreCount                     = 1
                 , .pSignalSemaphores                        = &*timelineSemaphore
             };
 
+		// Submit graphics work
+		{
+			std::lock_guard<std::mutex>	lock(queueSubmitMutex);
+			device.resetFences(*inFlightFences[frameIndex]);
+			queue.submit(
+				graphicsSubmitInfo
+				, *inFlightFences[frameIndex]
+			);
+		}
+		
+		// Wait for graphics to complete before presenting
+		vk::SemaphoreWaitInfo			waitInfo
+		{
+			.semaphoreCount						= 1
+			, .pSemaphores						= &*timelineSemaphore
+			, .pValues						= &graphicsSignalValue
+		};
+		
+		auto 					waitResult		= device.waitSemaphores(
+												waitInfo
+												, 5000000000
+											);
+
+		if (waitResult == vk::Result::eTimeout)
+		{
+			device.waitIdle();
+			return;
+		}
+		
+		// Present the image
             vk::PresentInfoKHR    presentInfo
             {
                   .waitSemaphoreCount                       = 0
