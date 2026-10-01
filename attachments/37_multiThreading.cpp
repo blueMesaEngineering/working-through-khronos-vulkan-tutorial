@@ -123,7 +123,7 @@ class ThreadSafeResourceManager
 			, uint32_t				threadCount
 		)
 		{
-			std::lock_guard<std::mutex>		lock(resourceMutx);
+			std::lock_guard<std::mutex>		lock(resourceMutex);
 			
 			commandBuffers.clear();
 			commandPools.clear();
@@ -569,7 +569,6 @@ class MultithreadedApplication
 		, static_cast<std::streamsize>(buffer.size())
 	    );
             file.close();
-#endif
             return buffer;
         }
 
@@ -866,7 +865,7 @@ class MultithreadedApplication
 		
             while (!glfwWindowShouldClose(window))
             {
-		double 				frameStartTime			glfwGetTime();
+		double 				frameStartTime			= glfwGetTime();
 		
                 glfwPollEvents();
                 drawFrame();
@@ -1294,7 +1293,7 @@ class MultithreadedApplication
 	    features.features.samplerAnisotropy									= vk::True;
             vk::PhysicalDeviceVulkan13Features			        vulkan13Features;
             vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT	extendedDynamicStateFeatures;
-	    vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR							= timelineSemaphoreFeatures;
+	    vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR			timelineSemaphoreFeatures;
 	    timelineSemaphoreFeatures.timelineSemaphore								= vk::True;
             vulkan13Features.dynamicRendering						            = vk::True;
             vulkan13Features.synchronization2						            = vk::True;
@@ -1441,14 +1440,14 @@ class MultithreadedApplication
                 (
                       1
                     , vk::DescriptorType::eStorageBuffer
-		    , 
-		    , vk::ShaderStageFlagBits::eCompute
-		    , nullptr
-		)
-		, vk::DescriptorSetLayoutBinding
-		(
-		    2
-		    , vk::DescriptorType::eStorageBuffer
+                    , 1
+                    , vk::ShaderStageFlagBits::eCompute
+                    , nullptr
+                )
+                , vk::DescriptorSetLayoutBinding
+                (
+                      2
+                    , vk::DescriptorType::eStorageBuffer
                     , 1
                     , vk::ShaderStageFlagBits::eCompute
                     , nullptr
@@ -1652,7 +1651,7 @@ class MultithreadedApplication
 			, .pName						= "compMain"
 		};
 		
-		vk::PipelineLayoutCreateInfo					= pipelineLayoutInfo
+		vk::PipelineLayoutCreateInfo					pipelineLayoutInfo
 		{
 			.setLayoutCount						= 1
 			, .pSetLayouts						= &*computeDescriptorSetLayout
@@ -1934,7 +1933,7 @@ class MultithreadedApplication
                         , .dstArrayElement                  = 0
                         , .descriptorCount                  = 1
                         , .descriptorType                   = vk::DescriptorType::eStorageBuffer
-                        , .pImageInfo                       = 
+                        , .pImageInfo                       = nullptr
 			, .pBufferInfo				= &storageBufferInfoLastFrame
 			, .pTexelBufferView			= nullptr
                     }
@@ -2627,7 +2626,7 @@ class MultithreadedApplication
 		{
 			try
 			{
-				computeCmdBuffers.push_back(*resourceManager.getcommandBuffer(i));
+				computeCmdBuffers.push_back(*resourceManager.getCommandBuffer(i));
 			}
 			catch (const std::exception &)
 			{
@@ -2646,8 +2645,8 @@ class MultithreadedApplication
 		{
 			.waitSemaphoreValueCount				= 1
 			, .pWaitSemaphoreValues					= &computeWaitValue
-			, .signalSemaphoreValues				= 1
-			, .pSignalSemaphoreValueCount				= &computeSignalValue
+			, .signalSemaphoreValueCount				= 1
+			, .pSignalSemaphoreValues				= &computeSignalValue
 		};
 		
 		vk::PipelineStageFlags			waitStages[]		=
@@ -2655,7 +2654,7 @@ class MultithreadedApplication
 			vk::PipelineStageFlagBits::eComputeShader
 		};
 		
-		vk::SubmitInfo				computSubmitInfo
+		vk::SubmitInfo				computeSubmitInfo
 		{
 			.pNext							= &computeTimelineInfo
 			, .waitSemaphoreCount					= 1

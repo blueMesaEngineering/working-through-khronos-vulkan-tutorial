@@ -1274,6 +1274,45 @@ depend:
 .PHONY : 36_multipleObjects_slang_shader/fast
 
 #=============================================================================
+# Target rules for targets named 37_multiThreading
+
+# Build rule for target.
+37_multiThreading: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 37_multiThreading
+.PHONY : 37_multiThreading
+
+# fast build rule for target.
+37_multiThreading/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/37_multiThreading.dir/build.make CMakeFiles/37_multiThreading.dir/build
+.PHONY : 37_multiThreading/fast
+
+#=============================================================================
+# Target rules for targets named 37_multiThreading_shader
+
+# Build rule for target.
+37_multiThreading_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 37_multiThreading_shader
+.PHONY : 37_multiThreading_shader
+
+# fast build rule for target.
+37_multiThreading_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/37_multiThreading_shader.dir/build.make CMakeFiles/37_multiThreading_shader.dir/build
+.PHONY : 37_multiThreading_shader/fast
+
+#=============================================================================
+# Target rules for targets named 37_multiThreading_slang_shader
+
+# Build rule for target.
+37_multiThreading_slang_shader: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 37_multiThreading_slang_shader
+.PHONY : 37_multiThreading_slang_shader
+
+# fast build rule for target.
+37_multiThreading_slang_shader/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/37_multiThreading_slang_shader.dir/build.make CMakeFiles/37_multiThreading_slang_shader.dir/build
+.PHONY : 37_multiThreading_slang_shader/fast
+
+#=============================================================================
 # Target rules for targets named tinyobjloader
 
 # Build rule for target.
@@ -2570,6 +2609,30 @@ astcenc-avx2-static/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/36_multipleObjects.dir/build.make CMakeFiles/36_multipleObjects.dir/36_multipleObjects.cpp.s
 .PHONY : 36_multipleObjects.cpp.s
 
+37_multiThreading.o: 37_multiThreading.cpp.o
+.PHONY : 37_multiThreading.o
+
+# target to build an object file
+37_multiThreading.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/37_multiThreading.dir/build.make CMakeFiles/37_multiThreading.dir/37_multiThreading.cpp.o
+.PHONY : 37_multiThreading.cpp.o
+
+37_multiThreading.i: 37_multiThreading.cpp.i
+.PHONY : 37_multiThreading.i
+
+# target to preprocess a source file
+37_multiThreading.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/37_multiThreading.dir/build.make CMakeFiles/37_multiThreading.dir/37_multiThreading.cpp.i
+.PHONY : 37_multiThreading.cpp.i
+
+37_multiThreading.s: 37_multiThreading.cpp.s
+.PHONY : 37_multiThreading.s
+
+# target to generate assembly for a file
+37_multiThreading.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/37_multiThreading.dir/build.make CMakeFiles/37_multiThreading.dir/37_multiThreading.cpp.s
+.PHONY : 37_multiThreading.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -2634,6 +2697,8 @@ help:
 	@echo "... 35_gltf_ktx_slang_shader"
 	@echo "... 36_multipleObjects_shader"
 	@echo "... 36_multipleObjects_slang_shader"
+	@echo "... 37_multiThreading_shader"
+	@echo "... 37_multiThreading_slang_shader"
 	@echo "... Continuous"
 	@echo "... ContinuousBuild"
 	@echo "... ContinuousConfigure"
@@ -2698,6 +2763,7 @@ help:
 	@echo "... 34_android"
 	@echo "... 35_gltf_ktx"
 	@echo "... 36_multipleObjects"
+	@echo "... 37_multiThreading"
 	@echo "... astcenc-avx2-static"
 	@echo "... ktx"
 	@echo "... ktx_read"
@@ -2807,6 +2873,9 @@ help:
 	@echo "... 36_multipleObjects.o"
 	@echo "... 36_multipleObjects.i"
 	@echo "... 36_multipleObjects.s"
+	@echo "... 37_multiThreading.o"
+	@echo "... 37_multiThreading.i"
+	@echo "... 37_multiThreading.s"
 .PHONY : help
 
 
