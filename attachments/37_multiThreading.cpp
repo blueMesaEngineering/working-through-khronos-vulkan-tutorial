@@ -1992,7 +1992,7 @@ class MultithreadedApplication
 
             bufferMemory                                    = vk::raii::DeviceMemory(device, allocInfo);
             
-            buffer.bindMemory(*bufferMemory, 0);
+            buffer.bindMemory(bufferMemory, 0);
         }
         
 
